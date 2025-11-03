@@ -2,9 +2,10 @@ const API_BASE_URL = 'http://localhost:5001/api';
 
 /**
  * Get authorization headers with JWT token
+ * Checks sessionStorage first (current session), then localStorage (remember me)
  */
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('authToken');
+  const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
   return {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` }),

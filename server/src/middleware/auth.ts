@@ -95,6 +95,7 @@ export const requirePermission = (requiredPermissions: string[]) => {
       PHLEBOTOMY: ['VIEW_PHLEBOTOMY', 'COLLECT_SAMPLE'],
       LAB: ['VIEW_LAB', 'ENTER_RESULTS'],
       APPROVER: ['VIEW_APPROVER', 'APPROVE_RESULTS'],
+      B2B_CLIENT: ['VIEW_B2B_DASHBOARD', 'REQUEST_VISIT', 'VIEW_LEDGER', 'PRINT_REPORT'],
     };
 
     const userPermissions = rolePermissions[req.user.role] || [];

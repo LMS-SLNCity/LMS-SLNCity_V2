@@ -41,43 +41,50 @@ export const Dashboard: React.FC = () => {
   const [trends, setTrends] = useState<TrendData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('🔄 Fetching dashboard data...');
+
+      const [metricsData, revenueData, testsData, clientsData, trendsData] = await Promise.all([
+        apiClient.getDashboardOverview(),
+        apiClient.getDashboardRevenue(),
+        apiClient.getDashboardTests(),
+        apiClient.getDashboardClients(),
+        apiClient.getDashboardTrends(),
+      ]);
+
+      console.log('✅ Dashboard data fetched:', {
+        metrics: metricsData,
+        revenue: revenueData,
+        tests: testsData,
+        clients: clientsData,
+        trends: trendsData,
+      });
+
+      setMetrics(metricsData);
+      setRevenue(revenueData);
+      setTests(testsData);
+      setClients(clientsData);
+      setTrends(trendsData);
+    } catch (err) {
+      console.error('❌ Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchDashboardData();
+  };
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        console.log('🔄 Fetching dashboard data...');
-
-        const [metricsData, revenueData, testsData, clientsData, trendsData] = await Promise.all([
-          apiClient.getDashboardOverview(),
-          apiClient.getDashboardRevenue(),
-          apiClient.getDashboardTests(),
-          apiClient.getDashboardClients(),
-          apiClient.getDashboardTrends(),
-        ]);
-
-        console.log('✅ Dashboard data fetched:', {
-          metrics: metricsData,
-          revenue: revenueData,
-          tests: testsData,
-          clients: clientsData,
-          trends: trendsData,
-        });
-
-        setMetrics(metricsData);
-        setRevenue(revenueData);
-        setTests(testsData);
-        setClients(clientsData);
-        setTrends(trendsData);
-      } catch (err) {
-        console.error('❌ Error fetching dashboard data:', err);
-        setError('Failed to load dashboard data: ' + (err instanceof Error ? err.message : String(err)));
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardData();
   }, []);
 
@@ -99,6 +106,31 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      {/* Header with Refresh Button */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+        >
+          <svg
+            className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </button>
+      </div>
+
       {/* Overview Metrics */}
       {metrics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

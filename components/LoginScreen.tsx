@@ -50,14 +50,19 @@ export const LoginScreen: React.FC = () => {
       }
 
       const data = await response.json();
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('clientId', data.client.id);
-      localStorage.setItem('clientName', data.client.name);
-      localStorage.setItem('clientType', data.client.type);
-      localStorage.setItem('userType', 'CLIENT');
 
-      // Redirect to client dashboard
-      window.location.href = '/client-dashboard';
+      console.log('✅ B2B Client login successful:', data.user);
+
+      // Clear any existing session first
+      sessionStorage.clear();
+      localStorage.clear();
+
+      // Store new token in both sessionStorage and localStorage
+      sessionStorage.setItem('authToken', data.token);
+      localStorage.setItem('authToken', data.token);
+
+      // Reload the page to trigger session restore with new token
+      window.location.reload();
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
     } finally {

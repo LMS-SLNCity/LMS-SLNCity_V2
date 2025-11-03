@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
+import { auditVisit } from '../middleware/auditLogger.js';
 
 const router = express.Router();
 
@@ -134,7 +135,13 @@ router.post('/', async (req: Request, res: Response) => {
        RETURNING id, patient_id, referred_doctor_id, ref_customer_id, other_ref_doctor, other_ref_customer, registration_datetime, visit_code, total_cost, amount_paid, payment_mode, due_amount`,
       [patient_id, referred_doctor_id, ref_customer_id, other_ref_doctor, other_ref_customer, registration_datetime, total_cost, amount_paid, payment_mode, due_amount]
     );
-    res.status(201).json(result.rows[0]);
+
+    const visit = result.rows[0];
+
+    // Audit log: Visit creation
+    await auditVisit.create(req, visit.id, visit);
+
+    res.status(201).json(visit);
   } catch (error) {
     console.error('Error creating visit:', error);
     res.status(500).json({ error: 'Internal server error' });

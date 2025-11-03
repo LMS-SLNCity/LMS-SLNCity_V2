@@ -5,6 +5,7 @@ import { Client } from '../../types';
 import { ClientLedgerModal } from './ClientLedgerModal';
 import { ClientPriceEditorModal } from './ClientPriceEditorModal';
 import { B2BAccountManagementModal } from './B2BAccountManagementModal';
+import { SettlementConfirmationModal } from './SettlementConfirmationModal';
 
 export const B2BManagement: React.FC = () => {
     const { clients, addClient, deleteClient, settleClientBalance } = useAppContext();
@@ -13,6 +14,7 @@ export const B2BManagement: React.FC = () => {
     const [isLedgerOpen, setIsLedgerOpen] = useState(false);
     const [isPriceEditorOpen, setIsPriceEditorOpen] = useState(false);
     const [isAccountManagementOpen, setIsAccountManagementOpen] = useState(false);
+    const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
     const [clientName, setClientName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -65,6 +67,7 @@ export const B2BManagement: React.FC = () => {
         setIsLedgerOpen(false);
         setIsPriceEditorOpen(false);
         setIsAccountManagementOpen(false);
+        setIsSettlementModalOpen(false);
     };
 
     const handleDeleteClient = async (clientId: number) => {
@@ -89,23 +92,44 @@ export const B2BManagement: React.FC = () => {
         }
     };
 
-    const handleSettleBalance = async (clientId: number) => {
+    const openSettlementModal = (client: Client) => {
         if (!actor) {
             alert("User session has expired. Please log in again.");
             return;
         }
 
-        if (!window.confirm('Are you sure you want to settle this client\'s balance to ₹0?')) {
+        if (client.balance <= 0) {
+            alert('Client balance is already zero. No settlement needed.');
             return;
         }
 
-        setSettlingId(clientId);
+        setSelectedClient(client);
+        setIsSettlementModalOpen(true);
+    };
+
+    const handleSettleBalance = async (paymentMode: string, description: string, receivedAmount?: number) => {
+        if (!actor || !selectedClient) {
+            alert("User session has expired. Please log in again.");
+            return;
+        }
+
+        setSettlingId(selectedClient.id);
         try {
-            await settleClientBalance(clientId, actor);
-            alert('Client balance settled successfully');
+            const amountReceived = receivedAmount || selectedClient.balance;
+            const waiverAmount = selectedClient.balance - amountReceived;
+            const hasWaiver = waiverAmount > 0.01;
+
+            await settleClientBalance(selectedClient.id, actor, paymentMode, description, receivedAmount);
+
+            const successMessage = hasWaiver
+                ? `Settlement completed successfully!\n\nClient: ${selectedClient.name}\nOriginal Balance: ₹${selectedClient.balance.toFixed(2)}\nAmount Received: ₹${amountReceived.toFixed(2)}\nWaiver/Discount: ₹${waiverAmount.toFixed(2)}\nMode: ${paymentMode}`
+                : `Settlement completed successfully!\n\nClient: ${selectedClient.name}\nAmount: ₹${selectedClient.balance.toFixed(2)}\nMode: ${paymentMode}`;
+
+            alert(successMessage);
+            closeModal();
         } catch (error) {
             console.error('Failed to settle balance:', error);
-            alert('Failed to settle balance');
+            alert('Failed to settle balance: ' + (error instanceof Error ? error.message : String(error)));
         } finally {
             setSettlingId(null);
         }
@@ -116,6 +140,13 @@ export const B2BManagement: React.FC = () => {
         {isLedgerOpen && selectedClient && <ClientLedgerModal client={selectedClient} onClose={closeModal} />}
         {isPriceEditorOpen && selectedClient && <ClientPriceEditorModal client={selectedClient} onClose={closeModal} />}
         {isAccountManagementOpen && selectedClient && <B2BAccountManagementModal client={selectedClient} onClose={closeModal} />}
+        {isSettlementModalOpen && selectedClient && (
+            <SettlementConfirmationModal
+                client={selectedClient}
+                onConfirm={handleSettleBalance}
+                onCancel={closeModal}
+            />
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Add New Client Form */}
@@ -175,9 +206,9 @@ export const B2BManagement: React.FC = () => {
                                     <button onClick={() => openPriceEditor(client)} className="text-blue-600 hover:text-blue-800 font-medium text-xs px-2 py-1 bg-blue-50 rounded">Prices</button>
                                     <button onClick={() => openAccountManagement(client)} className="text-purple-600 hover:text-purple-800 font-medium text-xs px-2 py-1 bg-purple-50 rounded">Account</button>
                                     <button
-                                        onClick={() => handleSettleBalance(client.id)}
-                                        disabled={settlingId === client.id}
-                                        className="text-orange-600 hover:text-orange-800 font-medium text-xs px-2 py-1 bg-orange-50 rounded disabled:opacity-50"
+                                        onClick={() => openSettlementModal(client)}
+                                        disabled={settlingId === client.id || client.balance <= 0}
+                                        className="text-orange-600 hover:text-orange-800 font-medium text-xs px-2 py-1 bg-orange-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {settlingId === client.id ? 'Settling...' : 'Settle'}
                                     </button>

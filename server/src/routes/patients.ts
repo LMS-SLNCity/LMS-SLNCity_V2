@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
+import { auditPatient } from '../middleware/auditLogger.js';
 
 const router = express.Router();
 
@@ -38,7 +39,13 @@ router.post('/', async (req: Request, res: Response) => {
        RETURNING id, salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history`,
       [salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history]
     );
-    res.status(201).json(result.rows[0]);
+
+    const patient = result.rows[0];
+
+    // Audit log: Patient registration
+    await auditPatient.create(req, patient.id, patient);
+
+    res.status(201).json(patient);
   } catch (error) {
     console.error('Error creating patient:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -48,6 +55,19 @@ router.post('/', async (req: Request, res: Response) => {
 router.patch('/:id', async (req: Request, res: Response) => {
   try {
     const { salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history } = req.body;
+
+    // Get old values for audit trail
+    const oldResult = await pool.query(
+      'SELECT id, salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history FROM patients WHERE id = $1',
+      [req.params.id]
+    );
+
+    if (oldResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Patient not found' });
+    }
+
+    const oldData = oldResult.rows[0];
+
     const result = await pool.query(
       `UPDATE patients
        SET salutation = COALESCE($1, salutation),
@@ -66,8 +86,13 @@ router.patch('/:id', async (req: Request, res: Response) => {
        RETURNING id, salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history`,
       [salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history, req.params.id]
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Patient not found' });
-    res.json(result.rows[0]);
+
+    const newData = result.rows[0];
+
+    // Audit log: Patient update with old and new values
+    await auditPatient.update(req, parseInt(req.params.id), oldData, newData);
+
+    res.json(newData);
   } catch (error) {
     console.error('Error updating patient:', error);
     res.status(500).json({ error: 'Internal server error' });

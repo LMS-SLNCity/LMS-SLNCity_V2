@@ -130,7 +130,8 @@ export const CreateVisitForm: React.FC<CreateVisitFormProps> = ({ onInitiateRepo
   const [referralDoctors, setReferralDoctors] = useState<any[]>([]);
   const [isB2BClient, setIsB2BClient] = useState(false);
   const [visitToCollectDue, setVisitToCollectDue] = useState<Visit | null>(null);
-  const lastSubmittedVisit = useMemo(() => submissionStatus === 'submitted' && visits.length > 0 ? visits[visits.length - 1] : null, [visits, submissionStatus]);
+  // Get the most recently created visit (visits are sorted by created_at DESC from backend)
+  const lastSubmittedVisit = useMemo(() => submissionStatus === 'submitted' && visits.length > 0 ? visits[0] : null, [visits, submissionStatus]);
 
 
   useEffect(() => {

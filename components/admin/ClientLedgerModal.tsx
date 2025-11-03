@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Client } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { Client, LedgerEntry } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import { Input } from '../form/Input';
 import { useAuth } from '../../context/AuthContext';
@@ -10,16 +10,49 @@ interface ClientLedgerModalProps {
 }
 
 export const ClientLedgerModal: React.FC<ClientLedgerModalProps> = ({ client, onClose }) => {
-    const { ledgerEntries, addClientPayment } = useAppContext();
+    const { addClientPayment } = useAppContext();
     const { user: actor } = useAuth();
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('Monthly Settlement');
+    const [clientLedger, setClientLedger] = useState<LedgerEntry[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const clientLedger = ledgerEntries
-        .filter(entry => entry.clientId === client.id)
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    // Fetch ledger entries from API
+    useEffect(() => {
+        const fetchLedger = async () => {
+            try {
+                const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+                const response = await fetch(`http://localhost:5001/api/clients/${client.id}/ledger`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
 
-    const handlePaymentSubmit = (e: React.FormEvent) => {
+                if (response.ok) {
+                    const data = await response.json();
+                    setClientLedger(data.map((entry: any) => ({
+                        id: entry.id,
+                        clientId: entry.client_id,
+                        visitId: entry.visit_id,
+                        type: entry.type,
+                        amount: parseFloat(entry.amount),
+                        description: entry.description,
+                        created_at: entry.created_at,
+                    })));
+                } else {
+                    console.error('Failed to fetch ledger entries');
+                }
+            } catch (error) {
+                console.error('Error fetching ledger:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLedger();
+    }, [client.id]);
+
+    const handlePaymentSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const paymentAmount = Number(amount);
         if (!actor) {
@@ -27,9 +60,35 @@ export const ClientLedgerModal: React.FC<ClientLedgerModalProps> = ({ client, on
             return;
         }
         if(paymentAmount > 0 && description) {
-            addClientPayment(client.id, paymentAmount, description, actor);
-            setAmount('');
-            setDescription('Monthly Settlement');
+            try {
+                await addClientPayment(client.id, paymentAmount, description, actor);
+                setAmount('');
+                setDescription('Monthly Settlement');
+
+                // Refresh ledger entries
+                const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+                const response = await fetch(`http://localhost:5001/api/clients/${client.id}/ledger`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setClientLedger(data.map((entry: any) => ({
+                        id: entry.id,
+                        clientId: entry.client_id,
+                        visitId: entry.visit_id,
+                        type: entry.type,
+                        amount: parseFloat(entry.amount),
+                        description: entry.description,
+                        created_at: entry.created_at,
+                    })));
+                }
+            } catch (error) {
+                console.error('Error adding payment:', error);
+                alert('Failed to add payment');
+            }
         } else {
             alert('Please enter a valid amount and description.');
         }
@@ -51,35 +110,39 @@ export const ClientLedgerModal: React.FC<ClientLedgerModalProps> = ({ client, on
                 </div>
 
                 <div className="p-6 overflow-y-auto flex-grow">
-                     <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                        <table className="min-w-full bg-white">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
-                                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Debit (₹)</th>
-                                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Credit (₹)</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {clientLedger.map((entry, index) => (
-                                    <tr key={entry.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50 hover:bg-gray-100'}>
-                                        <td className="px-4 py-2 text-xs text-gray-600 whitespace-nowrap">{new Date(entry.created_at).toLocaleString()}</td>
-                                        <td className="px-4 py-2 text-xs text-gray-800">{entry.description}</td>
-                                        <td className="px-4 py-2 text-xs text-right font-mono text-red-600">
-                                            {entry.type === 'DEBIT' ? entry.amount.toFixed(2) : '-'}
-                                        </td>
-                                        <td className="px-4 py-2 text-xs text-right font-mono text-green-600">
-                                             {entry.type === 'CREDIT' ? entry.amount.toFixed(2) : '-'}
-                                        </td>
+                     {loading ? (
+                        <div className="text-center py-8 text-gray-500">Loading ledger...</div>
+                     ) : (
+                        <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                            <table className="min-w-full bg-white">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                                        <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Debit (₹)</th>
+                                        <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Credit (₹)</th>
                                     </tr>
-                                ))}
-                                {clientLedger.length === 0 && (
-                                    <tr><td colSpan={4} className="text-center py-4 text-sm text-gray-500">No transactions found.</td></tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                    {clientLedger.map((entry, index) => (
+                                        <tr key={entry.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50 hover:bg-gray-100'}>
+                                            <td className="px-4 py-2 text-xs text-gray-600 whitespace-nowrap">{new Date(entry.created_at).toLocaleString()}</td>
+                                            <td className="px-4 py-2 text-xs text-gray-800">{entry.description}</td>
+                                            <td className="px-4 py-2 text-xs text-right font-mono text-red-600">
+                                                {entry.type === 'DEBIT' ? entry.amount.toFixed(2) : '-'}
+                                            </td>
+                                            <td className="px-4 py-2 text-xs text-right font-mono text-green-600">
+                                                 {entry.type === 'CREDIT' ? entry.amount.toFixed(2) : '-'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {clientLedger.length === 0 && (
+                                        <tr><td colSpan={4} className="text-center py-4 text-sm text-gray-500">No transactions found.</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                     )}
                 </div>
 
                 <form onSubmit={handlePaymentSubmit} className="p-6 border-t border-gray-200 bg-gray-50">

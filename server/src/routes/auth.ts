@@ -29,15 +29,49 @@ const rolePermissions: Record<string, string[]> = {
   PHLEBOTOMY: ['VIEW_PHLEBOTOMY', 'COLLECT_SAMPLE'],
   LAB: ['VIEW_LAB', 'ENTER_RESULTS'],
   APPROVER: ['VIEW_APPROVER', 'APPROVE_RESULTS'],
+  B2B_CLIENT: ['VIEW_B2B_DASHBOARD', 'REQUEST_VISIT', 'VIEW_LEDGER', 'PRINT_REPORT'],
+};
+
+// Helper function to log authentication attempts
+const logAuthAttempt = async (
+  username: string,
+  action: 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'LOGOUT',
+  details: string,
+  req: Request,
+  userId?: number
+) => {
+  try {
+    const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    await pool.query(
+      `INSERT INTO audit_logs (
+        username,
+        action,
+        details,
+        user_id,
+        ip_address,
+        user_agent,
+        retention_category,
+        timestamp
+      ) VALUES ($1, $2, $3, $4, $5, $6, 'LOGIN', CURRENT_TIMESTAMP)`,
+      [username, action, details, userId || null, ipAddress, userAgent]
+    );
+  } catch (error) {
+    console.error('Error logging auth attempt:', error);
+    // Don't throw - logging failure shouldn't prevent login
+  }
 };
 
 // Login endpoint
 router.post('/login', async (req: Request, res: Response) => {
+  const { username, password } = req.body;
+
   try {
     console.log('Login attempt:', req.body);
-    const { username, password } = req.body;
 
     if (!username || !password) {
+      await logAuthAttempt(username || 'unknown', 'LOGIN_FAILED', 'Missing username or password', req);
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
@@ -49,12 +83,14 @@ router.post('/login', async (req: Request, res: Response) => {
     console.log('Query result:', result.rows.length, 'rows');
 
     if (result.rows.length === 0) {
+      await logAuthAttempt(username, 'LOGIN_FAILED', 'User not found', req);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const user = result.rows[0];
 
     if (!user.is_active) {
+      await logAuthAttempt(username, 'LOGIN_FAILED', 'User account is inactive', req, user.id);
       return res.status(401).json({ error: 'User account is inactive' });
     }
 
@@ -62,6 +98,7 @@ router.post('/login', async (req: Request, res: Response) => {
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!passwordMatch) {
+      await logAuthAttempt(username, 'LOGIN_FAILED', 'Invalid password', req, user.id);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -78,6 +115,15 @@ router.post('/login', async (req: Request, res: Response) => {
       { expiresIn: JWT_EXPIRY }
     );
 
+    // Log successful login
+    await logAuthAttempt(
+      username,
+      'LOGIN_SUCCESS',
+      `User logged in successfully with role ${user.role}`,
+      req,
+      user.id
+    );
+
     console.log('Login successful for user:', username);
     // Store token in localStorage on client side
     res.json({
@@ -92,6 +138,7 @@ router.post('/login', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Login error:', error);
+    await logAuthAttempt(username || 'unknown', 'LOGIN_FAILED', `Login error: ${error}`, req);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -107,9 +154,9 @@ router.post('/verify', async (req: Request, res: Response) => {
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, JWT_SECRET) as { id: number; username: string; role: string };
 
-    // Check if user is still active in database
+    // Check if user is still active in database and get full user data
     const userResult = await pool.query(
-      'SELECT id, is_active FROM users WHERE id = $1',
+      'SELECT id, username, role, is_active FROM users WHERE id = $1',
       [decoded.id]
     );
 
@@ -123,19 +170,56 @@ router.post('/verify', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User account is inactive' });
     }
 
-    res.json({ valid: true, user: decoded });
+    // Get permissions for the user's role
+    const permissions = rolePermissions[user.role] || [];
+
+    // Return full user object with permissions (same format as login)
+    res.json({
+      valid: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        isActive: user.is_active,
+        permissions,
+      }
+    });
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' });
   }
 });
 
+// Logout endpoint
+router.post('/logout', async (req: Request, res: Response) => {
+  try {
+    const { username, userId } = req.body;
+
+    if (username) {
+      await logAuthAttempt(
+        username,
+        'LOGOUT',
+        'User logged out',
+        req,
+        userId
+      );
+    }
+
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Client login endpoint
 router.post('/client-login', async (req: Request, res: Response) => {
+  const { clientId, password } = req.body;
+
   try {
-    console.log('Client login attempt:', req.body);
-    const { clientId, password } = req.body;
+    console.log('Client login attempt for client ID:', clientId);
 
     if (!clientId || !password) {
+      await logAuthAttempt(`CLIENT_${clientId || 'unknown'}`, 'LOGIN_FAILED', 'Missing client ID or password', req);
       return res.status(400).json({ error: 'Client ID and password are required' });
     }
 
@@ -149,16 +233,19 @@ router.post('/client-login', async (req: Request, res: Response) => {
     );
 
     if (result.rows.length === 0) {
+      await logAuthAttempt(`CLIENT_${clientId}`, 'LOGIN_FAILED', 'Client not found', req);
       return res.status(401).json({ error: 'Client not found' });
     }
 
     const client = result.rows[0];
 
     if (!client.password_hash) {
+      await logAuthAttempt(`CLIENT_${client.name}`, 'LOGIN_FAILED', 'Client login not configured', req);
       return res.status(401).json({ error: 'Client login not configured' });
     }
 
     if (!client.is_active) {
+      await logAuthAttempt(`CLIENT_${client.name}`, 'LOGIN_FAILED', 'Client account is inactive', req);
       return res.status(401).json({ error: 'Client account is inactive' });
     }
 
@@ -166,6 +253,7 @@ router.post('/client-login', async (req: Request, res: Response) => {
     const passwordMatch = await bcrypt.compare(password, client.password_hash);
 
     if (!passwordMatch) {
+      await logAuthAttempt(`CLIENT_${client.name}`, 'LOGIN_FAILED', 'Invalid password', req);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -175,30 +263,48 @@ router.post('/client-login', async (req: Request, res: Response) => {
       [clientId]
     );
 
+    // Get B2B_CLIENT permissions
+    const permissions = rolePermissions['B2B_CLIENT'] || [];
+
     // Generate JWT token for client
     const token = jwt.sign(
       {
         id: client.id,
-        name: client.name,
-        type: 'CLIENT',
-        clientType: client.type,
+        username: `CLIENT_${client.name}`,
+        role: 'B2B_CLIENT',
+        clientId: client.id,
+        clientName: client.name,
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRY }
     );
 
+    // Log successful client login
+    await logAuthAttempt(
+      `CLIENT_${client.name}`,
+      'LOGIN_SUCCESS',
+      `B2B client logged in successfully (Type: ${client.type})`,
+      req
+    );
+
     console.log('Client login successful for client:', client.name);
     res.json({
       token,
-      client: {
+      user: {
         id: client.id,
-        name: client.name,
-        type: client.type,
+        username: `CLIENT_${client.name}`,
+        role: 'B2B_CLIENT',
+        isActive: true,
+        permissions,
+        clientId: client.id,
+        clientName: client.name,
+        clientType: client.type,
         balance: parseFloat(client.balance),
       },
     });
   } catch (error) {
     console.error('Client login error:', error);
+    await logAuthAttempt(`CLIENT_${clientId || 'unknown'}`, 'LOGIN_FAILED', `Login error: ${error}`, req);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -212,29 +318,48 @@ router.post('/verify-client', async (req: Request, res: Response) => {
     }
 
     const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number; name: string; type: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
 
-    if (decoded.type !== 'CLIENT') {
+    if (decoded.role !== 'B2B_CLIENT') {
       return res.status(401).json({ error: 'Invalid token type' });
     }
 
     // Check if client is still active
     const clientResult = await pool.query(
-      'SELECT id, is_active FROM b2b_client_logins WHERE client_id = $1',
-      [decoded.id]
+      `SELECT c.id, c.name, c.type, c.balance, bcl.is_active
+       FROM clients c
+       JOIN b2b_client_logins bcl ON c.id = bcl.client_id
+       WHERE c.id = $1`,
+      [decoded.clientId]
     );
 
     if (clientResult.rows.length === 0) {
       return res.status(401).json({ error: 'Client not found' });
     }
 
-    const clientLogin = clientResult.rows[0];
+    const client = clientResult.rows[0];
 
-    if (!clientLogin.is_active) {
+    if (!client.is_active) {
       return res.status(401).json({ error: 'Client account is inactive' });
     }
 
-    res.json({ valid: true, client: decoded });
+    // Get B2B_CLIENT permissions
+    const permissions = rolePermissions['B2B_CLIENT'] || [];
+
+    res.json({
+      valid: true,
+      user: {
+        id: client.id,
+        username: `CLIENT_${client.name}`,
+        role: 'B2B_CLIENT',
+        isActive: true,
+        permissions,
+        clientId: client.id,
+        clientName: client.name,
+        clientType: client.type,
+        balance: parseFloat(client.balance),
+      }
+    });
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' });
   }

@@ -96,6 +96,8 @@ export interface VisitTest {
   cultureResult?: CultureResult; // New field for structured culture results
   approvedBy?: string;
   approvedAt?: string; // ISO String
+  rejection_count?: number;
+  last_rejection_at?: string;
 }
 
 
@@ -164,6 +166,55 @@ export interface AuditLog {
     username: string;
     action: string;
     details: string;
+    user_id?: number;
+    resource?: string;
+    resource_id?: number;
+    ip_address?: string;
+    old_values?: any;
+    new_values?: any;
+    user_role?: string;
+}
+
+export interface PatientEditRequest {
+    id: number;
+    patient_id: number;
+    requested_by_user_id: number;
+    requested_by_username: string;
+    request_type: 'NAME_CHANGE' | 'CRITICAL_INFO_CHANGE' | 'GENERAL_EDIT';
+    old_values: any;
+    new_values: any;
+    reason?: string;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    reviewed_by_user_id?: number;
+    reviewed_by_username?: string;
+    review_comment?: string;
+    reviewed_at?: string;
+    created_at: string;
+    updated_at: string;
+    patient_name?: string;
+    patient_phone?: string;
+}
+
+export interface ResultRejection {
+    id: number;
+    visit_test_id: number;
+    rejected_by_user_id: number;
+    rejected_by_username: string;
+    rejection_reason: string;
+    old_results?: any;
+    status: 'PENDING_CORRECTION' | 'CORRECTED' | 'RESOLVED';
+    resolved_by_user_id?: number;
+    resolved_by_username?: string;
+    resolved_at?: string;
+    created_at: string;
+    updated_at: string;
+    visit_id?: number;
+    test_template_id?: number;
+    test_status?: string;
+    test_name?: string;
+    test_code?: string;
+    visit_code?: string;
+    patient_name?: string;
 }
 
 

@@ -5,6 +5,7 @@ import { LabQueue } from './LabQueue';
 import { Navbar, View } from './Navbar';
 import { ApproverQueue } from './ApproverQueue';
 import { AdminPanel } from './AdminPanel';
+import { B2BClientDashboard } from './B2BClientDashboard';
 import { ReportModal } from './ReportModal';
 import { SignatorySelectionModal } from './SignatorySelectionModal';
 import { Visit, Signatory, User, Permission, VisitTest } from '../types';
@@ -19,6 +20,7 @@ interface MainLayoutProps {
 }
 
 const viewOrder: { view: View; permission: Permission }[] = [
+    { view: 'b2b-dashboard', permission: 'VIEW_B2B_DASHBOARD' },
     { view: 'reception', permission: 'VIEW_RECEPTION' },
     { view: 'phlebotomy', permission: 'VIEW_PHLEBOTOMY' },
     { view: 'lab', permission: 'VIEW_LAB' },
@@ -31,9 +33,17 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
   const { reloadData } = useAppContext();
 
   const allowedViews = useMemo(() => {
-    return viewOrder
-        .filter(item => hasPermission(item.permission))
+    console.log('🔍 Calculating allowed views for user:', user);
+    console.log('📋 User permissions:', user.permissions);
+    const allowed = viewOrder
+        .filter(item => {
+          const has = hasPermission(item.permission);
+          console.log(`  - ${item.permission}: ${has ? '✅' : '❌'}`);
+          return has;
+        })
         .map(item => item.view);
+    console.log('✅ Allowed views:', allowed);
+    return allowed;
   }, [user.permissions, hasPermission]);
 
   // FIX: Initialize with undefined and let useEffect handle setting the initial view.
@@ -47,7 +57,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
   useEffect(() => {
     const defaultView = allowedViews.length > 0 ? allowedViews[0] : undefined;
 
+    console.log('🎯 Setting default view...');
+    console.log('  - Allowed views:', allowedViews);
+    console.log('  - Default view:', defaultView);
+    console.log('  - Current view:', currentView);
+
     if (user && allowedViews.length === 0) {
+        console.error('❌ User has no permissions!');
         alert("You do not have any permissions to view this application. Please contact an administrator.");
         logout();
         return;
@@ -56,6 +72,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
     // This condition prevents the infinite loop.
     // It only sets the view if it's undefined (on initial load) or invalid.
     if (!currentView || !allowedViews.includes(currentView)) {
+        console.log('✅ Setting current view to:', defaultView);
         setCurrentView(defaultView);
     }
   // FIX: Removed `currentView` from dependency array to break the infinite loop.
@@ -124,12 +141,24 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
                 <span className="text-gray-500 font-light text-xs sm:text-sm hidden sm:inline whitespace-nowrap">Diagnostic</span>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 justify-end min-w-0 flex-shrink-0">
-                <span className="text-xs text-gray-600 hidden lg:inline whitespace-nowrap">Welcome, <span className="font-semibold">{user.username}</span></span>
+                <span className="text-xs text-gray-600 hidden lg:inline whitespace-nowrap">
+                  Welcome, <span className="font-semibold">{(user as any).clientName || user.username}</span>
+                  {user.role === 'B2B_CLIENT' && <span className="ml-1 text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Client</span>}
+                </span>
                 <Navbar currentView={currentView} setCurrentView={setCurrentView} allowedViews={allowedViews} />
             </div>
         </div>
         </header>
         <main className="container mx-auto p-4 md:p-6">
+        {!currentView && (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        )}
+        {currentView === 'b2b-dashboard' && <B2BClientDashboard />}
         {currentView === 'reception' && <CreateVisitForm onInitiateReport={handleInitiateReport} />}
         {currentView === 'phlebotomy' && <PhlebotomyQueue onInitiateReport={handleInitiateReport} />}
         {currentView === 'lab' && <LabQueue onInitiateReport={handleInitiateReport} />}

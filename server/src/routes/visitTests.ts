@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
+import { auditSample, auditTestResult } from '../middleware/auditLogger.js';
 
 const router = express.Router();
 
@@ -116,6 +117,25 @@ router.post('/', async (req: Request, res: Response) => {
 router.patch('/:id', async (req: Request, res: Response) => {
   try {
     const { status, collected_by, collected_at, specimen_type, results, culture_result, approved_by, approved_at } = req.body;
+
+    // Get old values and test details for audit trail
+    const oldResult = await pool.query(
+      `SELECT vt.*, tt.name as test_name, v.visit_code
+       FROM visit_tests vt
+       JOIN test_templates tt ON vt.test_template_id = tt.id
+       JOIN visits v ON vt.visit_id = v.id
+       WHERE vt.id = $1`,
+      [req.params.id]
+    );
+
+    if (oldResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Visit test not found' });
+    }
+
+    const oldData = oldResult.rows[0];
+    const testName = oldData.test_name;
+    const visitCode = oldData.visit_code;
+
     const result = await pool.query(
       `UPDATE visit_tests
        SET status = COALESCE($1, status),
@@ -131,8 +151,29 @@ router.patch('/:id', async (req: Request, res: Response) => {
        RETURNING id, visit_id, test_template_id, status, collected_by, collected_at, specimen_type, results, culture_result, approved_by, approved_at`,
       [status, collected_by, collected_at, specimen_type, results ? JSON.stringify(results) : null, culture_result ? JSON.stringify(culture_result) : null, approved_by, approved_at, req.params.id]
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Visit test not found' });
-    res.json(result.rows[0]);
+
+    const newData = result.rows[0];
+
+    // Audit logging based on what changed
+    if (collected_by && !oldData.collected_by) {
+      // Sample collection
+      await auditSample.collect(req, oldData.visit_id, visitCode);
+    }
+
+    if (results && !oldData.results) {
+      // Result entry (first time)
+      await auditTestResult.enter(req, parseInt(req.params.id), testName, visitCode, results);
+    } else if (results && oldData.results) {
+      // Result update
+      await auditTestResult.update(req, parseInt(req.params.id), testName, visitCode, oldData.results, results);
+    }
+
+    if (approved_by && !oldData.approved_by) {
+      // Result approval
+      await auditTestResult.approve(req, parseInt(req.params.id), testName, visitCode);
+    }
+
+    res.json(newData);
   } catch (error) {
     console.error('Error updating visit test:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -55,6 +55,7 @@ interface AppContextType extends AppState {
   addTestResult: (visitTestId: number, data: AddResultData, actor: User) => void;
   editTestResult: (visitTestId: number, data: AddResultData, reason: string, actor: User) => void;
   approveTestResult: (visitTestId: number, actor: User) => void;
+  rejectTestResult: (visitTestId: number, rejectionReason: string, actor: User) => Promise<void>;
   collectDuePayment: (visitId: number, amount: number, mode: Visit['payment_mode'], actor: User) => void;
   // Admin functions
   addUser: (userData: UserCreationData, actor: User) => void;
@@ -96,11 +97,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     branches: [],
   });
 
+  // Helper function to get auth token from sessionStorage (current session) or localStorage (remember me)
+  const getAuthToken = (): string | null => {
+    return sessionStorage.getItem('authToken') || getAuthToken();
+  };
+
   // Load clients, referral doctors, test templates, branches, antibiotics, and visit tests from API on mount and when auth token changes
   useEffect(() => {
     const loadData = async () => {
       try {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = getAuthToken();
         console.log('Auth token:', authToken ? 'Present' : 'Missing');
 
         if (!authToken) {
@@ -185,9 +191,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addVisit = async (visitData: AddVisitData, actor: User) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
 
-      // First, create the visit in the database
+      // First, create or get the patient
+      let patientId = visitData.patient.id;
+
+      if (!patientId) {
+        // Create new patient
+        const patientResponse = await fetch('http://localhost:5001/api/patients', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(visitData.patient),
+        });
+
+        if (!patientResponse.ok) {
+          throw new Error('Failed to create patient');
+        }
+
+        const createdPatient = await patientResponse.json();
+        patientId = createdPatient.id;
+      }
+
+      // Now create the visit with the patient_id
       const visitResponse = await fetch('http://localhost:5001/api/visits', {
         method: 'POST',
         headers: {
@@ -195,7 +223,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
-          patient_id: visitData.patient.id,
+          patient_id: patientId,
           referred_doctor_id: visitData.referred_doctor_id,
           ref_customer_id: visitData.ref_customer_id,
           other_ref_doctor: visitData.other_ref_doctor,
@@ -212,6 +240,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       const createdVisit = await visitResponse.json();
+
+      // Create visit_tests in the database
+      for (const testTemplateId of visitData.testIds) {
+        const visitTestResponse = await fetch('http://localhost:5001/api/visit-tests', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            visit_id: createdVisit.id,
+            test_template_id: testTemplateId,
+          }),
+        });
+
+        if (!visitTestResponse.ok) {
+          console.error(`Failed to create visit test for template ${testTemplateId}`);
+        }
+      }
 
       // If this is a B2B client, update the client balance
       if (visitData.ref_customer_id) {
@@ -231,97 +278,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       addAuditLog(actor.username, 'CREATE_VISIT', `Created visit for patient ${visitData.patient.name} with ${visitData.testIds.length} tests.`);
 
-      // Update local state
-      setState(prevState => {
-        const newVisitId = createdVisit.id;
-        const visitCode = createdVisit.visit_code;
-
-        let lastTestId = (prevState.visitTests.length > 0 ? Math.max(...prevState.visitTests.map(t => t.id)) : 0);
-
-        const newTests: VisitTest[] = visitData.testIds.map(templateId => {
-          const template = prevState.testTemplates.find(t => t.id === templateId);
-          if (!template) throw new Error(`Test template with id ${templateId} not found.`);
-
-          lastTestId++;
-          return {
-            id: lastTestId,
-            visitId: newVisitId,
-            patientName: visitData.patient.name,
-            visitCode: visitCode,
-            template: template,
-            status: 'PENDING',
-          };
-        });
-
-        let updatedPatients = [...prevState.patients];
-        const existingPatientIndex = prevState.patients.findIndex(p => p.phone && p.phone === visitData.patient.phone);
-        let patientForVisit: Patient;
-
-        if (existingPatientIndex !== -1) {
-            const existingPatient = prevState.patients[existingPatientIndex];
-            patientForVisit = {
-                ...existingPatient,
-                ...visitData.patient,
-                id: existingPatient.id,
-            };
-            updatedPatients[existingPatientIndex] = patientForVisit;
-        } else {
-            const newPatientId = (prevState.patients.length > 0 ? Math.max(...prevState.patients.map(p => p.id || 0)) : 0) + 1;
-            patientForVisit = {
-                ...visitData.patient,
-                id: newPatientId,
-            };
-            updatedPatients.push(patientForVisit);
-        }
-
-        const newVisit: Visit = {
-          id: newVisitId,
-          patient: patientForVisit,
-          referred_doctor_id: visitData.referred_doctor_id,
-          ref_customer_id: visitData.ref_customer_id,
-          other_ref_doctor: visitData.other_ref_doctor,
-          other_ref_customer: visitData.other_ref_customer,
-          registration_datetime: visitData.registration_datetime,
-          visit_code: visitCode,
-          created_at: new Date().toISOString(),
-          total_cost: visitData.total_cost,
-          amount_paid: visitData.amount_paid,
-          payment_mode: visitData.payment_mode,
-          due_amount: visitData.total_cost - visitData.amount_paid,
-          tests: newTests.map(t => t.id),
-        };
-
-        let newLedgerEntries = [...prevState.ledgerEntries];
-        let newClients = [...prevState.clients];
-
-        const client = prevState.clients.find(c => c.id === visitData.ref_customer_id);
-        if(client && client.type === 'REFERRAL_LAB') {
-          const newLedgerId = (prevState.ledgerEntries.length > 0 ? Math.max(...prevState.ledgerEntries.map(l => l.id)) : 0) + 1;
-          const debitEntry: LedgerEntry = {
-              id: newLedgerId,
-              clientId: client.id,
-              visitId: newVisitId,
-              type: 'DEBIT',
-              amount: newVisit.total_cost,
-              description: `Visit ${visitCode} for ${visitData.patient.name}`,
-              created_at: new Date().toISOString(),
-          };
-          newLedgerEntries.push(debitEntry);
-
-          newClients = prevState.clients.map(c =>
-              c.id === client.id ? { ...c, balance: c.balance + newVisit.total_cost } : c
-          );
-        }
-
-        return {
-          ...prevState,
-          visits: [...prevState.visits, newVisit],
-          visitTests: [...prevState.visitTests, ...newTests],
-          ledgerEntries: newLedgerEntries,
-          clients: newClients,
-          patients: updatedPatients,
-        };
-      });
+      // Reload all data from database to ensure everything is in sync
+      await reloadData();
     } catch (error) {
       console.error('Error creating visit:', error);
       throw error;
@@ -330,7 +288,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   
   const updateVisitTestStatus = async (visitTestId: number, status: VisitTestStatus, actor: User, details?: UpdateStatusDetails) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       const test = state.visitTests.find(t => t.id === visitTestId);
 
       const updateData: any = { status };
@@ -375,7 +333,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   
   const addTestResult = async (visitTestId: number, data: AddResultData, actor: User) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       const test = state.visitTests.find(t => t.id === visitTestId);
 
       const updateData: any = {
@@ -420,7 +378,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
    const editTestResult = async (visitTestId: number, data: AddResultData, reason: string, actor: User) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       const test = state.visitTests.find(t => t.id === visitTestId);
 
       const updateData: any = {};
@@ -462,7 +420,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const approveTestResult = async (visitTestId: number, actor: User) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       const test = state.visitTests.find(t => t.id === visitTestId);
 
       const updateData = {
@@ -504,7 +462,48 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.error('Error approving test result:', error);
     }
   };
-  
+
+  const rejectTestResult = async (visitTestId: number, rejectionReason: string, actor: User): Promise<void> => {
+    try {
+      const authToken = getAuthToken();
+      const test = state.visitTests.find(t => t.id === visitTestId);
+
+      if (!test) {
+        throw new Error('Test not found');
+      }
+
+      // Create rejection record
+      const rejectionData = {
+        visit_test_id: visitTestId,
+        rejected_by_user_id: actor.id,
+        rejected_by_username: actor.username,
+        rejection_reason: rejectionReason,
+        old_results: test.results || test.cultureResult
+      };
+
+      const response = await fetch('http://localhost:5001/api/result-rejections', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(rejectionData),
+      });
+
+      if (response.ok) {
+        // Reload data to get updated test status and rejection count
+        await reloadData();
+        alert('Test result rejected successfully. Lab technician will be notified.');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to reject test result');
+      }
+    } catch (error) {
+      console.error('Error rejecting test result:', error);
+      throw error;
+    }
+  };
+
   const collectDuePayment = (visitId: number, amount: number, mode: Visit['payment_mode'], actor: User) => {
      const visit = state.visits.find(v => v.id === visitId);
      if(visit) {
@@ -529,7 +528,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addUser = async (userData: UserCreationData, actor: User) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       const response = await fetch('http://localhost:5001/api/users', {
         method: 'POST',
         headers: {
@@ -585,14 +584,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addTestTemplate = async (templateData: Omit<TestTemplate, 'id'>, actor: User) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
+
+      // Transform camelCase to snake_case for backend
+      const backendData = {
+        code: templateData.code,
+        name: templateData.name,
+        category: templateData.category,
+        price: templateData.price,
+        b2b_price: templateData.b2b_price,
+        report_type: templateData.reportType,
+        parameters: templateData.parameters,
+        defaultAntibioticIds: templateData.defaultAntibioticIds || [],
+      };
+
       const response = await fetch('http://localhost:5001/api/test-templates', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`,
         },
-        body: JSON.stringify(templateData),
+        body: JSON.stringify(backendData),
       });
 
       if (response.ok) {
@@ -612,14 +624,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateTestTemplate = async (templateData: TestTemplate, actor: User) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
+
+      // Transform camelCase to snake_case for backend
+      const backendData = {
+        code: templateData.code,
+        name: templateData.name,
+        category: templateData.category,
+        price: templateData.price,
+        b2b_price: templateData.b2b_price,
+        report_type: templateData.reportType,
+        parameters: templateData.parameters,
+        defaultAntibioticIds: templateData.defaultAntibioticIds || [],
+        is_active: templateData.isActive,
+      };
+
       const response = await fetch(`http://localhost:5001/api/test-templates/${templateData.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`,
         },
-        body: JSON.stringify(templateData),
+        body: JSON.stringify(backendData),
       });
 
       if (response.ok) {
@@ -642,7 +668,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const template = state.testTemplates.find(t => t.id === templateId);
       if (!template) return;
 
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       const response = await fetch(`http://localhost:5001/api/test-templates/${templateId}`, {
         method: 'DELETE',
         headers: {
@@ -687,7 +713,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
         },
         body: JSON.stringify({ permissions }),
       });
@@ -719,7 +745,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
         },
         body: JSON.stringify(clientData),
       });
@@ -749,7 +775,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const response = await fetch(`http://localhost:5001/api/clients/${clientId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
         },
       });
 
@@ -769,19 +795,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const settleClientBalance = async (clientId: number, actor: User) => {
+  const settleClientBalance = async (clientId: number, actor: User, paymentMode?: string, description?: string, receivedAmount?: number) => {
     try {
-      addAuditLog(actor.username, 'MANAGE_B2B', `Settled balance for client ID: ${clientId}.`);
+      addAuditLog(actor.username, 'MANAGE_B2B', `Settled balance for client ID: ${clientId}. Mode: ${paymentMode || 'N/A'}`);
 
       const response = await fetch(`http://localhost:5001/api/clients/${clientId}/settle`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          paymentMode: paymentMode || 'CASH',
+          description: description || 'Balance settled',
+          receivedAmount: receivedAmount,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to settle client balance');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to settle client balance');
       }
 
       const result = await response.json();
@@ -809,7 +842,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
         },
         body: JSON.stringify(doctorData),
       });
@@ -840,7 +873,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
         },
         body: JSON.stringify(doctorData),
       });
@@ -872,7 +905,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const response = await fetch(`http://localhost:5001/api/referral-doctors/${doctorId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
         },
       });
 
@@ -904,7 +937,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
         },
         body: JSON.stringify({ clientId, prices: pricesToUpdate }),
       });
@@ -943,7 +976,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
         },
         body: JSON.stringify({ amount, description }),
       });
@@ -976,7 +1009,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   
   const addAntibiotic = async (antibioticData: Omit<Antibiotic, 'id' | 'isActive'>, actor: User) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       const response = await fetch('http://localhost:5001/api/antibiotics', {
         method: 'POST',
         headers: {
@@ -1003,7 +1036,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateAntibiotic = async (antibioticData: Antibiotic, actor: User) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       const response = await fetch(`http://localhost:5001/api/antibiotics/${antibioticData.id}`, {
         method: 'PATCH',
         headers: {
@@ -1033,7 +1066,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const antibiotic = state.antibiotics.find(a => a.id === antibioticId);
       if (!antibiotic) return;
 
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       const response = await fetch(`http://localhost:5001/api/antibiotics/${antibioticId}`, {
         method: 'DELETE',
         headers: {
@@ -1057,7 +1090,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addBranch = async (branchData: Omit<Branch, 'id'>, actor: User) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       const response = await fetch('http://localhost:5001/api/branches', {
         method: 'POST',
         headers: {
@@ -1084,7 +1117,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateBranch = async (branchData: Branch, actor: User) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       const response = await fetch(`http://localhost:5001/api/branches/${branchData.id}`, {
         method: 'PATCH',
         headers: {
@@ -1114,7 +1147,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const branch = state.branches.find(b => b.id === branchId);
       if (!branch) return;
 
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       const response = await fetch(`http://localhost:5001/api/branches/${branchId}`, {
         method: 'DELETE',
         headers: {
@@ -1138,7 +1171,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const reloadData = async () => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = getAuthToken();
       if (!authToken) {
         console.log('No auth token, skipping data reload');
         return;
@@ -1219,6 +1252,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addTestResult,
     editTestResult,
     approveTestResult,
+    rejectTestResult,
     collectDuePayment,
     addUser,
     updateUserPermissions,

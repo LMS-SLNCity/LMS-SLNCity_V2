@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
 import bcrypt from 'bcryptjs';
+import { createAuditLog } from '../middleware/auditLogger.js';
 
 const router = express.Router();
 
@@ -83,6 +84,26 @@ router.post('/:id/prices', async (req: Request, res: Response) => {
   }
 });
 
+// Get ledger entries for a client
+router.get('/:id/ledger', async (req: Request, res: Response) => {
+  try {
+    const clientId = req.params.id;
+
+    const result = await pool.query(
+      `SELECT id, client_id, visit_id, type, amount, description, created_at
+       FROM ledger_entries
+       WHERE client_id = $1
+       ORDER BY created_at DESC`,
+      [clientId]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching ledger entries:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Add client payment (ledger entry)
 router.post('/:id/payment', async (req: Request, res: Response) => {
   try {
@@ -94,21 +115,39 @@ router.post('/:id/payment', async (req: Request, res: Response) => {
     if (client.rows.length === 0) return res.status(404).json({ error: 'Client not found' });
 
     // Create ledger entry for payment (CREDIT)
+    // This will automatically update the client balance via trigger
     const ledgerResult = await pool.query(
       'INSERT INTO ledger_entries (client_id, type, amount, description) VALUES ($1, $2, $3, $4) RETURNING id, client_id, type, amount, description, created_at',
-      [clientId, 'CREDIT', amount, description]
+      [clientId, 'CREDIT', amount, description || 'Payment received']
     );
 
-    // Update client balance
+    // Manually update client balance (since ledger entries don't have triggers yet)
     const newBalance = parseFloat(client.rows[0].balance) - amount;
     await pool.query(
       'UPDATE clients SET balance = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [newBalance, clientId]
     );
 
+    // Get updated balance
+    const updatedClient = await pool.query('SELECT balance FROM clients WHERE id = $1', [clientId]);
+
+    // Audit log: Payment received
+    await createAuditLog({
+      username: (req as any).user?.username || 'system',
+      action: 'B2B_PAYMENT_RECEIVED',
+      details: `Payment of ₹${amount} received for client ID ${clientId}. ${description || ''}`,
+      userId: (req as any).user?.id,
+      resource: 'client',
+      resourceId: parseInt(clientId),
+      oldValues: { balance: parseFloat(client.rows[0].balance) },
+      newValues: { balance: parseFloat(updatedClient.rows[0].balance) },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
     res.json({
       ledgerEntry: ledgerResult.rows[0],
-      newBalance: newBalance,
+      newBalance: parseFloat(updatedClient.rows[0].balance),
     });
   } catch (error) {
     console.error('Error adding client payment:', error);
@@ -135,39 +174,164 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Settle client balance (set to 0)
+// Settle client balance (set to 0 and mark all visits as paid)
 router.post('/:id/settle', async (req: Request, res: Response) => {
+  const client = await pool.connect();
+
   try {
     const clientId = req.params.id;
+    const { paymentMode, description, receivedAmount } = req.body;
+
+    // Validate required fields
+    if (!paymentMode) {
+      return res.status(400).json({ error: 'Payment mode is required' });
+    }
+
+    if (!description || !description.trim()) {
+      return res.status(400).json({ error: 'Description is required' });
+    }
+
+    await client.query('BEGIN');
 
     // Verify client exists
-    const client = await pool.query('SELECT id, balance FROM clients WHERE id = $1', [clientId]);
-    if (client.rows.length === 0) return res.status(404).json({ error: 'Client not found' });
+    const clientResult = await client.query('SELECT id, name, balance FROM clients WHERE id = $1', [clientId]);
+    if (clientResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Client not found' });
+    }
 
-    const previousBalance = parseFloat(client.rows[0].balance);
+    const previousBalance = parseFloat(clientResult.rows[0].balance);
+    const clientName = clientResult.rows[0].name;
 
-    // Create ledger entry for settlement
-    if (previousBalance !== 0) {
-      await pool.query(
+    if (previousBalance === 0) {
+      await client.query('ROLLBACK');
+      return res.json({
+        message: 'Client balance is already zero',
+        previousBalance: 0,
+        newBalance: 0
+      });
+    }
+
+    // Parse received amount (default to full balance if not provided)
+    const amountReceived = receivedAmount ? parseFloat(receivedAmount) : previousBalance;
+
+    // Validate received amount
+    if (isNaN(amountReceived) || amountReceived <= 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Invalid received amount' });
+    }
+
+    if (amountReceived > previousBalance) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Received amount cannot exceed outstanding balance' });
+    }
+
+    // Calculate waiver amount
+    const waiverAmount = previousBalance - amountReceived;
+    const hasWaiver = waiverAmount > 0.01; // More than 1 paisa
+
+    // Get all unpaid visits for this client
+    const visitsResult = await client.query(
+      'SELECT id, visit_code, total_cost, amount_paid, due_amount FROM visits WHERE ref_customer_id = $1 AND due_amount > 0',
+      [clientId]
+    );
+
+    const visitsUpdated = visitsResult.rows.length;
+    const totalDueAmount = visitsResult.rows.reduce((sum, v) => sum + parseFloat(v.due_amount), 0);
+
+    // Update all visits to mark them as fully paid
+    // This will trigger the balance update trigger automatically
+    await client.query(
+      `UPDATE visits
+       SET amount_paid = total_cost,
+           due_amount = 0,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE ref_customer_id = $1 AND due_amount > 0`,
+      [clientId]
+    );
+
+    // Create ledger entry for payment received (CREDIT)
+    const paymentDescription = `${paymentMode} - ${description.trim()} - Payment received`;
+    await client.query(
+      'INSERT INTO ledger_entries (client_id, type, amount, description) VALUES ($1, $2, $3, $4)',
+      [clientId, 'CREDIT', amountReceived, paymentDescription]
+    );
+
+    // If there's a waiver, create waiver entry and ledger entry
+    if (hasWaiver) {
+      // Extract waiver reason from description (format: "payment desc | Waiver: reason")
+      const waiverReason = description.includes('| Waiver:')
+        ? description.split('| Waiver:')[1].trim()
+        : 'Discount/Waiver';
+
+      // Create waiver record
+      await client.query(
+        `INSERT INTO b2b_waivers (client_id, waiver_amount, original_balance, amount_received, payment_mode, reason, description, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [clientId, waiverAmount, previousBalance, amountReceived, paymentMode, waiverReason, description.trim(), (req as any).user?.id]
+      );
+
+      // Create ledger entry for waiver (CREDIT)
+      const waiverDescription = `Waiver/Discount - ${waiverReason}`;
+      await client.query(
         'INSERT INTO ledger_entries (client_id, type, amount, description) VALUES ($1, $2, $3, $4)',
-        [clientId, 'CREDIT', Math.abs(previousBalance), `Settlement of balance: ₹${previousBalance}`]
+        [clientId, 'CREDIT', waiverAmount, waiverDescription]
       );
     }
 
-    // Set balance to 0
-    await pool.query(
+    // Ensure balance is set to 0 (should already be 0 from trigger, but just to be safe)
+    await client.query(
       'UPDATE clients SET balance = 0, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
       [clientId]
     );
 
+    // Audit log: Balance settlement
+    const auditDetails = hasWaiver
+      ? `Settled balance of ₹${previousBalance} for ${clientName}. Received: ₹${amountReceived}, Waiver: ₹${waiverAmount}. Payment Mode: ${paymentMode}. ${description.trim()}. ${visitsUpdated} visit(s) marked as paid.`
+      : `Settled balance of ₹${previousBalance} for ${clientName}. Payment Mode: ${paymentMode}. ${description.trim()}. ${visitsUpdated} visit(s) marked as paid.`;
+
+    await createAuditLog({
+      username: (req as any).user?.username || 'system',
+      action: 'B2B_BALANCE_SETTLED',
+      details: auditDetails,
+      userId: (req as any).user?.id,
+      resource: 'client',
+      resourceId: parseInt(clientId),
+      oldValues: {
+        balance: previousBalance,
+        unpaidVisits: visitsUpdated,
+        totalDue: totalDueAmount
+      },
+      newValues: {
+        balance: 0,
+        unpaidVisits: 0,
+        totalDue: 0,
+        amountReceived: amountReceived,
+        waiverAmount: hasWaiver ? waiverAmount : 0,
+        paymentMode: paymentMode
+      },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    await client.query('COMMIT');
+
     res.json({
-      message: 'Client balance settled',
+      message: `Settlement completed for ${clientName}`,
       previousBalance: previousBalance,
-      newBalance: 0
+      newBalance: 0,
+      amountReceived: amountReceived,
+      waiverAmount: hasWaiver ? waiverAmount : 0,
+      visitsUpdated: visitsUpdated,
+      paymentMode: paymentMode,
+      description: description.trim()
     });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Error settling client balance:', error);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
   }
 });
 
