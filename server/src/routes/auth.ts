@@ -68,7 +68,7 @@ router.post('/login', async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   try {
-    console.log('Login attempt:', req.body);
+    console.log('Login attempt for user:', username);
 
     if (!username || !password) {
       await logAuthAttempt(username || 'unknown', 'LOGIN_FAILED', 'Missing username or password', req);
