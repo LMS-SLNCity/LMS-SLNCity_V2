@@ -105,6 +105,8 @@ router.get('/:id/ledger', async (req: Request, res: Response) => {
       }
     }
 
+    console.log(`📊 Fetching ledger for client_id: ${clientId} (type: ${typeof clientId})`);
+
     const result = await pool.query(
       `SELECT id, client_id, visit_id, type, amount, description, created_at
        FROM ledger_entries
@@ -112,6 +114,19 @@ router.get('/:id/ledger', async (req: Request, res: Response) => {
        ORDER BY created_at DESC`,
       [clientId]
     );
+
+    console.log(`✅ Found ${result.rows.length} ledger entries for client ${clientId}`);
+
+    // Security verification: Double-check all entries belong to this client
+    const invalidEntries = result.rows.filter(row => row.client_id !== parseInt(clientId));
+    if (invalidEntries.length > 0) {
+      console.error(`🚨 CRITICAL: Query returned entries for wrong clients!`, invalidEntries.map(e => e.client_id));
+    }
+
+    // Log first entry for debugging
+    if (result.rows.length > 0) {
+      console.log(`📋 First entry: client_id=${result.rows[0].client_id}, amount=${result.rows[0].amount}`);
+    }
 
     res.json(result.rows);
   } catch (error) {
