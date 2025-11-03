@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useAppContext } from '../context/AppContext';
+import { ReportModal } from './ReportModal';
+import { Visit as FullVisit, Signatory } from '../types';
 
 interface Visit {
   id: number;
@@ -14,11 +17,14 @@ interface Visit {
 
 export const B2BPrintReport: React.FC = () => {
   const { user } = useAuth();
+  const { visits: allVisits, signatories } = useAppContext();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedVisit, setSelectedVisit] = useState<FullVisit | null>(null);
+  const [selectedSignatory, setSelectedSignatory] = useState<Signatory | null>(null);
 
   const clientId = (user as any)?.clientId;
 
@@ -66,17 +72,29 @@ export const B2BPrintReport: React.FC = () => {
     }
   };
 
-  const handlePrintReport = async (visitId: number, visitCode: string) => {
+  const handlePrintReport = async (visitId: number) => {
     try {
-      const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+      // Find the full visit object from context
+      const fullVisit = allVisits.find(v => v.id === visitId);
 
-      // Open report in new window
-      const reportUrl = `http://localhost:5001/api/visits/${visitId}/report?token=${token}`;
-      window.open(reportUrl, '_blank');
+      if (!fullVisit) {
+        alert('Visit not found');
+        return;
+      }
 
+      // Use the first signatory (or default)
+      const signatory = signatories.length > 0 ? signatories[0] : {
+        id: 0,
+        name: 'Lab Director',
+        title: 'Director',
+        show_on_print: true
+      };
+
+      setSelectedVisit(fullVisit);
+      setSelectedSignatory(signatory);
     } catch (error) {
-      console.error('Error printing report:', error);
-      alert('Failed to print report');
+      console.error('Error opening report:', error);
+      alert('Failed to open report');
     }
   };
 
@@ -239,7 +257,7 @@ export const B2BPrintReport: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {visit.reportStatus === 'APPROVED' || visit.reportStatus === 'PRINTED' ? (
                         <button
-                          onClick={() => handlePrintReport(visit.id, visit.visitCode)}
+                          onClick={() => handlePrintReport(visit.id)}
                           className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           <svg
@@ -255,7 +273,7 @@ export const B2BPrintReport: React.FC = () => {
                               d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
                             />
                           </svg>
-                          Print
+                          View Report
                         </button>
                       ) : (
                         <span className="text-gray-400 text-xs">Not Ready</span>
@@ -290,6 +308,22 @@ export const B2BPrintReport: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Report Modal */}
+      {selectedVisit && selectedSignatory && (
+        <ReportModal
+          visit={selectedVisit}
+          signatory={selectedSignatory}
+          onClose={() => {
+            setSelectedVisit(null);
+            setSelectedSignatory(null);
+          }}
+          onEdit={() => {
+            // B2B clients cannot edit reports
+            alert('You do not have permission to edit reports');
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -6,16 +6,35 @@ const router = express.Router();
 
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const result = await pool.query(
-      `SELECT v.id, v.patient_id, v.referred_doctor_id, v.ref_customer_id, v.other_ref_doctor, v.other_ref_customer,
+    const user = (req as any).user;
+
+    // Security: If user is a B2B_CLIENT, filter visits to only show their own
+    let query = `SELECT v.id, v.patient_id, v.referred_doctor_id, v.ref_customer_id, v.other_ref_doctor, v.other_ref_customer,
               v.registration_datetime, v.visit_code, v.total_cost, v.amount_paid, v.payment_mode, v.due_amount, v.created_at,
               p.salutation, p.name, p.age_years, p.age_months, p.age_days, p.sex, p.phone, p.address, p.email, p.clinical_history,
               c.id as client_id, c.name as client_name, c.type as client_type, c.balance as client_balance
        FROM visits v
        JOIN patients p ON v.patient_id = p.id
-       LEFT JOIN clients c ON v.ref_customer_id = c.id
-       ORDER BY v.created_at DESC`
-    );
+       LEFT JOIN clients c ON v.ref_customer_id = c.id`;
+
+    const queryParams: any[] = [];
+
+    if (user && user.role === 'B2B_CLIENT') {
+      const userClientId = (user as any).clientId;
+
+      if (!userClientId) {
+        return res.status(403).json({ error: 'Client ID not found in token' });
+      }
+
+      // Filter to only show visits for this B2B client
+      query += ` WHERE v.ref_customer_id = $1`;
+      queryParams.push(userClientId);
+      console.log(`🔒 B2B Client ${userClientId} accessing their visits only`);
+    }
+
+    query += ` ORDER BY v.created_at DESC`;
+
+    const result = await pool.query(query, queryParams);
 
     // Get all test IDs for all visits in one query
     const testsResult = await pool.query(
@@ -76,6 +95,8 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
+
     const result = await pool.query(
       `SELECT v.id, v.patient_id, v.referred_doctor_id, v.ref_customer_id, v.other_ref_doctor, v.other_ref_customer,
               v.registration_datetime, v.visit_code, v.total_cost, v.amount_paid, v.payment_mode, v.due_amount, v.created_at,
@@ -87,6 +108,20 @@ router.get('/:id', async (req: Request, res: Response) => {
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Visit not found' });
     const row = result.rows[0];
+
+    // Security: If user is a B2B_CLIENT, ensure they can only access their own visits
+    if (user && user.role === 'B2B_CLIENT') {
+      const userClientId = (user as any).clientId;
+
+      if (!userClientId) {
+        return res.status(403).json({ error: 'Client ID not found in token' });
+      }
+
+      if (row.ref_customer_id !== userClientId) {
+        console.warn(`⚠️  B2B Client ${userClientId} attempted to access visit ${req.params.id} belonging to client ${row.ref_customer_id}`);
+        return res.status(403).json({ error: 'Access denied: You can only view your own visits' });
+      }
+    }
     res.json({
       id: row.id,
       patient_id: row.patient_id,

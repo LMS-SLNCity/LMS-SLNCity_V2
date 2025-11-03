@@ -88,6 +88,22 @@ router.post('/:id/prices', async (req: Request, res: Response) => {
 router.get('/:id/ledger', async (req: Request, res: Response) => {
   try {
     const clientId = req.params.id;
+    const user = (req as any).user;
+
+    // Security: If user is a B2B_CLIENT, they can only access their own ledger
+    if (user && user.role === 'B2B_CLIENT') {
+      const userClientId = (user as any).clientId;
+
+      if (!userClientId) {
+        return res.status(403).json({ error: 'Client ID not found in token' });
+      }
+
+      // Ensure B2B client can only access their own ledger
+      if (parseInt(clientId) !== parseInt(userClientId)) {
+        console.warn(`⚠️  B2B Client ${userClientId} attempted to access ledger for client ${clientId}`);
+        return res.status(403).json({ error: 'Access denied: You can only view your own transactions' });
+      }
+    }
 
     const result = await pool.query(
       `SELECT id, client_id, visit_id, type, amount, description, created_at
