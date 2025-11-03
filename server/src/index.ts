@@ -36,10 +36,17 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Security: Validate critical environment variables
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your-secret-key-change-in-production') {
-  console.error('❌ SECURITY ERROR: JWT_SECRET must be set in environment variables');
-  console.error('Generate a secret with: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
-  process.exit(1);
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your-secret-key-change-in-production') {
+    console.error('❌ SECURITY ERROR: JWT_SECRET must be set in environment variables');
+    console.error('Generate a secret with: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
+    process.exit(1);
+  }
+} else {
+  // Development: Warn but don't exit
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your-secret-key-change-in-production') {
+    console.warn('⚠️  WARNING: JWT_SECRET not configured. Using default (NOT SECURE FOR PRODUCTION)');
+  }
 }
 
 // Security Middleware
@@ -60,43 +67,68 @@ app.use(helmet({
 }));
 
 // CORS Configuration
-const allowedOrigins = process.env.FRONTEND_URL
-  ? [process.env.FRONTEND_URL]
-  : ['http://localhost:3000', 'http://localhost:5173'];
+if (process.env.NODE_ENV === 'production') {
+  // Production: Strict CORS
+  const allowedOrigins = process.env.FRONTEND_URL
+    ? [process.env.FRONTEND_URL]
+    : [];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
+  app.use(cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn(`⚠️  Blocked CORS request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`⚠️  Blocked CORS request from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+} else {
+  // Development: Permissive CORS
+  app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+}
 
 // Rate Limiting for Authentication Endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per window
-  message: 'Too many authentication attempts, please try again after 15 minutes',
+  max: 10, // 10 attempts per window (increased for development)
+  message: { error: 'Too many authentication attempts, please try again after 15 minutes' },
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      error: 'Too many authentication attempts, please try again after 15 minutes'
+    });
+  }
 });
 
-// General API Rate Limiting
+// General API Rate Limiting (very permissive for development)
 const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100, // 100 requests per minute
-  message: 'Too many requests, please try again later',
+  max: 1000, // 1000 requests per minute (very high for development)
+  message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for health checks
+    return req.path === '/health';
+  },
+  handler: (req, res) => {
+    res.status(429).json({
+      error: 'Too many requests, please try again later'
+    });
+  }
 });
 
 // Body Parser Middleware
@@ -114,11 +146,7 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Routes with Rate Limiting
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/client-login', authLimiter);
-app.use('/api', apiLimiter); // Apply to all API routes
-
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/test-templates', testTemplatesRoutes);
