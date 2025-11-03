@@ -55,9 +55,22 @@ export const B2BClientDashboard: React.FC = () => {
         if (ledgerResponse.ok) {
           const ledgerData = await ledgerResponse.json();
           console.log('✅ Ledger data received:', ledgerData.length, 'entries');
+          console.log('📋 First entry:', ledgerData[0]);
+
+          // SECURITY CHECK: Verify all entries belong to this client
+          const invalidEntries = ledgerData.filter((entry: any) => entry.client_id !== parseInt(clientId));
+          if (invalidEntries.length > 0) {
+            console.error('🚨 SECURITY BREACH: Found entries for other clients!', invalidEntries);
+            setError('Security error: Unauthorized data detected. Please contact support.');
+            return;
+          }
+
+          console.log('✅ All entries verified for client:', clientId);
           setLedgerEntries(ledgerData);
         } else {
           console.error('❌ Failed to fetch ledger:', ledgerResponse.status);
+          const errorText = await ledgerResponse.text();
+          console.error('Error details:', errorText);
           setError('Failed to load transaction history');
         }
       } catch (error) {
@@ -140,7 +153,12 @@ export const B2BClientDashboard: React.FC = () => {
 
       {/* Transaction History */}
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Transaction History</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">Transaction History</h2>
+          <span className="text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded-full">
+            Client ID: {clientId}
+          </span>
+        </div>
 
         {ledgerEntries.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
@@ -170,6 +188,9 @@ export const B2BClientDashboard: React.FC = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Description
                   </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Client ID
+                  </th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Debit
                   </th>
@@ -179,26 +200,39 @@ export const B2BClientDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {ledgerEntries.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(entry.created_at).toLocaleDateString('en-IN', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {entry.description}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-right font-mono text-red-600">
-                      {entry.type === 'DEBIT' ? parseFloat(entry.amount as any).toFixed(2) : '-'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-right font-mono text-green-600">
-                      {entry.type === 'CREDIT' ? parseFloat(entry.amount as any).toFixed(2) : '-'}
-                    </td>
-                  </tr>
-                ))}
+                {ledgerEntries.map((entry) => {
+                  const isOwnEntry = entry.client_id === parseInt(clientId);
+                  return (
+                    <tr
+                      key={entry.id}
+                      className={`hover:bg-gray-50 ${!isOwnEntry ? 'bg-red-50' : ''}`}
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(entry.created_at).toLocaleDateString('en-IN', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {entry.description}
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm">
+                        <span className={`px-2 py-1 rounded text-xs font-mono ${
+                          isOwnEntry ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {entry.client_id}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-red-600">
+                        {entry.type === 'DEBIT' ? parseFloat(entry.amount as any).toFixed(2) : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right font-mono text-green-600">
+                        {entry.type === 'CREDIT' ? parseFloat(entry.amount as any).toFixed(2) : '-'}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

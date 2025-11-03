@@ -45,21 +45,31 @@ export const B2BPrintReport: React.FC = () => {
 
       if (response.ok) {
         const allVisits = await response.json();
-        
-        // Filter visits for this client
+
+        console.log('📊 Fetched visits:', allVisits.length);
+        console.log('🔍 Filtering for client ID:', clientId);
+
+        // The API should already filter for B2B clients, but double-check
         const clientVisits = allVisits
-          .filter((v: any) => v.refCustomerId === clientId)
+          .filter((v: any) => {
+            const matches = v.ref_customer_id === parseInt(clientId);
+            if (!matches) {
+              console.warn('⚠️ Visit does not belong to this client:', v.id, 'ref_customer_id:', v.ref_customer_id);
+            }
+            return matches;
+          })
           .map((v: any) => ({
             id: v.id,
-            visitCode: v.visitCode,
-            registrationDatetime: v.registrationDatetime,
-            patientName: v.patientName,
-            patientAge: `${v.patientAgeYears}Y ${v.patientAgeMonths}M`,
-            patientSex: v.patientSex,
-            totalCost: v.totalCost,
-            reportStatus: v.reportStatus || 'PENDING',
+            visitCode: v.visit_code,
+            registrationDatetime: v.registration_datetime,
+            patientName: v.patient?.name || 'Unknown',
+            patientAge: `${v.patient?.age_years || 0}Y ${v.patient?.age_months || 0}M`,
+            patientSex: v.patient?.sex || 'Unknown',
+            totalCost: v.total_cost,
+            reportStatus: v.report_status || 'PENDING',
           }));
 
+        console.log('✅ Filtered visits for client:', clientVisits.length);
         setVisits(clientVisits);
       } else {
         setError('Failed to load visits');
