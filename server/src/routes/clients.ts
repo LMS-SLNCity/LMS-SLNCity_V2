@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
 import bcrypt from 'bcryptjs';
 import { createAuditLog } from '../middleware/auditLogger.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -85,7 +86,7 @@ router.post('/:id/prices', async (req: Request, res: Response) => {
 });
 
 // Get ledger entries for a client
-router.get('/:id/ledger', async (req: Request, res: Response) => {
+router.get('/:id/ledger', authenticateToken, async (req: Request, res: Response) => {
   try {
     const clientId = req.params.id;
     const user = (req as any).user;

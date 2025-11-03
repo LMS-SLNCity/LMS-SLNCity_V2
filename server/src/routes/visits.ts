@@ -1,10 +1,11 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
 import { auditVisit } from '../middleware/auditLogger.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', authenticateToken, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
 
@@ -93,7 +94,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
 
