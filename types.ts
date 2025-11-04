@@ -220,7 +220,7 @@ export interface ResultRejection {
 
 export type Role = 'SUDO' | 'ADMIN' | 'RECEPTION' | 'PHLEBOTOMY' | 'LAB' | 'APPROVER';
 
-export type Permission = 
+export type Permission =
     | 'VIEW_RECEPTION'
     | 'CREATE_VISIT'
     | 'COLLECT_DUE_PAYMENT'
@@ -238,7 +238,8 @@ export type Permission =
     | 'MANAGE_B2B'
     | 'MANAGE_ANTIBIOTICS'  // ADMIN/SUDO
     | 'EDIT_APPROVED_REPORT' // SUDO Only
-    | 'VIEW_AUDIT_LOG';      // SUDO Only
+    | 'VIEW_AUDIT_LOG'      // SUDO Only
+    | 'VIEW_B2B_DASHBOARD';  // B2B Client Only
 
 export type RolePermissions = Record<Role, Permission[]>;
 
@@ -248,6 +249,7 @@ export interface User {
   role: Role;
   isActive: boolean;
   permissions: Permission[];
+  signatureImageUrl?: string;
 }
 
 export type UserWithPassword = User & { password_hash: string };

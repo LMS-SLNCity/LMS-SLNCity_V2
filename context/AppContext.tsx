@@ -24,10 +24,11 @@ interface AppState {
   patients: Patient[];
   referralDoctors: ReferralDoctor[];
   branches: Branch[];
+  signatories: any[];
 }
 
 interface AddVisitData {
-    patient: Omit<Patient, 'id'>;
+    patient: Patient;
     referred_doctor_id?: number;
     ref_customer_id?: number;
     other_ref_doctor?: string;
@@ -67,15 +68,25 @@ interface AppContextType extends AppState {
   updateRolePermissions: (role: Role, permissions: Permission[], actor: User) => void;
   // B2B Functions
   addClient: (clientData: { name: string; type: 'PATIENT' | 'REFERRAL_LAB' | 'INTERNAL' }, actor: User) => void;
+  deleteClient: (clientId: number, actor: User) => void;
+  settleClientBalance: (clientId: number, actor: User, paymentMode?: string, description?: string, receivedAmount?: number) => void;
   addReferralDoctor: (doctorData: { name: string }, actor: User) => void;
+  updateReferralDoctor: (doctorId: number, doctorData: { name: string }, actor: User) => void;
+  deleteReferralDoctor: (doctorId: number, actor: User) => void;
   updateClientPrices: (clientId: number, prices: { testTemplateId: number, price: number }[], actor: User) => void;
   addClientPayment: (clientId: number, amount: number, description: string, actor: User) => void;
+  // Branch Management
+  addBranch: (branchData: Omit<Branch, 'id' | 'isActive'>, actor: User) => void;
+  updateBranch: (branchData: Branch, actor: User) => void;
+  deleteBranch: (branchId: number, actor: User) => void;
   // Antibiotic Management
   addAntibiotic: (antibiotic: Omit<Antibiotic, 'id' | 'isActive'>, actor: User) => void;
   updateAntibiotic: (antibiotic: Antibiotic, actor: User) => void;
   deleteAntibiotic: (antibioticId: number, actor: User) => void;
   // Data loading
   reloadData: () => Promise<void>;
+  // Signatories
+  signatories: any[];
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -95,6 +106,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     patients: [],
     referralDoctors: [],
     branches: [],
+    signatories: [],
   });
 
   // Helper function to get auth token from sessionStorage (current session) or localStorage (remember me)

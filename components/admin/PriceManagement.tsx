@@ -42,10 +42,16 @@ export const PriceManagement: React.FC = () => {
             alert("User session has expired. Please log in again.");
             return;
         }
-        const updates = Object.entries(prices).map(([id, priceData]) => ({
-            id: Number(id),
-            ...priceData,
-        }));
+        const updates = Object.entries(prices)
+            .filter(([_, priceData]) => priceData !== undefined)
+            .map(([id, priceData]) => {
+                const data = priceData as { price: number; b2b_price: number };
+                return {
+                    id: Number(id),
+                    price: data.price,
+                    b2b_price: data.b2b_price,
+                };
+            });
         updateTestPrices(updates, actor);
         setHasChanges(false);
         alert('Prices updated successfully!');
