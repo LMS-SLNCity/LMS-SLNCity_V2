@@ -3,6 +3,11 @@ import pool from '../db/connection.js';
 import bcrypt from 'bcryptjs';
 import { createAuditLog } from '../middleware/auditLogger.js';
 import { authMiddleware } from '../middleware/auth.js';
+import {
+  validateClientLedger,
+  validateAllLedgers,
+  generateValidationReport
+} from '../utils/ledgerValidator.js';
 
 const router = express.Router();
 
@@ -501,6 +506,57 @@ router.patch('/:id', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error updating client:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// LEDGER VALIDATION ENDPOINTS
+// ============================================================================
+
+// Validate ledger for a specific client
+router.get('/:id/validate-ledger', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const clientId = parseInt(req.params.id);
+    const validation = await validateClientLedger(clientId);
+
+    if (!validation.isValid || validation.warnings.length > 0) {
+      console.warn('⚠️  Ledger validation issues:', validation);
+    }
+
+    res.json(validation);
+  } catch (error) {
+    console.error('Error validating ledger:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Validate all client ledgers (admin only)
+router.get('/validate-all-ledgers', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+
+    // Only SUDO and ADMIN can validate all ledgers
+    if (!['SUDO', 'ADMIN'].includes(user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    const results = await validateAllLedgers();
+    const report = generateValidationReport(results);
+
+    console.log(report);
+
+    res.json({
+      results,
+      report,
+      summary: {
+        total: results.length,
+        valid: results.filter(r => r.isValid && r.warnings.length === 0).length,
+        invalid: results.filter(r => !r.isValid || r.warnings.length > 0).length,
+      },
+    });
+  } catch (error) {
+    console.error('Error validating all ledgers:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
