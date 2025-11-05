@@ -237,7 +237,9 @@ CREATE TABLE audit_logs (
     username VARCHAR(255) NOT NULL,
     action VARCHAR(255) NOT NULL,
     details TEXT NOT NULL,
-    ip_address VARCHAR(45)
+    user_id INTEGER REFERENCES users(id),
+    ip_address VARCHAR(45),
+    user_agent TEXT
 );
 
 -- Create indexes for better query performance
