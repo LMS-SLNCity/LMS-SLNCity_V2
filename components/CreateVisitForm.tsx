@@ -130,6 +130,8 @@ export const CreateVisitForm: React.FC<CreateVisitFormProps> = ({ onInitiateRepo
   const [referralDoctors, setReferralDoctors] = useState<any[]>([]);
   const [isB2BClient, setIsB2BClient] = useState(false);
   const [visitToCollectDue, setVisitToCollectDue] = useState<Visit | null>(null);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   // Get the most recently created visit (visits are sorted by created_at DESC from backend)
   const lastSubmittedVisit = useMemo(() => submissionStatus === 'submitted' && visits.length > 0 ? visits[0] : null, [visits, submissionStatus]);
 
@@ -158,10 +160,13 @@ export const CreateVisitForm: React.FC<CreateVisitFormProps> = ({ onInitiateRepo
   useEffect(() => {
     const fetchReferralDoctors = async () => {
       try {
-        const data = await (window as any).apiClient?.getReferralDoctors?.() || [];
+        const response = await fetch('http://localhost:5001/api/referral-doctors');
+        if (!response.ok) throw new Error('Failed to fetch referral doctors');
+        const data = await response.json();
+        console.log('✅ Loaded referral doctors:', data);
         setReferralDoctors(data);
       } catch (error) {
-        console.error('Failed to fetch referral doctors:', error);
+        console.error('❌ Failed to fetch referral doctors:', error);
       }
     };
     fetchReferralDoctors();
@@ -234,44 +239,69 @@ export const CreateVisitForm: React.FC<CreateVisitFormProps> = ({ onInitiateRepo
     });
   };
 
-  const handleSearch = () => {
-    if (!searchQuery) {
-        alert("Please enter a mobile number to search.");
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+        alert("Please enter a phone number or patient name to search.");
         return;
     }
-    const foundPatient = patients.find(p => p.phone === searchQuery);
-    if (foundPatient) {
-        let age = 0;
-        let age_unit: AgeUnit = 'Years';
-        if (foundPatient.age_years > 0) {
-            age = foundPatient.age_years;
-            age_unit = 'Years';
-        } else if (foundPatient.age_months > 0) {
-            age = foundPatient.age_months;
-            age_unit = 'Months';
-        } else {
-            age = foundPatient.age_days;
-            age_unit = 'Days';
-        }
 
-        setFormData(prev => ({
-            ...prev,
-            salutation: foundPatient.salutation,
-            name: foundPatient.name,
-            age: age,
-            age_unit: age_unit,
-            sex: foundPatient.sex,
-            guardian_name: foundPatient.guardian_name || '',
-            phone: foundPatient.phone,
-            address: foundPatient.address || '',
-            email: foundPatient.email || '',
-            clinical_history: foundPatient.clinical_history || '',
-        }));
-        setIsPatientLoaded(true);
-    } else {
-        alert('Patient not found with that mobile number.');
+    setIsSearching(true);
+    setSearchResults([]);
+
+    try {
+      const response = await fetch(`http://localhost:5001/api/patients/search/${encodeURIComponent(searchQuery.trim())}`);
+      if (!response.ok) throw new Error('Search failed');
+
+      const results = await response.json();
+      console.log('🔍 Search results:', results);
+
+      if (results.length === 0) {
+        alert('No patients found. Please check the phone number or name and try again.');
         setIsPatientLoaded(false);
+      } else if (results.length === 1) {
+        // Auto-load if only one result
+        loadPatientData(results[0]);
+      } else {
+        // Show multiple results
+        setSearchResults(results);
+      }
+    } catch (error) {
+      console.error('❌ Search error:', error);
+      alert('Failed to search patients. Please try again.');
+    } finally {
+      setIsSearching(false);
     }
+  };
+
+  const loadPatientData = (foundPatient: any) => {
+    let age = 0;
+    let age_unit: AgeUnit = 'Years';
+    if (foundPatient.age_years > 0) {
+        age = foundPatient.age_years;
+        age_unit = 'Years';
+    } else if (foundPatient.age_months > 0) {
+        age = foundPatient.age_months;
+        age_unit = 'Months';
+    } else {
+        age = foundPatient.age_days;
+        age_unit = 'Days';
+    }
+
+    setFormData(prev => ({
+        ...prev,
+        salutation: foundPatient.salutation,
+        name: foundPatient.name,
+        age: age,
+        age_unit: age_unit,
+        sex: foundPatient.sex,
+        guardian_name: foundPatient.guardian_name || '',
+        phone: foundPatient.phone,
+        address: foundPatient.address || '',
+        email: foundPatient.email || '',
+        clinical_history: foundPatient.clinical_history || '',
+    }));
+    setIsPatientLoaded(true);
+    setSearchResults([]);
   };
 
   const handleClearForm = () => {
@@ -279,6 +309,7 @@ export const CreateVisitForm: React.FC<CreateVisitFormProps> = ({ onInitiateRepo
       setIsPatientLoaded(false);
       setSearchQuery('');
       setTestSearchQuery('');
+      setSearchResults([]);
   };
 
   const handleStartNewVisit = () => {
@@ -395,23 +426,25 @@ export const CreateVisitForm: React.FC<CreateVisitFormProps> = ({ onInitiateRepo
             <div className="mt-4 border rounded-lg p-4 space-y-4">
                 {/* Search Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
-                    <Input 
+                    <Input
                         name="patient_search_mobile"
                         label=""
-                        placeholder="Search Patient by Mobile"
+                        placeholder="Search by Phone or Name"
                         className="sm:col-span-6"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     />
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         onClick={handleSearch}
-                        className="sm:col-span-3 px-4 py-2 bg-green-500 text-white font-semibold rounded-md shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        disabled={isSearching}
+                        className="sm:col-span-3 px-4 py-2 bg-green-500 text-white font-semibold rounded-md shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Search & Load Patient
+                        {isSearching ? 'Searching...' : 'Search Patient'}
                     </button>
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         onClick={handleClearForm}
                         className="sm:col-span-3 px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-md shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
                     >
@@ -419,6 +452,33 @@ export const CreateVisitForm: React.FC<CreateVisitFormProps> = ({ onInitiateRepo
                     </button>
                 </div>
 
+                {/* Search Results */}
+                {searchResults.length > 0 && (
+                    <div className="border rounded-lg p-4 bg-blue-50">
+                        <h4 className="font-semibold text-gray-800 mb-3">Found {searchResults.length} patient(s). Click to load:</h4>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {searchResults.map((patient) => (
+                                <button
+                                    key={patient.id}
+                                    type="button"
+                                    onClick={() => loadPatientData(patient)}
+                                    className="w-full text-left p-3 bg-white rounded-md hover:bg-blue-100 border border-gray-200 transition-colors"
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="font-semibold text-gray-900">{patient.salutation} {patient.name}</p>
+                                            <p className="text-sm text-gray-600">
+                                                {patient.sex} • {patient.age_years}y {patient.age_months}m {patient.age_days}d
+                                            </p>
+                                            <p className="text-sm text-gray-500">📞 {patient.phone}</p>
+                                        </div>
+                                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Click to load</span>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Patient Info Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 pt-4 border-t">

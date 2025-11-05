@@ -16,6 +16,34 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// Search patients by phone or name
+router.get('/search/:query', async (req: Request, res: Response) => {
+  try {
+    const searchQuery = req.params.query.trim();
+
+    if (!searchQuery) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+
+    // Search by phone (exact match) OR name (partial match, case-insensitive)
+    const result = await pool.query(
+      `SELECT id, salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history
+       FROM patients
+       WHERE phone = $1 OR LOWER(name) LIKE LOWER($2)
+       ORDER BY
+         CASE WHEN phone = $1 THEN 1 ELSE 2 END,
+         name
+       LIMIT 20`,
+      [searchQuery, `%${searchQuery}%`]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error searching patients:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(

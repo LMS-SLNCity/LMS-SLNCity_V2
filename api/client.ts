@@ -205,6 +205,17 @@ export const apiClient = {
     return data;
   },
 
+  async searchPatients(query: string) {
+    console.log('🔍 Searching patients with query:', query);
+    const response = await fetch(`${API_BASE_URL}/patients/search/${encodeURIComponent(query)}`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to search patients');
+    const data = await response.json();
+    console.log('✅ Found patients:', data.length, 'records');
+    return data;
+  },
+
   async createPatient(data: any) {
     const response = await fetch(`${API_BASE_URL}/patients`, {
       method: 'POST',
