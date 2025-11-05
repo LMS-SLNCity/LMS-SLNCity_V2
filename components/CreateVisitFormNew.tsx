@@ -370,14 +370,48 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                     </div>
                   </div>
 
+                  {/* Payment Summary */}
+                  <div className="px-3 pb-2">
+                    <h2 className="text-sm font-bold text-gray-800 mb-2 pb-1 border-b">Payment</h2>
+                    {!isB2BClient ? (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Mode *</label>
+                            <select name="payment_mode" value={formData.payment_mode} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                              <option value="">--Select--</option>
+                              <option value="CASH">Cash</option>
+                              <option value="CARD">Card</option>
+                              <option value="UPI">UPI</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Amount Paid</label>
+                            <input type="number" name="amount_paid" value={formData.amount_paid} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                          </div>
+                        </div>
+                        <div className="bg-yellow-50 p-2 rounded border border-yellow-200">
+                          <div className="flex justify-between text-xs font-semibold">
+                            <span className="text-green-600">Total: ₹{totalCost.toFixed(2)}</span>
+                            <span className="text-red-600">Due: ₹{amountDue.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-100 p-2 rounded text-xs text-blue-800 font-semibold">
+                        B2B Credit: ₹{totalCost.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Create Visit Button */}
                   <div className="px-3 pb-3">
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full py-3 bg-green-600 text-white font-bold text-base rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                      className="w-full py-2 bg-green-600 text-white font-semibold text-sm rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isSubmitting ? '⏳ Creating Visit...' : '✓ Create Visit'}
+                      {isSubmitting ? '⏳ Creating...' : '✓ Create Visit'}
                     </button>
                   </div>
                 </div>
@@ -387,13 +421,9 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
               <div className="bg-white rounded shadow overflow-hidden grid grid-cols-2 gap-0">
                 {/* Left Half - Selected Tests */}
                 <div className="border-r flex flex-col overflow-hidden">
-                  <div className="bg-green-600 text-white px-2 py-1 text-xs font-bold">
-                    Selected Tests ({formData.selected_tests.length})
-                  </div>
-                  <div className="p-2 border-b bg-yellow-50">
-                    <div className="text-xs font-semibold text-gray-800">
-                      Total: ₹{totalCost.toFixed(2)}
-                    </div>
+                  <div className="bg-green-600 text-white px-2 py-1 text-xs font-bold flex justify-between items-center">
+                    <span>Selected Tests ({formData.selected_tests.length})</span>
+                    <span>Total: ₹{totalCost.toFixed(2)}</span>
                   </div>
                   <div className="flex-1 overflow-y-auto p-2">
                     {formData.selected_tests.length === 0 ? (
@@ -425,31 +455,6 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                             </div>
                           );
                         })}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Payment Summary in Selected Tests Column */}
-                  <div className="border-t bg-gradient-to-r from-yellow-50 to-orange-50 p-2">
-                    {!isB2BClient ? (
-                      <div className="space-y-1">
-                        <div className="grid grid-cols-2 gap-1">
-                          <select name="payment_mode" value={formData.payment_mode} onChange={handleChange} required className="px-2 py-1 border border-gray-300 rounded text-xs">
-                            <option value="">Mode *</option>
-                            <option value="CASH">Cash</option>
-                            <option value="CARD">Card</option>
-                            <option value="UPI">UPI</option>
-                          </select>
-                          <input type="number" name="amount_paid" value={formData.amount_paid} onChange={handleChange} placeholder="Amount Paid" className="px-2 py-1 border border-gray-300 rounded text-xs" />
-                        </div>
-                        <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-green-600">Total: ₹{totalCost.toFixed(2)}</span>
-                          <span className="text-red-600">Due: ₹{amountDue.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-blue-100 p-2 rounded text-xs text-blue-800 font-semibold text-center">
-                        B2B Credit: ₹{totalCost.toFixed(2)}
                       </div>
                     )}
                   </div>
