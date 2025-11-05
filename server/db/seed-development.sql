@@ -85,14 +85,14 @@ INSERT INTO referral_doctors (name) VALUES
 ON CONFLICT DO NOTHING;
 
 -- ============================================
--- 8. SAMPLE PATIENTS
+-- 8. SAMPLE PATIENTS (phone and address are optional)
 -- ============================================
 INSERT INTO patients (salutation, name, age_years, age_months, age_days, sex, phone, address, email) VALUES
 ('Mr.', 'Rajesh Kumar', 35, 0, 0, 'Male', '9876543210', 'Address 1, City', 'rajesh@example.com'),
 ('Mrs.', 'Priya Sharma', 28, 0, 0, 'Female', '9876543211', 'Address 2, City', 'priya@example.com'),
 ('Mr.', 'Venkat Reddy', 45, 0, 0, 'Male', '9876543212', 'Address 3, City', 'venkat@example.com'),
-('Mrs.', 'Lakshmi Devi', 32, 0, 0, 'Female', '9876543213', 'Address 4, City', 'lakshmi@example.com'),
-('Mr.', 'Suresh Babu', 50, 0, 0, 'Male', '9876543214', 'Address 5, City', 'suresh@example.com')
+('Mrs.', 'Lakshmi Devi', 32, 0, 0, 'Female', NULL, NULL, 'lakshmi@example.com'),
+('Mr.', 'Suresh Babu', 50, 0, 0, 'Male', '9876543214', 'Address 5, City', NULL)
 ON CONFLICT DO NOTHING;
 
 -- ============================================

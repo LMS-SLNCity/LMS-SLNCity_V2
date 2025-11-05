@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CreateVisitForm } from './CreateVisitForm';
+import { CreateVisitFormNew } from './CreateVisitFormNew';
 import { PhlebotomyQueue } from './PhlebotomyQueue';
 import { LabQueue } from './LabQueue';
 import { Navbar, View } from './Navbar';
@@ -159,7 +159,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
           </div>
         )}
         {currentView === 'b2b-dashboard' && <B2BClientDashboard />}
-        {currentView === 'reception' && <CreateVisitForm onInitiateReport={handleInitiateReport} />}
+        {currentView === 'reception' && <CreateVisitFormNew onInitiateReport={handleInitiateReport} />}
         {currentView === 'phlebotomy' && <PhlebotomyQueue onInitiateReport={handleInitiateReport} />}
         {currentView === 'lab' && <LabQueue onInitiateReport={handleInitiateReport} />}
         {currentView === 'approver' && <ApproverQueue onInitiateReport={handleInitiateReport} />}
