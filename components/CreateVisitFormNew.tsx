@@ -226,42 +226,42 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
 
   return (
     <>
-      <div className="h-[calc(100vh-120px)] overflow-hidden bg-gray-50">
+      <div className="h-[calc(100vh-80px)] overflow-hidden bg-gray-50">
         <form onSubmit={handleSubmit} className="h-full flex flex-col">
-          {/* Header */}
-          <div className="bg-white border-b px-6 py-4 flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-800">New Visit Registration</h1>
-            <div className="flex gap-3">
+          {/* Compact Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 flex justify-between items-center shadow-md">
+            <h1 className="text-lg font-bold text-white">New Visit Registration</h1>
+            <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setIsSearchModalOpen(true)}
-                className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+                className="px-3 py-1 bg-white text-blue-600 text-sm font-semibold rounded hover:bg-blue-50"
               >
-                🔍 Search Existing Patient
+                🔍 Search Patient
               </button>
               <button
                 type="button"
                 onClick={handleClearForm}
-                className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300"
+                className="px-3 py-1 bg-blue-800 text-white text-sm font-semibold rounded hover:bg-blue-900"
               >
-                Clear Form
+                Clear
               </button>
             </div>
           </div>
 
-          {/* Main Content - 2 Column Layout */}
-          <div className="flex-1 overflow-hidden p-6">
-            <div className="h-full grid grid-cols-2 gap-6">
+          {/* Main Content - Compact 2 Column Layout */}
+          <div className="flex-1 overflow-hidden p-3">
+            <div className="h-full grid grid-cols-2 gap-3">
               {/* Left Column - All Patient & Registration Details */}
-              <div className="bg-white rounded-lg shadow overflow-y-auto">
-                <div className="p-6 space-y-6">
-                  {/* Patient Information */}
+              <div className="bg-white rounded shadow overflow-hidden flex flex-col">
+                <div className="p-3 space-y-3">
+                  {/* Patient Information - Compact Grid */}
                   <div>
-                    <h2 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b">Patient Information</h2>
-                    <div className="grid grid-cols-2 gap-4">
+                    <h2 className="text-sm font-bold text-gray-800 mb-2 pb-1 border-b">Patient Information</h2>
+                    <div className="grid grid-cols-4 gap-2">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Salutation *</label>
-                        <select name="salutation" value={formData.salutation} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Salutation *</label>
+                        <select name="salutation" value={formData.salutation} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs">
                           <option value="Mr">Mr</option>
                           <option value="Ms">Ms</option>
                           <option value="Mrs">Mrs</option>
@@ -270,98 +270,101 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Sex *</label>
-                        <select name="sex" value={formData.sex} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Sex *</label>
+                        <select name="sex" value={formData.sex} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs">
                           <option value="Male">Male</option>
                           <option value="Female">Female</option>
                         </select>
                       </div>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                        <input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Age *</label>
+                        <input type="number" name="age" value={formData.age} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Age *</label>
-                        <input type="number" name="age" value={formData.age} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
-                        <select name="age_unit" value={formData.age_unit} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Unit *</label>
+                        <select name="age_unit" value={formData.age_unit} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs">
                           <option value="Years">Years</option>
                           <option value="Months">Months</option>
                           <option value="Days">Days</option>
                         </select>
                       </div>
+                      <div className="col-span-4">
+                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Name *</label>
+                        <input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                      </div>
                       {isGuardianVisible && (
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Guardian Name</label>
-                          <input type="text" name="guardian_name" value={formData.guardian_name || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                        <div className="col-span-4">
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Guardian Name</label>
+                          <input type="text" name="guardian_name" value={formData.guardian_name || ''} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
                         </div>
                       )}
                       <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                        <input type="text" name="phone" value={formData.phone} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Phone</label>
+                        <input type="text" name="phone" value={formData.phone} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
                       </div>
                       <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input type="email" name="email" value={formData.email || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Email</label>
+                        <input type="email" name="email" value={formData.email || ''} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
                       </div>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                        <textarea name="address" value={formData.address} onChange={handleChange} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                      <div className="col-span-4">
+                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Address</label>
+                        <input type="text" name="address" value={formData.address} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
                       </div>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Clinical History</label>
-                        <textarea name="clinical_history" value={formData.clinical_history || ''} onChange={handleChange} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                      <div className="col-span-4">
+                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Clinical History</label>
+                        <input type="text" name="clinical_history" value={formData.clinical_history || ''} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
                       </div>
                     </div>
                   </div>
 
-                  {/* Referral Information */}
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b">Referral Information</h2>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Referral Doctor</label>
-                        <select name="referred_doctor_id" value={String(formData.referred_doctor_id || '')} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-                          <option value="">--Select Doctor--</option>
-                          {referralDoctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">B2B Client</label>
-                        <select name="ref_customer_id" value={String(formData.ref_customer_id || '')} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-                          <option value="">--Select Client--</option>
-                          {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Other Ref. Doctor</label>
-                        <input type="text" name="other_ref_doctor" value={formData.other_ref_doctor || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Other Ref. Customer</label>
-                        <input type="text" name="other_ref_customer" value={formData.other_ref_customer || ''} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Registration Details */}
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b">Registration Date & Time</h2>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-                        <input type="date" name="registration_date" value={formData.registration_date} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
+                  {/* Referral & Registration - Side by Side */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Referral Information */}
+                    <div>
+                      <h2 className="text-sm font-bold text-gray-800 mb-2 pb-1 border-b">Referral</h2>
+                      <div className="space-y-2">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Hour *</label>
-                          <input type="text" name="registration_time_hh" value={formData.registration_time_hh} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Ref. Doctor</label>
+                          <select name="referred_doctor_id" value={String(formData.referred_doctor_id || '')} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                            <option value="">--Select--</option>
+                            {referralDoctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                          </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Minute *</label>
-                          <input type="text" name="registration_time_mm" value={formData.registration_time_mm} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">B2B Client</label>
+                          <select name="ref_customer_id" value={String(formData.ref_customer_id || '')} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                            <option value="">--Select--</option>
+                            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Other Ref. Dr</label>
+                          <input type="text" name="other_ref_doctor" value={formData.other_ref_doctor || ''} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Other Ref. Cust</label>
+                          <input type="text" name="other_ref_customer" value={formData.other_ref_customer || ''} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Registration Details */}
+                    <div>
+                      <h2 className="text-sm font-bold text-gray-800 mb-2 pb-1 border-b">Registration</h2>
+                      <div className="space-y-2">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Date *</label>
+                          <input type="date" name="registration_date" value={formData.registration_date} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Hour *</label>
+                            <input type="text" name="registration_time_hh" value={formData.registration_time_hh} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Min *</label>
+                            <input type="text" name="registration_time_mm" value={formData.registration_time_mm} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -370,115 +373,110 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
               </div>
 
               {/* Right Column - Tests & Payment */}
-              <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col">
-                {/* Selected Tests Section */}
-                <div className="p-6 border-b bg-green-50">
-                  <h2 className="text-lg font-bold text-gray-800 mb-3">Selected Tests ({formData.selected_tests.length})</h2>
-                  {formData.selected_tests.length === 0 ? (
-                    <p className="text-sm text-gray-500 italic">No tests selected yet</p>
-                  ) : (
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {formData.selected_tests.map(testId => {
-                        const test = testTemplates.find(t => t.id === testId);
-                        if (!test) return null;
-                        const price = isB2BClient ? (clientPrices.find(p => p.clientId === formData.ref_customer_id && p.testTemplateId === test.id)?.price || test.b2b_price) : test.price;
-                        return (
-                          <div key={testId} className="flex items-center justify-between bg-white p-2 rounded border border-green-200">
-                            <div className="flex-1">
-                              <div className="font-medium text-sm">{test.name}</div>
-                              <div className="text-xs text-gray-500">{test.code}</div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-semibold text-green-600">₹{price}</span>
+              <div className="bg-white rounded shadow overflow-hidden flex flex-col">
+                {/* Test Selection with Tabs */}
+                <div className="flex-1 overflow-hidden flex flex-col">
+                  {/* Search Bar */}
+                  <div className="p-2 border-b bg-gray-50">
+                    <input
+                      type="text"
+                      placeholder="🔍 Search tests by name or code..."
+                      value={testSearchQuery}
+                      onChange={(e) => setTestSearchQuery(e.target.value)}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                    />
+                  </div>
+
+                  {/* Selected Tests - Compact Pills */}
+                  {formData.selected_tests.length > 0 && (
+                    <div className="p-2 border-b bg-green-50">
+                      <div className="text-xs font-semibold text-gray-700 mb-1">Selected ({formData.selected_tests.length}):</div>
+                      <div className="flex flex-wrap gap-1">
+                        {formData.selected_tests.map(testId => {
+                          const test = testTemplates.find(t => t.id === testId);
+                          if (!test) return null;
+                          const price = isB2BClient ? (clientPrices.find(p => p.clientId === formData.ref_customer_id && p.testTemplateId === test.id)?.price || test.b2b_price) : test.price;
+                          return (
+                            <span key={testId} className="inline-flex items-center gap-1 bg-green-600 text-white px-2 py-0.5 rounded-full text-xs">
+                              {test.code} - ₹{price}
                               <button
                                 type="button"
                                 onClick={() => handleTestSelection(testId)}
-                                className="text-red-500 hover:text-red-700 font-bold text-lg"
-                                title="Remove test"
+                                className="hover:bg-green-700 rounded-full w-4 h-4 flex items-center justify-center"
+                                title="Remove"
                               >
                                 ×
                               </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Available Tests - Compact List */}
+                  <div className="flex-1 overflow-y-auto p-2">
+                    <div className="space-y-1">
+                      {filteredTests.map(test => {
+                        const isSelected = formData.selected_tests.includes(test.id);
+                        const price = isB2BClient ? (clientPrices.find(p => p.clientId === formData.ref_customer_id && p.testTemplateId === test.id)?.price || test.b2b_price) : test.price;
+                        return (
+                          <label key={test.id} className={`flex items-center justify-between p-1.5 rounded cursor-pointer text-xs ${isSelected ? 'bg-green-100 border border-green-300' : 'hover:bg-gray-100'}`}>
+                            <div className="flex items-center flex-1">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleTestSelection(test.id)}
+                                className="mr-2 w-3 h-3"
+                              />
+                              <div className="flex-1">
+                                <div className="font-medium">{test.name}</div>
+                                <div className="text-gray-500">{test.code}</div>
+                              </div>
                             </div>
-                          </div>
+                            <span className="font-semibold text-green-600 ml-2">₹{price}</span>
+                          </label>
                         );
                       })}
                     </div>
-                  )}
-                </div>
-
-                {/* Available Tests Section */}
-                <div className="flex-1 overflow-hidden flex flex-col p-6">
-                  <h2 className="text-lg font-bold text-gray-800 mb-3">Available Tests</h2>
-                  <input
-                    type="text"
-                    placeholder="Search tests..."
-                    value={testSearchQuery}
-                    onChange={(e) => setTestSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 text-sm"
-                  />
-                  <div className="flex-1 overflow-y-auto space-y-2">
-                    {filteredTests.map(test => {
-                      const isSelected = formData.selected_tests.includes(test.id);
-                      const price = isB2BClient ? (clientPrices.find(p => p.clientId === formData.ref_customer_id && p.testTemplateId === test.id)?.price || test.b2b_price) : test.price;
-                      return (
-                        <label key={test.id} className={`flex items-center p-2 rounded cursor-pointer border ${isSelected ? 'bg-green-50 border-green-300' : 'hover:bg-gray-50 border-transparent'}`}>
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleTestSelection(test.id)}
-                            className="mr-3"
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium text-sm">{test.name}</div>
-                            <div className="text-xs text-gray-500">{test.code}</div>
-                          </div>
-                          <div className="text-sm font-semibold text-green-600">₹{price}</div>
-                        </label>
-                      );
-                    })}
                   </div>
                 </div>
 
-                {/* Payment Summary Section */}
-                <div className="p-6 border-t bg-yellow-50">
-                  <h2 className="text-lg font-bold text-gray-800 mb-3">Payment Summary</h2>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-lg">
-                      <span className="font-medium">Total Cost:</span>
-                      <span className="font-bold text-green-600">₹{totalCost.toFixed(2)}</span>
+                {/* Compact Payment Summary - Bottom Bar */}
+                <div className="border-t bg-gradient-to-r from-yellow-50 to-orange-50 p-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Left: Payment Details */}
+                    <div className="space-y-1">
+                      {!isB2BClient ? (
+                        <>
+                          <div className="grid grid-cols-2 gap-1">
+                            <select name="payment_mode" value={formData.payment_mode} onChange={handleChange} required className="px-2 py-1 border border-gray-300 rounded text-xs">
+                              <option value="">Mode *</option>
+                              <option value="CASH">Cash</option>
+                              <option value="CARD">Card</option>
+                              <option value="UPI">UPI</option>
+                            </select>
+                            <input type="number" name="amount_paid" value={formData.amount_paid} onChange={handleChange} placeholder="Paid" className="px-2 py-1 border border-gray-300 rounded text-xs" />
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span>Total: <strong className="text-green-600">₹{totalCost.toFixed(2)}</strong></span>
+                            <span>Due: <strong className="text-red-600">₹{amountDue.toFixed(2)}</strong></span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="bg-blue-100 p-1.5 rounded text-xs text-blue-800 font-medium">
+                          B2B Credit: ₹{totalCost.toFixed(2)}
+                        </div>
+                      )}
                     </div>
-                    {!isB2BClient && (
-                      <>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Payment Mode *</label>
-                          <select name="payment_mode" value={formData.payment_mode} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-                            <option value="">--Select--</option>
-                            <option value="CASH">Cash</option>
-                            <option value="CARD">Card</option>
-                            <option value="UPI">UPI</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Amount Paid</label>
-                          <input type="number" name="amount_paid" value={formData.amount_paid} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
-                        </div>
-                        <div className="flex justify-between text-lg">
-                          <span className="font-medium">Due Amount:</span>
-                          <span className="font-bold text-red-600">₹{amountDue.toFixed(2)}</span>
-                        </div>
-                      </>
-                    )}
-                    {isB2BClient && (
-                      <div className="bg-blue-100 p-3 rounded-md">
-                        <p className="text-sm text-blue-800 font-medium">B2B Client - Credit Payment</p>
-                      </div>
-                    )}
+
+                    {/* Right: Submit Button */}
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full py-3 bg-green-600 text-white font-bold text-lg rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                      className="bg-green-600 text-white font-bold rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     >
-                      {isSubmitting ? 'Creating Visit...' : '✓ Create Visit'}
+                      {isSubmitting ? 'Creating...' : '✓ Create Visit'}
                     </button>
                   </div>
                 </div>
