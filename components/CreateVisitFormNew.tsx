@@ -226,11 +226,14 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
 
   return (
     <>
-      <div className="h-[calc(100vh-80px)] overflow-hidden bg-gray-50">
+      <div className="h-[calc(100vh-100px)] overflow-hidden bg-gray-50">
         <form onSubmit={handleSubmit} className="h-full flex flex-col">
-          {/* Compact Header */}
+          {/* Compact Header with Dual Branding */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 flex justify-between items-center shadow-md">
-            <h1 className="text-lg font-bold text-white">New Visit Registration</h1>
+            <div>
+              <h1 className="text-base font-bold text-white">SLNCity - New Visit Registration</h1>
+              <p className="text-xs text-blue-100">Sri Lakshmi Narasimha Diagnostic Center</p>
+            </div>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -417,51 +420,10 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                 </div>
               </div>
 
-              {/* Right Column - Split into Selected & Available Tests */}
+              {/* Right Column - Split into Available & Selected Tests (SWAPPED) */}
               <div className="bg-white rounded shadow overflow-hidden grid grid-cols-2 gap-0">
-                {/* Left Half - Selected Tests */}
+                {/* Left Half - Available Tests */}
                 <div className="border-r flex flex-col overflow-hidden">
-                  <div className="bg-green-600 text-white px-2 py-1 text-xs font-bold flex justify-between items-center">
-                    <span>Selected Tests ({formData.selected_tests.length})</span>
-                    <span>Total: ₹{totalCost.toFixed(2)}</span>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-2">
-                    {formData.selected_tests.length === 0 ? (
-                      <div className="text-center text-gray-400 text-xs mt-8">
-                        <div className="text-2xl mb-2">👈</div>
-                        <div>Double-click tests</div>
-                        <div>from right to add</div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        {formData.selected_tests.map(testId => {
-                          const test = testTemplates.find(t => t.id === testId);
-                          if (!test) return null;
-                          const price = isB2BClient ? (clientPrices.find(p => p.clientId === formData.ref_customer_id && p.testTemplateId === test.id)?.price || test.b2b_price) : test.price;
-                          return (
-                            <div
-                              key={testId}
-                              onDoubleClick={() => handleTestSelection(testId)}
-                              className="p-2 bg-green-50 border border-green-300 rounded cursor-pointer hover:bg-green-100 text-xs"
-                              title="Double-click to remove"
-                            >
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="font-semibold text-gray-800">{test.name}</div>
-                                  <div className="text-gray-500">{test.code}</div>
-                                </div>
-                                <div className="font-bold text-green-600 ml-2">₹{price}</div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right Half - Available Tests */}
-                <div className="flex flex-col overflow-hidden">
                   <div className="bg-blue-600 text-white px-2 py-1 text-xs font-bold">
                     Available Tests
                   </div>
@@ -501,6 +463,47 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                         );
                       })}
                     </div>
+                  </div>
+                </div>
+
+                {/* Right Half - Selected Tests */}
+                <div className="flex flex-col overflow-hidden">
+                  <div className="bg-green-600 text-white px-2 py-1 text-xs font-bold flex justify-between items-center">
+                    <span>Selected Tests ({formData.selected_tests.length})</span>
+                    <span>Total: ₹{totalCost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-2">
+                    {formData.selected_tests.length === 0 ? (
+                      <div className="text-center text-gray-400 text-xs mt-8">
+                        <div className="text-2xl mb-2">👉</div>
+                        <div>Double-click tests</div>
+                        <div>from left to add</div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        {formData.selected_tests.map(testId => {
+                          const test = testTemplates.find(t => t.id === testId);
+                          if (!test) return null;
+                          const price = isB2BClient ? (clientPrices.find(p => p.clientId === formData.ref_customer_id && p.testTemplateId === test.id)?.price || test.b2b_price) : test.price;
+                          return (
+                            <div
+                              key={testId}
+                              onDoubleClick={() => handleTestSelection(testId)}
+                              className="p-2 bg-green-50 border border-green-300 rounded cursor-pointer hover:bg-green-100 text-xs"
+                              title="Double-click to remove"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-semibold text-gray-800">{test.name}</div>
+                                  <div className="text-gray-500">{test.code}</div>
+                                </div>
+                                <div className="font-bold text-green-600 ml-2">₹{price}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
