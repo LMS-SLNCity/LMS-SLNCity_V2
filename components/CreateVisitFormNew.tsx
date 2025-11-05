@@ -369,115 +369,133 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                       </div>
                     </div>
                   </div>
+
+                  {/* Create Visit Button */}
+                  <div className="px-3 pb-3">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full py-3 bg-green-600 text-white font-bold text-base rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                    >
+                      {isSubmitting ? '⏳ Creating Visit...' : '✓ Create Visit'}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Right Column - Tests & Payment */}
-              <div className="bg-white rounded shadow overflow-hidden flex flex-col">
-                {/* Test Selection with Tabs */}
-                <div className="flex-1 overflow-hidden flex flex-col">
-                  {/* Search Bar */}
-                  <div className="p-2 border-b bg-gray-50">
-                    <input
-                      type="text"
-                      placeholder="🔍 Search tests by name or code..."
-                      value={testSearchQuery}
-                      onChange={(e) => setTestSearchQuery(e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                    />
+              {/* Right Column - Split into Selected & Available Tests */}
+              <div className="bg-white rounded shadow overflow-hidden grid grid-cols-2 gap-0">
+                {/* Left Half - Selected Tests */}
+                <div className="border-r flex flex-col overflow-hidden">
+                  <div className="bg-green-600 text-white px-2 py-1 text-xs font-bold">
+                    Selected Tests ({formData.selected_tests.length})
                   </div>
-
-                  {/* Selected Tests - Compact Pills */}
-                  {formData.selected_tests.length > 0 && (
-                    <div className="p-2 border-b bg-green-50">
-                      <div className="text-xs font-semibold text-gray-700 mb-1">Selected ({formData.selected_tests.length}):</div>
-                      <div className="flex flex-wrap gap-1">
+                  <div className="p-2 border-b bg-yellow-50">
+                    <div className="text-xs font-semibold text-gray-800">
+                      Total: ₹{totalCost.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-2">
+                    {formData.selected_tests.length === 0 ? (
+                      <div className="text-center text-gray-400 text-xs mt-8">
+                        <div className="text-2xl mb-2">👈</div>
+                        <div>Double-click tests</div>
+                        <div>from right to add</div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
                         {formData.selected_tests.map(testId => {
                           const test = testTemplates.find(t => t.id === testId);
                           if (!test) return null;
                           const price = isB2BClient ? (clientPrices.find(p => p.clientId === formData.ref_customer_id && p.testTemplateId === test.id)?.price || test.b2b_price) : test.price;
                           return (
-                            <span key={testId} className="inline-flex items-center gap-1 bg-green-600 text-white px-2 py-0.5 rounded-full text-xs">
-                              {test.code} - ₹{price}
-                              <button
-                                type="button"
-                                onClick={() => handleTestSelection(testId)}
-                                className="hover:bg-green-700 rounded-full w-4 h-4 flex items-center justify-center"
-                                title="Remove"
-                              >
-                                ×
-                              </button>
-                            </span>
+                            <div
+                              key={testId}
+                              onDoubleClick={() => handleTestSelection(testId)}
+                              className="p-2 bg-green-50 border border-green-300 rounded cursor-pointer hover:bg-green-100 text-xs"
+                              title="Double-click to remove"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-semibold text-gray-800">{test.name}</div>
+                                  <div className="text-gray-500">{test.code}</div>
+                                </div>
+                                <div className="font-bold text-green-600 ml-2">₹{price}</div>
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
-                  {/* Available Tests - Compact List */}
+                  {/* Payment Summary in Selected Tests Column */}
+                  <div className="border-t bg-gradient-to-r from-yellow-50 to-orange-50 p-2">
+                    {!isB2BClient ? (
+                      <div className="space-y-1">
+                        <div className="grid grid-cols-2 gap-1">
+                          <select name="payment_mode" value={formData.payment_mode} onChange={handleChange} required className="px-2 py-1 border border-gray-300 rounded text-xs">
+                            <option value="">Mode *</option>
+                            <option value="CASH">Cash</option>
+                            <option value="CARD">Card</option>
+                            <option value="UPI">UPI</option>
+                          </select>
+                          <input type="number" name="amount_paid" value={formData.amount_paid} onChange={handleChange} placeholder="Amount Paid" className="px-2 py-1 border border-gray-300 rounded text-xs" />
+                        </div>
+                        <div className="flex justify-between text-xs font-semibold">
+                          <span className="text-green-600">Total: ₹{totalCost.toFixed(2)}</span>
+                          <span className="text-red-600">Due: ₹{amountDue.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-100 p-2 rounded text-xs text-blue-800 font-semibold text-center">
+                        B2B Credit: ₹{totalCost.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Half - Available Tests */}
+                <div className="flex flex-col overflow-hidden">
+                  <div className="bg-blue-600 text-white px-2 py-1 text-xs font-bold">
+                    Available Tests
+                  </div>
+                  <div className="p-2 border-b">
+                    <input
+                      type="text"
+                      placeholder="🔍 Search tests..."
+                      value={testSearchQuery}
+                      onChange={(e) => setTestSearchQuery(e.target.value)}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                    />
+                  </div>
                   <div className="flex-1 overflow-y-auto p-2">
                     <div className="space-y-1">
                       {filteredTests.map(test => {
                         const isSelected = formData.selected_tests.includes(test.id);
                         const price = isB2BClient ? (clientPrices.find(p => p.clientId === formData.ref_customer_id && p.testTemplateId === test.id)?.price || test.b2b_price) : test.price;
                         return (
-                          <label key={test.id} className={`flex items-center justify-between p-1.5 rounded cursor-pointer text-xs ${isSelected ? 'bg-green-100 border border-green-300' : 'hover:bg-gray-100'}`}>
-                            <div className="flex items-center flex-1">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => handleTestSelection(test.id)}
-                                className="mr-2 w-3 h-3"
-                              />
+                          <div
+                            key={test.id}
+                            onDoubleClick={() => handleTestSelection(test.id)}
+                            className={`p-2 rounded cursor-pointer text-xs ${
+                              isSelected
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-white border border-gray-300 hover:bg-blue-50 hover:border-blue-400'
+                            }`}
+                            title={isSelected ? 'Already selected' : 'Double-click to add'}
+                          >
+                            <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                <div className="font-medium">{test.name}</div>
+                                <div className="font-semibold">{test.name}</div>
                                 <div className="text-gray-500">{test.code}</div>
                               </div>
+                              <div className="font-bold text-green-600 ml-2">₹{price}</div>
                             </div>
-                            <span className="font-semibold text-green-600 ml-2">₹{price}</span>
-                          </label>
+                          </div>
                         );
                       })}
                     </div>
-                  </div>
-                </div>
-
-                {/* Compact Payment Summary - Bottom Bar */}
-                <div className="border-t bg-gradient-to-r from-yellow-50 to-orange-50 p-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Left: Payment Details */}
-                    <div className="space-y-1">
-                      {!isB2BClient ? (
-                        <>
-                          <div className="grid grid-cols-2 gap-1">
-                            <select name="payment_mode" value={formData.payment_mode} onChange={handleChange} required className="px-2 py-1 border border-gray-300 rounded text-xs">
-                              <option value="">Mode *</option>
-                              <option value="CASH">Cash</option>
-                              <option value="CARD">Card</option>
-                              <option value="UPI">UPI</option>
-                            </select>
-                            <input type="number" name="amount_paid" value={formData.amount_paid} onChange={handleChange} placeholder="Paid" className="px-2 py-1 border border-gray-300 rounded text-xs" />
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span>Total: <strong className="text-green-600">₹{totalCost.toFixed(2)}</strong></span>
-                            <span>Due: <strong className="text-red-600">₹{amountDue.toFixed(2)}</strong></span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="bg-blue-100 p-1.5 rounded text-xs text-blue-800 font-medium">
-                          B2B Credit: ₹{totalCost.toFixed(2)}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Right: Submit Button */}
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="bg-green-600 text-white font-bold rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                    >
-                      {isSubmitting ? 'Creating...' : '✓ Create Visit'}
-                    </button>
                   </div>
                 </div>
               </div>
