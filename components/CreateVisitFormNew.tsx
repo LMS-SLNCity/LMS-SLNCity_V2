@@ -228,11 +228,11 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
     <>
       <div className="h-[calc(100vh-100px)] overflow-hidden bg-gray-50">
         <form onSubmit={handleSubmit} className="h-full flex flex-col">
-          {/* Compact Header with Dual Branding */}
+          {/* Header with Full Branding */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 flex justify-between items-center shadow-md">
             <div>
-              <h1 className="text-base font-bold text-white">SLNCity - New Visit Registration</h1>
-              <p className="text-xs text-blue-100">Sri Lakshmi Narasimha Diagnostic Center</p>
+              <h1 className="text-base font-bold text-white">Sri Lakshmi Narasimha Diagnostic Center</h1>
+              <p className="text-xs text-blue-100">New Visit Registration (SLNCity)</p>
             </div>
             <div className="flex gap-2">
               <button

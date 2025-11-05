@@ -74,10 +74,10 @@ export const LoginScreen: React.FC = () => {
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
       <div className="max-w-md w-full mx-auto">
         <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-brand-secondary">
-            SLNCity
+            <h1 className="text-3xl font-bold text-brand-secondary leading-tight">
+            Sri Lakshmi Narasimha<br/>Diagnostic Center
             </h1>
-            <p className="text-gray-600">Diagnostic Center</p>
+            <p className="text-sm text-gray-500 mt-2">(SLNCity)</p>
         </div>
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Tab Navigation */}
@@ -251,7 +251,7 @@ export const LoginScreen: React.FC = () => {
         </div>
       </div>
        <footer className="text-center py-4 text-sm text-gray-500 mt-8">
-          <p>&copy; 2024 SLNCity Diagnostic Center. All rights reserved.</p>
+          <p>&copy; 2024 Sri Lakshmi Narasimha Diagnostic Center. All rights reserved.</p>
         </footer>
     </div>
   );

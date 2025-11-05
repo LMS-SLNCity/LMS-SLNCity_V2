@@ -136,9 +136,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
     <div className="min-h-screen bg-gray-50 text-gray-800">
         <header className="bg-white shadow-sm sticky top-0 z-20 overflow-hidden">
         <div className="container mx-auto px-2 sm:px-4 py-2 flex justify-between items-center gap-2 min-w-0">
-            <div className="flex items-center gap-1 min-w-0 flex-shrink-0">
-                <h1 className="text-lg sm:text-xl font-bold text-brand-secondary whitespace-nowrap">SLNCity</h1>
-                <span className="text-gray-500 font-light text-xs sm:text-sm hidden sm:inline whitespace-nowrap">Diagnostic</span>
+            <div className="flex flex-col min-w-0 flex-shrink-0">
+                <h1 className="text-sm sm:text-base font-bold text-brand-secondary leading-tight">Sri Lakshmi Narasimha Diagnostic Center</h1>
+                <span className="text-gray-500 font-light text-xs hidden sm:inline">(SLNCity)</span>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 justify-end min-w-0 flex-shrink-0">
                 <span className="text-xs text-gray-600 hidden lg:inline whitespace-nowrap">
@@ -166,7 +166,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
         {currentView === 'admin' && <AdminPanel user={user} />}
         </main>
         <footer className="text-center py-4 text-sm text-gray-500">
-        <p>&copy; 2024 SLNCity Diagnostic Center. All rights reserved.</p>
+        <p>&copy; 2024 Sri Lakshmi Narasimha Diagnostic Center (SLNCity). All rights reserved.</p>
         </footer>
         
         {isEditReasonModalOpen && testToEdit && (
