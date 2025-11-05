@@ -1,6 +1,9 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database
+  # Use: docker-compose up postgres (for DB only)
+  # Environment: Set ENV=production for production setup, ENV=development for dev setup
   postgres:
     image: postgres:16-alpine
     container_name: lms-postgres
@@ -9,12 +12,21 @@ services:
       POSTGRES_USER: lms_user
       POSTGRES_PASSWORD: lms_password
       POSTGRES_DB: lms_slncity
+      # Set ENV variable to control which seed data to load
+      # ENV=development (default) - loads test data
+      # ENV=production - loads only essential data
+      ENV: ${ENV:-development}
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./server/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
-      - ./server/db/clean-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+      # Mount both seed files - the setup script will choose which one to use
+      - ./server/db/seed-development.sql:/docker-entrypoint-initdb.d/seed-development.sql
+      - ./server/db/seed-production.sql:/docker-entrypoint-initdb.d/seed-production.sql
+      # Mount setup scripts
+      - ./server/db/setup-development.sh:/docker-entrypoint-initdb.d/02-setup-development.sh
+      - ./server/db/setup-production.sh:/docker-entrypoint-initdb.d/02-setup-production.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U lms_user -d lms_slncity"]
       interval: 10s

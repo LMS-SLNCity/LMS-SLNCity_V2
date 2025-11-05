@@ -1,0 +1,30 @@
+# Docker Compose for PRODUCTION
+# This runs ONLY PostgreSQL with production data (no test data)
+# Backend and frontend should be deployed separately
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lms-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lms_user
+      POSTGRES_PASSWORD: lms_password
+      POSTGRES_DB: lms_slncity
+    ports:
+      - "5432:5432"  # Production uses standard port
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./server/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./server/db/seed-production.sql:/docker-entrypoint-initdb.d/02-seed-production.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lms_user -d lms_slncity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_prod_data:
+
