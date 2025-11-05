@@ -98,7 +98,7 @@ ON CONFLICT DO NOTHING;
 -- ============================================
 -- 9. SAMPLE VISITS (for testing)
 -- ============================================
--- Note: These will be created with proper visit codes
+-- Note: Ledger entries and balance updates are handled automatically by triggers
 -- Schema: patient_id, ref_customer_id, total_cost, amount_paid, payment_mode, due_amount
 DO $$
 DECLARE
@@ -107,7 +107,7 @@ DECLARE
     v_client_id INTEGER;
     v_test_id INTEGER;
 BEGIN
-    -- Visit 1: Walk-in patient (Cash payment)
+    -- Visit 1: Walk-in patient (Cash payment - fully paid)
     SELECT id INTO v_patient_id FROM patients WHERE name = 'Rajesh Kumar' LIMIT 1;
     IF v_patient_id IS NOT NULL THEN
         INSERT INTO visits (
@@ -124,7 +124,7 @@ BEGIN
         END IF;
     END IF;
 
-    -- Visit 2: B2B client visit (Credit payment)
+    -- Visit 2: B2B client visit (Credit payment - unpaid, trigger will create ledger entry)
     SELECT id INTO v_patient_id FROM patients WHERE name = 'Priya Sharma' LIMIT 1;
     SELECT id INTO v_client_id FROM clients WHERE name = 'City Diagnostic Center' LIMIT 1;
     IF v_patient_id IS NOT NULL AND v_client_id IS NOT NULL THEN
@@ -141,12 +141,10 @@ BEGIN
             VALUES (v_visit_id, v_test_id, 'PENDING');
         END IF;
 
-        -- Add ledger entry
-        INSERT INTO ledger_entries (client_id, visit_id, type, amount, description)
-        VALUES (v_client_id, v_visit_id, 'DEBIT', 500.00, 'Visit charges for LFT');
+        -- Ledger entry is automatically created by trigger
     END IF;
 
-    -- Visit 3: Another B2B visit (Credit payment)
+    -- Visit 3: Another B2B visit (Credit payment - unpaid, trigger will create ledger entry)
     SELECT id INTO v_patient_id FROM patients WHERE name = 'Venkat Reddy' LIMIT 1;
     SELECT id INTO v_client_id FROM clients WHERE name = 'Apollo Diagnostics' LIMIT 1;
     IF v_patient_id IS NOT NULL AND v_client_id IS NOT NULL THEN
@@ -163,9 +161,7 @@ BEGIN
             VALUES (v_visit_id, v_test_id, 'SAMPLE_COLLECTED');
         END IF;
 
-        -- Add ledger entry
-        INSERT INTO ledger_entries (client_id, visit_id, type, amount, description)
-        VALUES (v_client_id, v_visit_id, 'DEBIT', 450.00, 'Visit charges for RFT');
+        -- Ledger entry is automatically created by trigger
     END IF;
 END $$;
 
