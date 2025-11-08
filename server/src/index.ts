@@ -56,9 +56,10 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
+      imgSrc: ["'self'", "data:", "https:", "http://localhost:5001"],
     },
   },
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow images to be loaded cross-origin
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
