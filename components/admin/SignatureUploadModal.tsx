@@ -233,7 +233,7 @@ export const SignatureUploadModal: React.FC<SignatureUploadModalProps> = ({ appr
                     <button
                         type="button"
                         onClick={handleSave}
-                        disabled={isLoading || !previewUrl}
+                        disabled={isLoading}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isLoading ? 'Uploading...' : 'Save Signature'}
