@@ -825,21 +825,18 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
             marginBottom: '6px',
             minHeight: '35px'
           }}>
-            {approvers.length > 0 ? (
+            {approvers.length > 0 && (
               <>
                 {/* Dynamic Approvers */}
                 {approvers.map((approver, index) => (
                   <div key={approver.id} style={{ textAlign: index === 0 ? 'left' : index === approvers.length - 1 ? 'right' : 'center', flex: 1 }}>
-                    {approver.signature_image_url ? (
-                      <img src={approver.signature_image_url} alt="Signature" style={{ maxWidth: '80px', maxHeight: '25px', marginBottom: '2px' }} />
-                    ) : (
-                      <div style={{
-                        borderBottom: '1px solid #000',
-                        width: '80px',
-                        height: '20px',
-                        margin: index === 0 ? '0 0 2px 0' : index === approvers.length - 1 ? '0 0 2px auto' : '0 auto 2px',
-                        display: 'inline-block'
-                      }}></div>
+                    {/* Show signature image if present, otherwise just show name */}
+                    {approver.signature_image_url && (
+                      <img
+                        src={`http://localhost:5001${approver.signature_image_url}`}
+                        alt="Signature"
+                        style={{ maxWidth: '80px', maxHeight: '25px', marginBottom: '2px', display: 'block', margin: index === 0 ? '0 0 2px 0' : index === approvers.length - 1 ? '0 0 2px auto' : '0 auto 2px' }}
+                      />
                     )}
                     <div style={{ fontWeight: 'bold', fontSize: '8px', marginBottom: '1px' }}>
                       {approver.name}
@@ -859,10 +856,6 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                   </div>
                 )}
               </>
-            ) : (
-              <div style={{ textAlign: 'center', width: '100%', fontSize: '8px', color: '#999' }}>
-                Loading approvers...
-              </div>
             )}
           </div>
 

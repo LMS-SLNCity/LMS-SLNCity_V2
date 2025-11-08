@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      'SELECT id, username, role, is_active FROM users ORDER BY id'
+      'SELECT id, username, role, is_active, signature_image_url FROM users ORDER BY id'
     );
     res.json(result.rows);
   } catch (error) {
@@ -22,7 +22,7 @@ router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'SELECT id, username, role, is_active FROM users WHERE id = $1',
+      'SELECT id, username, role, is_active, signature_image_url FROM users WHERE id = $1',
       [id]
     );
     if (result.rows.length === 0) {
@@ -47,7 +47,7 @@ router.post('/', async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
-      'INSERT INTO users (username, password_hash, role, is_active) VALUES ($1, $2, $3, $4) RETURNING id, username, role, is_active',
+      'INSERT INTO users (username, password_hash, role, is_active) VALUES ($1, $2, $3, $4) RETURNING id, username, role, is_active, signature_image_url',
       [username, hashedPassword, role, true]
     );
 
@@ -68,7 +68,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
     const { role, is_active } = req.body;
 
     const result = await pool.query(
-      'UPDATE users SET role = COALESCE($1, role), is_active = COALESCE($2, is_active), updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING id, username, role, is_active',
+      'UPDATE users SET role = COALESCE($1, role), is_active = COALESCE($2, is_active), updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING id, username, role, is_active, signature_image_url',
       [role, is_active, id]
     );
 

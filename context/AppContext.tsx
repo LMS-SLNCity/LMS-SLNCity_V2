@@ -493,6 +493,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         old_results: test.results || test.cultureResult
       };
 
+      console.log('Sending rejection data:', rejectionData);
+
       const response = await fetch('http://localhost:5001/api/result-rejections', {
         method: 'POST',
         headers: {
@@ -502,12 +504,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         body: JSON.stringify(rejectionData),
       });
 
+      console.log('Rejection response status:', response.status);
+
       if (response.ok) {
+        const responseData = await response.json();
+        console.log('Rejection successful:', responseData);
         // Reload data to get updated test status and rejection count
         await reloadData();
         alert('Test result rejected successfully. Lab technician will be notified.');
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Rejection failed:', errorData);
         throw new Error(errorData.error || 'Failed to reject test result');
       }
     } catch (error) {

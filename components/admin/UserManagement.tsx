@@ -4,16 +4,18 @@ import { Role, User } from '../../types';
 import { Input } from '../form/Input';
 import { Select } from '../form/Select';
 import { UserPermissionsModal } from './UserPermissionsModal';
+import { SignatureUploadModal } from './SignatureUploadModal';
 import { useAuth } from '../../context/AuthContext';
 
 export const UserManagement: React.FC = () => {
     const { users, addUser } = useAppContext();
     const { user: actor } = useAuth();
-    
+
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState<Role>('RECEPTION');
     const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [uploadingSignatureFor, setUploadingSignatureFor] = useState<User | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -42,9 +44,15 @@ export const UserManagement: React.FC = () => {
     return (
         <>
         {editingUser && (
-            <UserPermissionsModal 
+            <UserPermissionsModal
                 user={editingUser}
                 onClose={() => setEditingUser(null)}
+            />
+        )}
+        {uploadingSignatureFor && (
+            <SignatureUploadModal
+                approver={uploadingSignatureFor}
+                onClose={() => setUploadingSignatureFor(null)}
             />
         )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -58,6 +66,7 @@ export const UserManagement: React.FC = () => {
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Username</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Signature</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -73,7 +82,19 @@ export const UserManagement: React.FC = () => {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 text-sm">
-                                        <button 
+                                        {user.role === 'APPROVER' ? (
+                                            <button
+                                                onClick={() => setUploadingSignatureFor(user)}
+                                                className={`px-2 py-1 text-xs font-medium rounded ${user.signatureImageUrl ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
+                                            >
+                                                {user.signatureImageUrl ? '✓ Uploaded' : '+ Add Signature'}
+                                            </button>
+                                        ) : (
+                                            <span className="text-xs text-gray-400">N/A</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm">
+                                        <button
                                             onClick={() => setEditingUser(user)}
                                             className="font-medium text-brand-primary hover:text-brand-primary_hover"
                                         >
