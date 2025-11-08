@@ -75,7 +75,7 @@ export const LoginScreen: React.FC = () => {
       <div className="max-w-md w-full mx-auto">
         <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-brand-secondary leading-tight">
-            Sri Lakshmi Narasimha<br/>Diagnostic Center
+            Sri Lakshmi Narasimha City<br/>Diagnostic Center
             </h1>
             <p className="text-sm text-gray-500 mt-2">(SLNCity)</p>
         </div>
@@ -251,7 +251,7 @@ export const LoginScreen: React.FC = () => {
         </div>
       </div>
        <footer className="text-center py-4 text-sm text-gray-500 mt-8">
-          <p>&copy; 2024 Sri Lakshmi Narasimha Diagnostic Center. All rights reserved.</p>
+          <p>&copy; 2024 Sri Lakshmi Narasimha City Diagnostic Center. All rights reserved.</p>
         </footer>
     </div>
   );
