@@ -226,45 +226,46 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
 
   return (
     <>
-      <div className="h-[calc(100vh-100px)] overflow-hidden bg-gray-50">
+      <div className="h-[calc(100vh-140px)] overflow-hidden bg-gray-50">
         <form onSubmit={handleSubmit} className="h-full flex flex-col">
           {/* Header with Full Branding */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 flex justify-between items-center shadow-md">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-2 sm:px-4 py-1.5 sm:py-2 flex justify-between items-center shadow-md">
             <div>
-              <h1 className="text-base font-bold text-white">Sri Lakshmi Narasimha Diagnostic Center</h1>
-              <p className="text-xs text-blue-100">New Visit Registration (SLNCity)</p>
+              <h1 className="text-sm sm:text-base font-bold text-white">Sri Lakshmi Narasimha Diagnostic Center</h1>
+              <p className="text-[10px] sm:text-xs text-blue-100">New Visit Registration (SLNCity)</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1 sm:gap-2">
               <button
                 type="button"
                 onClick={() => setIsSearchModalOpen(true)}
-                className="px-3 py-1 bg-white text-blue-600 text-sm font-semibold rounded hover:bg-blue-50"
+                className="px-2 sm:px-3 py-1 bg-white text-blue-600 text-xs sm:text-sm font-semibold rounded hover:bg-blue-50"
               >
-                🔍 Search Patient
+                🔍 <span className="hidden sm:inline">Search Patient</span>
               </button>
               <button
                 type="button"
                 onClick={handleClearForm}
-                className="px-3 py-1 bg-blue-800 text-white text-sm font-semibold rounded hover:bg-blue-900"
+                className="px-2 sm:px-3 py-1 bg-blue-800 text-white text-xs sm:text-sm font-semibold rounded hover:bg-blue-900"
               >
                 Clear
               </button>
             </div>
           </div>
 
-          {/* Main Content - Compact 2 Column Layout */}
-          <div className="flex-1 overflow-hidden p-3">
-            <div className="h-full grid grid-cols-2 gap-3">
+          {/* Main Content - Responsive 2 Column Layout */}
+          <div className="flex-1 overflow-hidden p-2 sm:p-3">
+            <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
               {/* Left Column - All Patient & Registration Details */}
-              <div className="bg-white rounded shadow overflow-hidden flex flex-col">
-                <div className="p-3 space-y-3">
-                  {/* Patient Information - Compact Grid */}
+              <div className="bg-white rounded shadow overflow-hidden flex flex-col max-h-full">
+                <div className="overflow-y-auto flex-1">
+                <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+                  {/* Patient Information - Responsive Grid */}
                   <div>
-                    <h2 className="text-sm font-bold text-gray-800 mb-2 pb-1 border-b">Patient Information</h2>
-                    <div className="grid grid-cols-4 gap-2">
+                    <h2 className="text-xs sm:text-sm font-bold text-gray-800 mb-1 sm:mb-2 pb-1 border-b">Patient Information</h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Salutation *</label>
-                        <select name="salutation" value={formData.salutation} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                        <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Salutation *</label>
+                        <select name="salutation" value={formData.salutation} onChange={handleChange} required className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs">
                           <option value="Mr">Mr</option>
                           <option value="Ms">Ms</option>
                           <option value="Mrs">Mrs</option>
@@ -273,115 +274,115 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Sex *</label>
-                        <select name="sex" value={formData.sex} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                        <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Sex *</label>
+                        <select name="sex" value={formData.sex} onChange={handleChange} required className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs">
                           <option value="Male">Male</option>
                           <option value="Female">Female</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Age *</label>
-                        <input type="number" name="age" value={formData.age} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                        <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Age *</label>
+                        <input type="number" name="age" value={formData.age} onChange={handleChange} required className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Unit *</label>
-                        <select name="age_unit" value={formData.age_unit} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                        <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Unit *</label>
+                        <select name="age_unit" value={formData.age_unit} onChange={handleChange} required className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs">
                           <option value="Years">Years</option>
                           <option value="Months">Months</option>
                           <option value="Days">Days</option>
                         </select>
                       </div>
-                      <div className="col-span-4">
-                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Name *</label>
-                        <input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                      <div className="col-span-2 sm:col-span-4">
+                        <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Name *</label>
+                        <input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                       </div>
                       {isGuardianVisible && (
-                        <div className="col-span-4">
-                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Guardian Name</label>
-                          <input type="text" name="guardian_name" value={formData.guardian_name || ''} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                        <div className="col-span-2 sm:col-span-4">
+                          <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Guardian Name</label>
+                          <input type="text" name="guardian_name" value={formData.guardian_name || ''} onChange={handleChange} className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                         </div>
                       )}
-                      <div className="col-span-2">
-                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Phone</label>
-                        <input type="text" name="phone" value={formData.phone} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                      <div className="col-span-1 sm:col-span-2">
+                        <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Phone</label>
+                        <input type="text" name="phone" value={formData.phone} onChange={handleChange} className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                       </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Email</label>
-                        <input type="email" name="email" value={formData.email || ''} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                      <div className="col-span-1 sm:col-span-2">
+                        <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Email</label>
+                        <input type="email" name="email" value={formData.email || ''} onChange={handleChange} className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                       </div>
-                      <div className="col-span-4">
-                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Address</label>
-                        <input type="text" name="address" value={formData.address} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                      <div className="col-span-2 sm:col-span-4">
+                        <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Address</label>
+                        <input type="text" name="address" value={formData.address} onChange={handleChange} className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                       </div>
-                      <div className="col-span-4">
-                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Clinical History</label>
-                        <input type="text" name="clinical_history" value={formData.clinical_history || ''} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                      <div className="col-span-2 sm:col-span-4">
+                        <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Clinical History</label>
+                        <input type="text" name="clinical_history" value={formData.clinical_history || ''} onChange={handleChange} className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                       </div>
                     </div>
                   </div>
 
-                  {/* Referral & Registration - Side by Side */}
-                  <div className="grid grid-cols-2 gap-3">
+                  {/* Referral & Registration - Responsive Side by Side */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     {/* Referral Information */}
                     <div>
-                      <h2 className="text-sm font-bold text-gray-800 mb-2 pb-1 border-b">Referral</h2>
-                      <div className="space-y-2">
+                      <h2 className="text-xs sm:text-sm font-bold text-gray-800 mb-1 sm:mb-2 pb-1 border-b">Referral</h2>
+                      <div className="space-y-1.5 sm:space-y-2">
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Ref. Doctor</label>
-                          <select name="referred_doctor_id" value={String(formData.referred_doctor_id || '')} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                          <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Ref. Doctor</label>
+                          <select name="referred_doctor_id" value={String(formData.referred_doctor_id || '')} onChange={handleChange} className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs">
                             <option value="">--Select--</option>
                             {referralDoctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-0.5">B2B Client</label>
-                          <select name="ref_customer_id" value={String(formData.ref_customer_id || '')} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                          <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">B2B Client</label>
+                          <select name="ref_customer_id" value={String(formData.ref_customer_id || '')} onChange={handleChange} className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs">
                             <option value="">--Select--</option>
                             {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Other Ref. Dr</label>
-                          <input type="text" name="other_ref_doctor" value={formData.other_ref_doctor || ''} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                          <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Other Ref. Dr</label>
+                          <input type="text" name="other_ref_doctor" value={formData.other_ref_doctor || ''} onChange={handleChange} className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Other Ref. Cust</label>
-                          <input type="text" name="other_ref_customer" value={formData.other_ref_customer || ''} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                          <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Other Ref. Cust</label>
+                          <input type="text" name="other_ref_customer" value={formData.other_ref_customer || ''} onChange={handleChange} className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                         </div>
                       </div>
                     </div>
 
                     {/* Registration Details */}
                     <div>
-                      <h2 className="text-sm font-bold text-gray-800 mb-2 pb-1 border-b">Registration</h2>
-                      <div className="space-y-2">
+                      <h2 className="text-xs sm:text-sm font-bold text-gray-800 mb-1 sm:mb-2 pb-1 border-b">Registration</h2>
+                      <div className="space-y-1.5 sm:space-y-2">
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Date *</label>
-                          <input type="date" name="registration_date" value={formData.registration_date} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                          <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Date *</label>
+                          <input type="date" name="registration_date" value={formData.registration_date} onChange={handleChange} required className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Hour *</label>
-                            <input type="text" name="registration_time_hh" value={formData.registration_time_hh} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                            <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Hour *</label>
+                            <input type="text" name="registration_time_hh" value={formData.registration_time_hh} onChange={handleChange} required className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Min *</label>
-                            <input type="text" name="registration_time_mm" value={formData.registration_time_mm} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                            <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Min *</label>
+                            <input type="text" name="registration_time_mm" value={formData.registration_time_mm} onChange={handleChange} required className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Payment Summary */}
-                  <div className="px-3 pb-2">
-                    <h2 className="text-sm font-bold text-gray-800 mb-2 pb-1 border-b">Payment</h2>
+                  {/* Payment Summary - Responsive */}
+                  <div className="px-2 sm:px-3 pb-2">
+                    <h2 className="text-xs sm:text-sm font-bold text-gray-800 mb-1 sm:mb-2 pb-1 border-b">Payment</h2>
                     {!isB2BClient ? (
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Mode *</label>
-                            <select name="payment_mode" value={formData.payment_mode} onChange={handleChange} required className="w-full px-2 py-1 border border-gray-300 rounded text-xs">
+                            <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Mode *</label>
+                            <select name="payment_mode" value={formData.payment_mode} onChange={handleChange} required className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs">
                               <option value="">--Select--</option>
                               <option value="CASH">Cash</option>
                               <option value="CARD">Card</option>
@@ -389,54 +390,55 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                             </select>
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Amount Paid</label>
-                            <input type="number" name="amount_paid" value={formData.amount_paid} onChange={handleChange} className="w-full px-2 py-1 border border-gray-300 rounded text-xs" />
+                            <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Amount Paid</label>
+                            <input type="number" name="amount_paid" value={formData.amount_paid} onChange={handleChange} className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                           </div>
                         </div>
-                        <div className="bg-yellow-50 p-2 rounded border border-yellow-200">
-                          <div className="flex justify-between text-xs font-semibold">
+                        <div className="bg-yellow-50 p-1.5 sm:p-2 rounded border border-yellow-200">
+                          <div className="flex justify-between text-[10px] sm:text-xs font-semibold">
                             <span className="text-green-600">Total: ₹{totalCost.toFixed(2)}</span>
                             <span className="text-red-600">Due: ₹{amountDue.toFixed(2)}</span>
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-blue-100 p-2 rounded text-xs text-blue-800 font-semibold">
+                      <div className="bg-blue-100 p-1.5 sm:p-2 rounded text-[10px] sm:text-xs text-blue-800 font-semibold">
                         B2B Credit: ₹{totalCost.toFixed(2)}
                       </div>
                     )}
                   </div>
 
-                  {/* Create Visit Button */}
-                  <div className="px-3 pb-3">
+                  {/* Create Visit Button - Responsive */}
+                  <div className="px-2 sm:px-3 pb-2 sm:pb-3">
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full py-2 bg-green-600 text-white font-semibold text-sm rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full py-1.5 sm:py-2 bg-green-600 text-white font-semibold text-xs sm:text-sm rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? '⏳ Creating...' : '✓ Create Visit'}
                     </button>
                   </div>
                 </div>
               </div>
+              </div>
 
-              {/* Right Column - Split into Available & Selected Tests (SWAPPED) */}
-              <div className="bg-white rounded shadow overflow-hidden grid grid-cols-2 gap-0">
+              {/* Right Column - Split into Available & Selected Tests - Responsive */}
+              <div className="bg-white rounded shadow overflow-hidden grid grid-cols-2 gap-0 max-h-full">
                 {/* Left Half - Available Tests */}
                 <div className="border-r flex flex-col overflow-hidden">
-                  <div className="bg-blue-600 text-white px-2 py-1 text-xs font-bold">
+                  <div className="bg-blue-600 text-white px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-bold">
                     Available Tests
                   </div>
-                  <div className="p-2 border-b">
+                  <div className="p-1.5 sm:p-2 border-b">
                     <input
                       type="text"
                       placeholder="🔍 Search tests..."
                       value={testSearchQuery}
                       onChange={(e) => setTestSearchQuery(e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                      className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs"
                     />
                   </div>
-                  <div className="flex-1 overflow-y-auto p-2">
+                  <div className="flex-1 overflow-y-auto p-1.5 sm:p-2">
                     <div className="space-y-1">
                       {filteredTests.map(test => {
                         const isSelected = formData.selected_tests.includes(test.id);
@@ -445,7 +447,7 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                           <div
                             key={test.id}
                             onDoubleClick={() => handleTestSelection(test.id)}
-                            className={`p-2 rounded cursor-pointer text-xs ${
+                            className={`p-1.5 sm:p-2 rounded cursor-pointer text-[10px] sm:text-xs ${
                               isSelected
                                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                 : 'bg-white border border-gray-300 hover:bg-blue-50 hover:border-blue-400'
@@ -453,11 +455,11 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                             title={isSelected ? 'Already selected' : 'Double-click to add'}
                           >
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="font-semibold">{test.name}</div>
-                                <div className="text-gray-500">{test.code}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold truncate">{test.name}</div>
+                                <div className="text-gray-500 text-[9px] sm:text-[10px]">{test.code}</div>
                               </div>
-                              <div className="font-bold text-green-600 ml-2">₹{price}</div>
+                              <div className="font-bold text-green-600 ml-1 sm:ml-2 flex-shrink-0">₹{price}</div>
                             </div>
                           </div>
                         );
@@ -466,16 +468,17 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                   </div>
                 </div>
 
-                {/* Right Half - Selected Tests */}
+                {/* Right Half - Selected Tests - Responsive */}
                 <div className="flex flex-col overflow-hidden">
-                  <div className="bg-green-600 text-white px-2 py-1 text-xs font-bold flex justify-between items-center">
-                    <span>Selected Tests ({formData.selected_tests.length})</span>
-                    <span>Total: ₹{totalCost.toFixed(2)}</span>
+                  <div className="bg-green-600 text-white px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-bold flex justify-between items-center">
+                    <span>Selected ({formData.selected_tests.length})</span>
+                    <span className="hidden sm:inline">Total: ₹{totalCost.toFixed(2)}</span>
+                    <span className="sm:hidden">₹{totalCost.toFixed(2)}</span>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-2">
+                  <div className="flex-1 overflow-y-auto p-1.5 sm:p-2">
                     {formData.selected_tests.length === 0 ? (
-                      <div className="text-center text-gray-400 text-xs mt-8">
-                        <div className="text-2xl mb-2">👉</div>
+                      <div className="text-center text-gray-400 text-[10px] sm:text-xs mt-4 sm:mt-8">
+                        <div className="text-xl sm:text-2xl mb-1 sm:mb-2">👉</div>
                         <div>Double-click tests</div>
                         <div>from left to add</div>
                       </div>
@@ -489,15 +492,15 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                             <div
                               key={testId}
                               onDoubleClick={() => handleTestSelection(testId)}
-                              className="p-2 bg-green-50 border border-green-300 rounded cursor-pointer hover:bg-green-100 text-xs"
+                              className="p-1.5 sm:p-2 bg-green-50 border border-green-300 rounded cursor-pointer hover:bg-green-100 text-[10px] sm:text-xs"
                               title="Double-click to remove"
                             >
                               <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="font-semibold text-gray-800">{test.name}</div>
-                                  <div className="text-gray-500">{test.code}</div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-semibold text-gray-800 truncate">{test.name}</div>
+                                  <div className="text-gray-500 text-[9px] sm:text-[10px]">{test.code}</div>
                                 </div>
-                                <div className="font-bold text-green-600 ml-2">₹{price}</div>
+                                <div className="font-bold text-green-600 ml-1 sm:ml-2 flex-shrink-0">₹{price}</div>
                               </div>
                             </div>
                           );
