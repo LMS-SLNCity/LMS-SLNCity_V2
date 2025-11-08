@@ -66,6 +66,7 @@ export const UserManagement: React.FC = () => {
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Username</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Permissions</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Signature</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -82,7 +83,31 @@ export const UserManagement: React.FC = () => {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 text-sm">
-                                        {user.role === 'APPROVER' ? (
+                                        <div className="flex flex-wrap gap-1 max-w-xs">
+                                            {user.role === 'SUDO' ? (
+                                                <span className="px-2 py-0.5 text-xs font-medium rounded bg-purple-100 text-purple-800">
+                                                    ALL
+                                                </span>
+                                            ) : user.permissions && user.permissions.length > 0 ? (
+                                                <>
+                                                    {user.permissions.slice(0, 3).map(perm => (
+                                                        <span key={perm} className="px-2 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-800">
+                                                            {perm.replace(/_/g, ' ').split(' ').map(w => w[0]).join('')}
+                                                        </span>
+                                                    ))}
+                                                    {user.permissions.length > 3 && (
+                                                        <span className="px-2 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-800">
+                                                            +{user.permissions.length - 3}
+                                                        </span>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">None</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm">
+                                        {(user.role === 'APPROVER' || user.role === 'SUDO' || user.permissions?.includes('APPROVE_RESULTS')) ? (
                                             <button
                                                 onClick={() => {
                                                     console.log('Signature button clicked for user:', user);
