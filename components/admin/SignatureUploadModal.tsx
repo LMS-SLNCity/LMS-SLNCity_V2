@@ -15,6 +15,12 @@ export const SignatureUploadModal: React.FC<SignatureUploadModalProps> = ({ appr
     const [previewUrl, setPreviewUrl] = useState<string | null>(approver.signatureImageUrl || null);
     const [isLoading, setIsLoading] = useState(false);
     const { user: actor } = useAuth();
+    const { reloadData } = useAppContext();
+
+    // Log when modal opens
+    React.useEffect(() => {
+        console.log('SignatureUploadModal opened for approver:', approver);
+    }, []);
 
     // Initialize canvas
     React.useEffect(() => {
@@ -96,6 +102,7 @@ export const SignatureUploadModal: React.FC<SignatureUploadModalProps> = ({ appr
                 const canvas = canvasRef.current;
                 if (!canvas) {
                     alert('Please draw a signature');
+                    setIsLoading(false);
                     return;
                 }
                 imageData = canvas.toDataURL('image/png');
@@ -105,8 +112,11 @@ export const SignatureUploadModal: React.FC<SignatureUploadModalProps> = ({ appr
 
             if (!imageData) {
                 alert('Please provide a signature');
+                setIsLoading(false);
                 return;
             }
+
+            console.log('Uploading signature for user:', approver.id);
 
             const response = await fetch(`http://localhost:5001/api/signatures/upload/${approver.id}`, {
                 method: 'POST',
@@ -116,15 +126,25 @@ export const SignatureUploadModal: React.FC<SignatureUploadModalProps> = ({ appr
                 body: JSON.stringify({ imageData }),
             });
 
+            console.log('Upload response status:', response.status);
+
             if (!response.ok) {
-                throw new Error('Failed to upload signature');
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                console.error('Upload failed:', errorData);
+                throw new Error(errorData.error || 'Failed to upload signature');
             }
+
+            const result = await response.json();
+            console.log('Upload successful:', result);
+
+            // Reload users to get updated signature_image_url
+            await reloadData();
 
             alert('Signature uploaded successfully');
             onClose();
         } catch (error) {
             console.error('Error uploading signature:', error);
-            alert('Failed to upload signature');
+            alert(`Failed to upload signature: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setIsLoading(false);
         }

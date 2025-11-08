@@ -84,7 +84,10 @@ export const UserManagement: React.FC = () => {
                                     <td className="px-4 py-3 text-sm">
                                         {user.role === 'APPROVER' ? (
                                             <button
-                                                onClick={() => setUploadingSignatureFor(user)}
+                                                onClick={() => {
+                                                    console.log('Signature button clicked for user:', user);
+                                                    setUploadingSignatureFor(user);
+                                                }}
                                                 className={`px-2 py-1 text-xs font-medium rounded ${user.signatureImageUrl ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
                                             >
                                                 {user.signatureImageUrl ? '✓ Uploaded' : '+ Add Signature'}
