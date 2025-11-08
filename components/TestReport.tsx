@@ -542,6 +542,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
         });
 
         const fetchedApprovers = (await Promise.all(approverPromises)).filter(Boolean) as Approver[];
+        console.log('Fetched approvers for report:', fetchedApprovers);
         setApprovers(fetchedApprovers);
       } catch (err) {
         console.error('Error fetching approvers:', err);
@@ -891,6 +892,11 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                         src={`http://localhost:5001${approver.signature_image_url}`}
                         alt="Signature"
                         style={{ maxWidth: '80px', maxHeight: '25px', marginBottom: '2px', display: 'block', margin: index === 0 ? '0 0 2px 0' : index === approvers.length - 1 ? '0 0 2px auto' : '0 auto 2px' }}
+                        onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                          console.error('Failed to load signature image:', approver.signature_image_url);
+                          console.error('Full URL:', `http://localhost:5001${approver.signature_image_url}`);
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                     )}
                     <div style={{ fontWeight: 'bold', fontSize: '8px', marginBottom: '1px' }}>
