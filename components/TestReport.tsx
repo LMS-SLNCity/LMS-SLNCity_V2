@@ -573,7 +573,13 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
   }
 
   const firstTest = approvedTestsForVisit[0];
-  const doctorName = visit.referred_doctor_id ? `Dr. ID: ${visit.referred_doctor_id}` : visit.other_ref_doctor || 'N/A';
+
+  // Get referred doctor name
+  const doctorName = visit.referred_doctor_name
+    ? `Dr. ${visit.referred_doctor_name}`
+    : visit.other_ref_doctor
+    ? `Dr. ${visit.other_ref_doctor}`
+    : 'N/A';
 
   // Group tests by category
   const testsByCategory = approvedTestsForVisit.reduce((acc, test) => {

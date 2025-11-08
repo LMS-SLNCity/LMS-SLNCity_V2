@@ -33,7 +33,7 @@ const getDefaultTime = () => {
 const initialFormState: FormState = {
   salutation: 'Mr',
   name: '',
-  age: 0,
+  age: 1,
   age_unit: 'Years',
   sex: 'Male',
   guardian_name: '',
@@ -178,6 +178,11 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (formData.age < 1) {
+      alert('Age must be at least 1.');
+      return;
+    }
+
     if (formData.selected_tests.length === 0) {
       alert('Please select at least one test.');
       return;
@@ -281,7 +286,7 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                       </div>
                       <div>
                         <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Age *</label>
-                        <input type="number" name="age" value={formData.age} onChange={handleChange} required className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
+                        <input type="number" name="age" value={formData.age} onChange={handleChange} required min="1" className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs" />
                       </div>
                       <div>
                         <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Unit *</label>

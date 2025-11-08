@@ -13,10 +13,12 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
     let query = `SELECT v.id, v.patient_id, v.referred_doctor_id, v.ref_customer_id, v.other_ref_doctor, v.other_ref_customer,
               v.registration_datetime, v.visit_code, v.total_cost, v.amount_paid, v.payment_mode, v.due_amount, v.created_at,
               p.salutation, p.name, p.age_years, p.age_months, p.age_days, p.sex, p.phone, p.address, p.email, p.clinical_history,
-              c.id as client_id, c.name as client_name, c.type as client_type, c.balance as client_balance
+              c.id as client_id, c.name as client_name, c.type as client_type, c.balance as client_balance,
+              rd.name as referred_doctor_name
        FROM visits v
        JOIN patients p ON v.patient_id = p.id
-       LEFT JOIN clients c ON v.ref_customer_id = c.id`;
+       LEFT JOIN clients c ON v.ref_customer_id = c.id
+       LEFT JOIN referral_doctors rd ON v.referred_doctor_id = rd.id`;
 
     const queryParams: any[] = [];
 
@@ -55,6 +57,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
       id: row.id,
       patient_id: row.patient_id,
       referred_doctor_id: row.referred_doctor_id,
+      referred_doctor_name: row.referred_doctor_name,
       ref_customer_id: row.ref_customer_id,
       other_ref_doctor: row.other_ref_doctor,
       other_ref_customer: row.other_ref_customer,
@@ -101,9 +104,11 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
     const result = await pool.query(
       `SELECT v.id, v.patient_id, v.referred_doctor_id, v.ref_customer_id, v.other_ref_doctor, v.other_ref_customer,
               v.registration_datetime, v.visit_code, v.total_cost, v.amount_paid, v.payment_mode, v.due_amount, v.created_at,
-              p.salutation, p.name, p.age_years, p.age_months, p.age_days, p.sex, p.phone, p.address, p.email, p.clinical_history
+              p.salutation, p.name, p.age_years, p.age_months, p.age_days, p.sex, p.phone, p.address, p.email, p.clinical_history,
+              rd.name as referred_doctor_name
        FROM visits v
        JOIN patients p ON v.patient_id = p.id
+       LEFT JOIN referral_doctors rd ON v.referred_doctor_id = rd.id
        WHERE v.id = $1`,
       [req.params.id]
     );
@@ -127,6 +132,7 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
       id: row.id,
       patient_id: row.patient_id,
       referred_doctor_id: row.referred_doctor_id,
+      referred_doctor_name: row.referred_doctor_name,
       ref_customer_id: row.ref_customer_id,
       other_ref_doctor: row.other_ref_doctor,
       other_ref_customer: row.other_ref_customer,
