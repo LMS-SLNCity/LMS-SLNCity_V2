@@ -290,7 +290,7 @@
 
 ---
 
-### **IF YOU WANT TO PAY: Contabo VPS S**
+### **IF YOU WANT TO PAY: Consignature tabo VPS S**
 
 **Why:**
 1. ✅ **Only $5.50/month** (₹450/month)
