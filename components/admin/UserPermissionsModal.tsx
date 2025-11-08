@@ -22,7 +22,14 @@ const allPermissions: Permission[] = [
 export const UserPermissionsModal: React.FC<UserPermissionsModalProps> = ({ user, onClose }) => {
     const { updateUserPermissions } = useAppContext();
     const { user: actor } = useAuth();
-    const [permissions, setPermissions] = useState<Permission[]>(user.permissions);
+    const [permissions, setPermissions] = useState<Permission[]>(user.permissions || []);
+
+    // Debug: Log user permissions
+    React.useEffect(() => {
+        console.log('UserPermissionsModal - User:', user);
+        console.log('UserPermissionsModal - User permissions:', user.permissions);
+        console.log('UserPermissionsModal - State permissions:', permissions);
+    }, []);
 
     const handlePermissionChange = (permission: Permission, checked: boolean) => {
         setPermissions(prev => {

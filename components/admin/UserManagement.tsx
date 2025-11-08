@@ -8,7 +8,7 @@ import { SignatureUploadModal } from './SignatureUploadModal';
 import { useAuth } from '../../context/AuthContext';
 
 export const UserManagement: React.FC = () => {
-    const { users, addUser } = useAppContext();
+    const { users, addUser, reloadData } = useAppContext();
     const { user: actor } = useAuth();
 
     const [username, setUsername] = useState('');
@@ -16,6 +16,46 @@ export const UserManagement: React.FC = () => {
     const [role, setRole] = useState<Role>('RECEPTION');
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [uploadingSignatureFor, setUploadingSignatureFor] = useState<User | null>(null);
+
+    const handleDeleteUser = async (userToDelete: User) => {
+        if (!actor) {
+            alert("User session has expired. Please log in again.");
+            return;
+        }
+
+        if (userToDelete.role === 'SUDO') {
+            alert("Cannot delete SUDO user.");
+            return;
+        }
+
+        const confirmDelete = window.confirm(
+            `Are you sure you want to delete user "${userToDelete.username}"?\n\n` +
+            `This action cannot be undone. All audit logs will be preserved.`
+        );
+
+        if (!confirmDelete) return;
+
+        try {
+            const authToken = localStorage.getItem('authToken');
+            const response = await fetch(`http://localhost:5001/api/users/${userToDelete.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                throw new Error(errorData.error || 'Failed to delete user');
+            }
+
+            alert(`User "${userToDelete.username}" deleted successfully.`);
+            await reloadData();
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            alert(`Failed to delete user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -122,12 +162,22 @@ export const UserManagement: React.FC = () => {
                                         )}
                                     </td>
                                     <td className="px-4 py-3 text-sm">
-                                        <button
-                                            onClick={() => setEditingUser(user)}
-                                            className="font-medium text-brand-primary hover:text-brand-primary_hover"
-                                        >
-                                            Edit Permissions
-                                        </button>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => setEditingUser(user)}
+                                                className="font-medium text-brand-primary hover:text-brand-primary_hover"
+                                            >
+                                                Edit Permissions
+                                            </button>
+                                            {user.role !== 'SUDO' && (
+                                                <button
+                                                    onClick={() => handleDeleteUser(user)}
+                                                    className="font-medium text-red-600 hover:text-red-800"
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

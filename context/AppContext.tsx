@@ -588,17 +588,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const updateUserPermissions = (userId: number, permissions: Permission[], actor: User) => {
-      const user = state.users.find(u => u.id === userId);
-      if(user) {
-         addAuditLog(actor.username, 'MANAGE_USERS', `Updated permissions for user: ${user.username}.`);
+  const updateUserPermissions = async (userId: number, permissions: Permission[], actor: User) => {
+      try {
+        const user = state.users.find(u => u.id === userId);
+        if(user) {
+           addAuditLog(actor.username, 'MANAGE_USERS', `Updated permissions for user: ${user.username}.`);
+        }
+
+        // Call backend API to save permissions
+        const authToken = getAuthToken();
+        const response = await fetch(`http://localhost:5001/api/users/${userId}/permissions`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ permissions }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update user permissions');
+        }
+
+        const updatedUser = await response.json();
+
+        // Update local state after successful API call
+        setState(prevState => ({
+            ...prevState,
+            users: prevState.users.map(user =>
+                user.id === userId ? updatedUser : user
+            )
+        }));
+      } catch (error) {
+        console.error('Error updating user permissions:', error);
+        alert(`Failed to update permissions: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
-      setState(prevState => ({
-          ...prevState,
-          users: prevState.users.map(user => 
-              user.id === userId ? { ...user, permissions } : user
-          )
-      }));
   };
 
   const addTestTemplate = async (templateData: Omit<TestTemplate, 'id'>, actor: User) => {
