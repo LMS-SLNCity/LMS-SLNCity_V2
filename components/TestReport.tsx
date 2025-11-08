@@ -496,20 +496,75 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
   const { visitTests } = useAppContext();
   const [approvers, setApprovers] = useState<Approver[]>([]);
 
-  // Fetch approvers on mount
+  // Fetch actual approvers who approved tests for this visit
   useEffect(() => {
-    fetch('http://localhost:5001/api/approvers')
-      .then(res => res.json())
-      .then(data => setApprovers(data.filter((a: Approver) => a.show_on_print)))
-      .catch(err => console.error('Error fetching approvers:', err));
-  }, []);
+    const fetchActualApprovers = async () => {
+      try {
+        // Get all approved tests for this visit
+        const approvedTests = visit.tests
+          .map((testId: number) => visitTests.find(vt => vt.id === testId && vt.status === 'APPROVED'))
+          .filter(Boolean) as VisitTest[];
+
+        // Get unique approver usernames
+        const approverUsernames = [...new Set(
+          approvedTests
+            .map(test => test.approvedBy)
+            .filter(Boolean)
+        )] as string[];
+
+        if (approverUsernames.length === 0) {
+          // Fallback to default approvers if no specific approvers found
+          const response = await fetch('http://localhost:5001/api/approvers');
+          const data = await response.json();
+          setApprovers(data.filter((a: Approver) => a.show_on_print));
+          return;
+        }
+
+        // Fetch user details for each approver
+        const authToken = localStorage.getItem('authToken');
+        const approverPromises = approverUsernames.map(async (username) => {
+          const response = await fetch('http://localhost:5001/api/users', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          const users = await response.json();
+          const user = users.find((u: any) => u.username === username);
+
+          if (user) {
+            return {
+              id: user.id,
+              name: user.username,
+              title: user.role,
+              signature_image_url: user.signature_image_url,
+              show_on_print: true
+            };
+          }
+          return null;
+        });
+
+        const fetchedApprovers = (await Promise.all(approverPromises)).filter(Boolean) as Approver[];
+        setApprovers(fetchedApprovers);
+      } catch (err) {
+        console.error('Error fetching approvers:', err);
+        // Fallback to default approvers on error
+        try {
+          const response = await fetch('http://localhost:5001/api/approvers');
+          const data = await response.json();
+          setApprovers(data.filter((a: Approver) => a.show_on_print));
+        } catch (fallbackErr) {
+          console.error('Error fetching fallback approvers:', fallbackErr);
+        }
+      }
+    };
+
+    fetchActualApprovers();
+  }, [visit.tests, visitTests]);
 
   if (!visit) {
     return <div className="bg-white p-8 max-w-4xl mx-auto text-red-500">Error: Visit data not found.</div>;
   }
 
   const approvedTestsForVisit = visit.tests
-    .map(testId => visitTests.find(vt => vt.id === testId && vt.status === 'APPROVED'))
+    .map((testId: number) => visitTests.find(vt => vt.id === testId && vt.status === 'APPROVED'))
     .filter(Boolean) as VisitTest[];
 
   if (approvedTestsForVisit.length === 0) {
@@ -828,7 +883,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
             {approvers.length > 0 && (
               <>
                 {/* Dynamic Approvers */}
-                {approvers.map((approver, index) => (
+                {approvers.map((approver: Approver, index: number) => (
                   <div key={approver.id} style={{ textAlign: index === 0 ? 'left' : index === approvers.length - 1 ? 'right' : 'center', flex: 1 }}>
                     {/* Show signature image if present, otherwise just show name */}
                     {approver.signature_image_url && (
