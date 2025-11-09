@@ -9,7 +9,9 @@ interface SampleCollectionModalProps {
 }
 
 export const SampleCollectionModal: React.FC<SampleCollectionModalProps> = ({ test, onClose, onConfirm }) => {
-  const [sampleType, setSampleType] = useState('');
+  // Pre-fill with template's default sample type if available
+  const defaultSampleType = test.template.sampleType || '';
+  const [sampleType, setSampleType] = useState(defaultSampleType);
   const [customSampleType, setCustomSampleType] = useState('');
 
   // Common sample types based on test category
@@ -76,6 +78,17 @@ export const SampleCollectionModal: React.FC<SampleCollectionModalProps> = ({ te
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {test.template.sampleType && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-sm text-green-800">
+                <strong>Recommended Sample Type:</strong> {test.template.sampleType}
+              </p>
+              <p className="text-xs text-green-700 mt-1">
+                This is the default sample type for this test. You can change it if needed.
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Sample Type <span className="text-red-500">*</span>

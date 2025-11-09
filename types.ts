@@ -55,6 +55,7 @@ export interface TestTemplate {
   };
   reportType: 'standard' | 'culture';
   defaultAntibioticIds?: number[];
+  sampleType?: string;
 }
 
 export type VisitTestStatus = 'PENDING' | 'SAMPLE_COLLECTED' | 'IN_PROGRESS' | 'AWAITING_APPROVAL' | 'APPROVED' | 'COMPLETED';

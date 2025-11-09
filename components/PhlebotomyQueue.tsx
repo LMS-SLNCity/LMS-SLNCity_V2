@@ -40,6 +40,8 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
   const { visits, visitTests, updateVisitTestStatus } = useAppContext();
   const { user } = useAuth();
   const [collectingTest, setCollectingTest] = useState<VisitTest | null>(null);
+  const [rejectingSampleId, setRejectingSampleId] = useState<number | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const pendingSamples = visitTests.filter(test => test.status === 'PENDING');
   const collectedSamples = visitTests.filter(test => ['SAMPLE_COLLECTED', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS'].includes(test.status)).sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
@@ -69,6 +71,40 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
       specimen_type: sampleType
     });
     setCollectingTest(null);
+  };
+
+  const handleRejectSample = async (testId: number) => {
+    if (!user) {
+      alert("User session has expired. Please log in again.");
+      return;
+    }
+    if (!rejectionReason.trim()) {
+      alert("Please provide a reason for rejecting the sample.");
+      return;
+    }
+
+    const test = visitTests.find(t => t.id === testId);
+    const visit = test ? visits.find(v => v.id === test.visitId) : null;
+
+    try {
+      // For B2B samples collected at client site, mark as rejected
+      // This removes the sample from the system as it needs to be re-drawn at client site
+      await updateVisitTestStatus(testId, 'PENDING', user, {
+        rejectionReason: `B2B Sample Rejected: ${rejectionReason.trim()}`
+      });
+
+      if (visit && visit.ref_customer_id) {
+        alert(`B2B sample rejected. Client will be notified to re-draw the sample.\nVisit: ${visit.visit_code}\nReason: ${rejectionReason}`);
+      } else {
+        alert('Sample rejected successfully.');
+      }
+
+      setRejectingSampleId(null);
+      setRejectionReason('');
+    } catch (error) {
+      console.error('Error rejecting sample:', error);
+      alert('Failed to reject sample. Please try again.');
+    }
   };
 
   const findVisitForTest = (test: VisitTest): Visit | undefined => {
@@ -139,6 +175,7 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visit Code</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sample Type</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collected At</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
@@ -147,25 +184,66 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
               <tbody className="divide-y divide-gray-200">
                 {collectedSamples.map(test => {
                   const visit = findVisitForTest(test);
+                  const isB2BSample = visit?.ref_customer_id;
                   return (
-                  <tr key={test.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{test.visitCode}</td>
+                  <tr key={test.id} className={`hover:bg-gray-50 ${isB2BSample ? 'bg-blue-50' : ''}`}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {test.visitCode}
+                      {isB2BSample && <span className="ml-2 text-xs text-blue-600 font-semibold">(B2B)</span>}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{test.template.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{test.specimen_type || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {test.collectedAt ? new Date(test.collectedAt).toLocaleString() : 'N/A'}
                     </td>
                      <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <StatusBadge status={test.status} />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {test.status === 'APPROVED' && visit && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                      {test.status === 'SAMPLE_COLLECTED' && isB2BSample ? (
+                        rejectingSampleId === test.id ? (
+                          <div className="flex flex-col space-y-2">
+                            <textarea
+                              value={rejectionReason}
+                              onChange={(e) => setRejectionReason(e.target.value)}
+                              placeholder="Reason for rejection (e.g., hemolyzed, insufficient, damaged in transit)"
+                              rows={2}
+                              className="w-64 px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                            />
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleRejectSample(test.id)}
+                                className="px-3 py-1 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors text-xs"
+                              >
+                                Confirm Reject
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setRejectingSampleId(null);
+                                  setRejectionReason('');
+                                }}
+                                className="px-3 py-1 bg-gray-300 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors text-xs"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setRejectingSampleId(test.id)}
+                            className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors text-xs"
+                          >
+                            Reject B2B Sample
+                          </button>
+                        )
+                      ) : test.status === 'APPROVED' && visit ? (
                         <button
                           onClick={() => onInitiateReport(visit)}
                           className="px-3 py-1 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors text-xs"
                         >
                           View Report
                         </button>
-                      )}
+                      ) : null}
                     </td>
                   </tr>
                   );

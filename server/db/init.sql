@@ -25,6 +25,7 @@ CREATE TABLE test_templates (
     report_type VARCHAR(50) NOT NULL CHECK (report_type IN ('standard', 'culture')),
     parameters JSONB DEFAULT '{"fields": []}',
     default_antibiotic_ids INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+    sample_type VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

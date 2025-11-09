@@ -19,7 +19,8 @@ const emptyTemplate: Omit<TestTemplate, 'id'> = {
     isActive: true,
     parameters: { fields: [] },
     reportType: 'standard',
-    defaultAntibioticIds: []
+    defaultAntibioticIds: [],
+    sampleType: ''
 };
 
 export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ templateToEdit, onClose }) => {
@@ -116,8 +117,17 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                             <Input label="Walk-in Price (₹)" name="price" type="number" value={String(formData.price)} onChange={handleChange} required />
                             <Input label="B2B Price (₹)" name="b2b_price" type="number" value={String(formData.b2b_price)} onChange={handleChange} required />
                         </div>
-                        
-                        <Select label="Report Type" name="reportType" value={formData.reportType} onChange={handleChange} options={reportTypeOptions} />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Select label="Report Type" name="reportType" value={formData.reportType} onChange={handleChange} options={reportTypeOptions} />
+                            <Input
+                                label="Default Sample Type"
+                                name="sampleType"
+                                value={formData.sampleType || ''}
+                                onChange={handleChange}
+                                placeholder="e.g., WB EDTA, Serum, Urine"
+                            />
+                        </div>
                         
                         
                         <div>
