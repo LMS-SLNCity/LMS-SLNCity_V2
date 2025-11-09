@@ -1,6 +1,6 @@
 # AWS Deployment Steps for LMS SLNCity
 
-**AWS Instance IP:** `http://13.233.122.144`
+**AWS Elastic IP:** `http://13.201.165.54`
 
 ---
 
@@ -10,7 +10,7 @@
 
 ```bash
 # 1. SSH into your AWS instance
-ssh -i your-key.pem ubuntu@13.233.122.144
+ssh -i your-key.pem ec2-user@13.201.165.54
 
 # 2. Pull latest code from GitHub
 cd /path/to/LMS-SLNCity-V1
@@ -75,15 +75,15 @@ NODE_ENV=production
 # JWT Secret (KEEP THIS SECRET!)
 JWT_SECRET=e338cec6670e03b9cab465f4331062c9233e5a61e93f04e77b844d0ff597702a4693ffbfb147008ae78f7a2d35c15c63e7f7bfc02624f2609928e687dec16d95
 
-# Frontend URL for CORS
-FRONTEND_URL=http://13.233.122.144
+# Frontend URL for CORS (with port 3001)
+FRONTEND_URL=http://13.201.165.54:3001
 ```
 
 ### **Frontend `.env` (root directory)**
 
 ```env
 # API URL (Backend URL)
-VITE_API_URL=http://13.233.122.144:5001
+VITE_API_URL=http://13.201.165.54:5001
 
 # Optional: Gemini API Key (for AI features)
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -227,8 +227,8 @@ curl http://localhost:5001/health
 curl http://localhost:80
 
 # Check from outside
-curl http://13.233.122.144:5001/health
-curl http://13.233.122.144
+curl http://13.201.165.54:5001/health
+curl http://13.201.165.54:3001
 ```
 
 ### **View logs:**
@@ -276,8 +276,8 @@ sudo tail -f /var/log/nginx/error.log
    - Check AWS Security Group allows port 5001
 
 3. **"CORS Error"**
-   - Verify `FRONTEND_URL` in `server/.env` matches your AWS IP with port 3001
-   - Should be: `FRONTEND_URL=http://13.233.122.144:3001`
+   - Verify `FRONTEND_URL` in `server/.env` matches your AWS Elastic IP with port 3001
+   - Should be: `FRONTEND_URL=http://13.201.165.54:3001`
    - Restart backend after changing `.env`
 
 4. **"Database Connection Error"**
