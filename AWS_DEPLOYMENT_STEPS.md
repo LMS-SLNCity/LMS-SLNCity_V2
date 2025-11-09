@@ -16,12 +16,12 @@ ssh -i your-key.pem ubuntu@13.233.122.144
 cd /path/to/LMS-SLNCity-V1
 git pull origin main
 
-# 3. Install/Update dependencies
-# Backend
+# 3. Install/Update dependencies (IMPORTANT: Install ALL dependencies including devDependencies)
+# Backend - needs TypeScript compiler and type definitions
 cd server
-npm install --production
+npm install
 
-# Frontend
+# Frontend - needs Vite and build tools
 cd ..
 npm install
 
@@ -249,21 +249,43 @@ sudo tail -f /var/log/nginx/error.log
 
 ### **Common Issues:**
 
-1. **"Connection Refused"**
+1. **"TypeScript Build Errors" (82+ errors)**
+
+   **Problem:** Backend build fails with "Could not find a declaration file for module 'express'" or similar errors.
+
+   **Solution:**
+   ```bash
+   cd server
+
+   # Make sure ALL dependencies are installed (not just production)
+   npm install
+
+   # Verify @types packages are installed
+   npm list @types/express @types/bcryptjs @types/cors @types/jsonwebtoken
+
+   # If any are missing, they should be installed by npm install
+   # Now build should work
+   npm run build
+   ```
+
+   **Why this happens:** TypeScript needs type definition files (`@types/*` packages) to understand JavaScript libraries. These are in `devDependencies`, so using `npm install --production` skips them.
+
+2. **"Connection Refused"**
    - Check if backend is running: `pm2 status`
    - Check if port 5001 is open: `sudo netstat -tlnp | grep 5001`
    - Check AWS Security Group allows port 5001
 
-2. **"CORS Error"**
-   - Verify `FRONTEND_URL` in `server/.env` matches your AWS IP
+3. **"CORS Error"**
+   - Verify `FRONTEND_URL` in `server/.env` matches your AWS IP with port 3001
+   - Should be: `FRONTEND_URL=http://13.233.122.144:3001`
    - Restart backend after changing `.env`
 
-3. **"Database Connection Error"**
+4. **"Database Connection Error"**
    - Check PostgreSQL is running: `sudo systemctl status postgresql`
    - Verify database credentials in `server/.env`
    - Check database exists: `psql -U lms_user -d lms_slncity -c "\l"`
 
-4. **"404 Not Found" on refresh**
+5. **"404 Not Found" on refresh**
    - Use Nginx configuration above
    - Or configure Vite preview to handle SPA routing
 
