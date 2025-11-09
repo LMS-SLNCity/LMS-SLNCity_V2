@@ -22,12 +22,7 @@ export default defineConfig(({ mode }) => {
       build: {
         // Optimize build for production
         target: 'es2015',
-        minify: 'terser',
-        terserOptions: {
-          compress: {
-            drop_console: true, // Remove console.logs in production
-          }
-        },
+        minify: 'esbuild', // Use esbuild instead of terser (faster and built-in)
         // Reduce chunk size warnings
         chunkSizeWarningLimit: 1000,
         // Optimize chunking
