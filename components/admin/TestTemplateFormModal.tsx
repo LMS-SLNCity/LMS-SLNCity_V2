@@ -98,16 +98,16 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
     const activeAntibiotics = antibiotics.filter(ab => ab.isActive);
 
     return (
-         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all max-h-[90vh] flex flex-col">
-                <form onSubmit={handleSubmit} className="flex flex-col flex-grow">
-                    <div className="p-6 border-b border-gray-200">
+         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+                <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
+                    <div className="p-6 border-b border-gray-200 flex-shrink-0">
                         <h3 className="text-xl font-bold text-gray-900" id="modal-title">
                             {templateToEdit ? 'Edit' : 'Add New'} Test Template
                         </h3>
                     </div>
 
-                    <div className="p-6 overflow-y-auto space-y-4">
+                    <div className="p-6 overflow-y-auto flex-1 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input label="Test Code" name="code" value={formData.code} onChange={handleChange} required />
                             <Input label="Test Name" name="name" value={formData.name} onChange={handleChange} required />
@@ -153,7 +153,7 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                             ) : (
                                 <div>
                                     <h4 className="text-md font-semibold text-gray-700 mb-2 border-t border-gray-200 pt-4">Result Parameters</h4>
-                                    <div className="max-h-96 overflow-y-auto pr-2 space-y-3">
+                                    <div className="space-y-3">
                                         {formData.parameters.fields.map((param, index) => (
                                             <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 rounded-md bg-gray-50 border border-gray-200">
                                                 <div className="col-span-12 sm:col-span-4">
@@ -188,7 +188,7 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                         </div>
                     </div>
 
-                    <div className="bg-gray-50 px-6 py-4 flex justify-end items-center space-x-3 rounded-b-2xl mt-auto border-t border-gray-200">
+                    <div className="bg-gray-50 px-6 py-4 flex justify-end items-center space-x-3 rounded-b-2xl border-t border-gray-200 flex-shrink-0">
                         <button type="button" onClick={onClose} className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">
                             Cancel
                         </button>

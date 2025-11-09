@@ -22,15 +22,15 @@
 -- ============================================
 -- 1. USERS (All with password: "password")
 -- ============================================
--- Password hash for "password": $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+-- Password hash for "password": $2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO
 
 INSERT INTO users (username, password_hash, role, is_active) VALUES
-('sudo', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'SUDO', true),
-('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'ADMIN', true),
-('reception', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'RECEPTION', true),
-('phlebotomy', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'PHLEBOTOMY', true),
-('lab', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'LAB', true),
-('approver', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'APPROVER', true)
+('sudo', '$2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO', 'SUDO', true),
+('admin', '$2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO', 'ADMIN', true),
+('reception', '$2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO', 'RECEPTION', true),
+('phlebotomy', '$2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO', 'PHLEBOTOMY', true),
+('lab', '$2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO', 'LAB', true),
+('approver', '$2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO', 'APPROVER', true)
 ON CONFLICT (username) DO UPDATE SET
   password_hash = EXCLUDED.password_hash,
   role = EXCLUDED.role,
