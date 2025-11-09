@@ -9,7 +9,7 @@ interface ApprovalModalProps {
 }
 
 export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) => {
-  const { approveTestResult, rejectTestResult } = useAppContext();
+  const { approveTestResult, rejectTestResult, antibiotics } = useAppContext();
   const { user } = useAuth();
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -96,7 +96,7 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
                         })}
                     </div>
                 ) : test.cultureResult ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <div className="text-sm">
                             <span className="font-medium">Growth Status:</span> {test.cultureResult.growthStatus === 'growth' ? 'Growth Detected' : 'No Growth'}
                         </div>
@@ -108,6 +108,48 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
                         {test.cultureResult.colonyCount && (
                             <div className="text-sm">
                                 <span className="font-medium">Colony Count:</span> {test.cultureResult.colonyCount}
+                            </div>
+                        )}
+                        {test.cultureResult.remarks && (
+                            <div className="text-sm">
+                                <span className="font-medium">Remarks:</span> {test.cultureResult.remarks}
+                            </div>
+                        )}
+
+                        {/* Antibiotic Sensitivity Results */}
+                        {test.cultureResult.sensitivity && test.cultureResult.sensitivity.length > 0 && (
+                            <div className="mt-4 border-t pt-3">
+                                <h5 className="font-semibold text-gray-800 mb-2 text-sm">Antibiotic Sensitivity:</h5>
+                                <div className="max-h-48 overflow-y-auto">
+                                    <table className="min-w-full text-sm">
+                                        <thead className="bg-gray-50 sticky top-0">
+                                            <tr>
+                                                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Antibiotic</th>
+                                                <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600">Result</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {test.cultureResult.sensitivity.map((sens, index) => {
+                                                const antibiotic = antibiotics.find(ab => ab.id === sens.antibioticId);
+                                                const sensitivityLabel = sens.sensitivity === 'S' ? 'Sensitive' : sens.sensitivity === 'R' ? 'Resistant' : 'Intermediate';
+                                                const sensitivityColor = sens.sensitivity === 'S' ? 'text-green-700 bg-green-50' : sens.sensitivity === 'R' ? 'text-red-700 bg-red-50' : 'text-yellow-700 bg-yellow-50';
+
+                                                return (
+                                                    <tr key={index} className="hover:bg-gray-50">
+                                                        <td className="px-3 py-2 text-gray-800">
+                                                            {antibiotic ? `${antibiotic.name} (${antibiotic.abbreviation})` : `Unknown (ID: ${sens.antibioticId})`}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-center">
+                                                            <span className={`inline-block px-2 py-1 rounded-md text-xs font-semibold ${sensitivityColor}`}>
+                                                                {sensitivityLabel} ({sens.sensitivity})
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )}
                     </div>

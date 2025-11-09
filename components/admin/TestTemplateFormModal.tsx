@@ -143,7 +143,7 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                             ) : (
                                 <div>
                                     <h4 className="text-md font-semibold text-gray-700 mb-2 border-t border-gray-200 pt-4">Result Parameters</h4>
-                                    <div className="space-y-3">
+                                    <div className="max-h-96 overflow-y-auto pr-2 space-y-3">
                                         {formData.parameters.fields.map((param, index) => (
                                             <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 rounded-md bg-gray-50 border border-gray-200">
                                                 <div className="col-span-12 sm:col-span-4">
@@ -168,11 +168,11 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                                                 </div>
                                             </div>
                                         ))}
-                                        <button type="button" onClick={addParameter} className="mt-3 text-sm text-brand-primary font-semibold hover:text-brand-primary_hover flex items-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" /></svg>
-                                            Add Parameter
-                                        </button>
                                     </div>
+                                    <button type="button" onClick={addParameter} className="mt-3 text-sm text-brand-primary font-semibold hover:text-brand-primary_hover flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" /></svg>
+                                        Add Parameter
+                                    </button>
                                 </div>
                             )}
                         </div>
