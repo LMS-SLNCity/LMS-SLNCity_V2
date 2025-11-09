@@ -4,7 +4,7 @@ import type { Visit, VisitTest, Patient, TestTemplate, VisitTestStatus, User, Ro
 // API Base URL - uses environment variable or falls back to localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
-  : `${API_BASE_URL}';
+  : 'http://localhost:5001/api';
 
 // Define a type for user creation data to avoid exposing password hash elsewhere
 type UserCreationData = Omit<User, 'id' | 'isActive' | 'permissions'> & { password_hash: string };
@@ -260,7 +260,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Create visit_tests in the database
       for (const testTemplateId of visitData.testIds) {
-        const visitTestResponse = await fetch(`${API_BASE_URL}/visit-tests', {
+        const visitTestResponse = await fetch(`${API_BASE_URL}/visit-tests`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -500,7 +500,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       console.log('Sending rejection data:', rejectionData);
 
-      const response = await fetch(`${API_BASE_URL}/result-rejections', {
+      const response = await fetch(`${API_BASE_URL}/result-rejections`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -553,7 +553,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addUser = async (userData: UserCreationData, actor: User) => {
     try {
       const authToken = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/users', {
+      const response = await fetch(`${API_BASE_URL}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -646,7 +646,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         defaultAntibioticIds: templateData.defaultAntibioticIds || [],
       };
 
-      const response = await fetch(`${API_BASE_URL}/test-templates', {
+      const response = await fetch(`${API_BASE_URL}/test-templates`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -789,7 +789,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       addAuditLog(actor.username, 'MANAGE_B2B', `Created new B2B client: ${clientData.name}.`);
 
       // Call backend API to create client
-      const response = await fetch(`${API_BASE_URL}/clients', {
+      const response = await fetch(`${API_BASE_URL}/clients`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -886,7 +886,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       addAuditLog(actor.username, 'MANAGE_B2B', `Created new referral doctor: ${doctorData.name}.`);
 
       // Call backend API to create referral doctor
-      const response = await fetch(`${API_BASE_URL}/referral-doctors', {
+      const response = await fetch(`${API_BASE_URL}/referral-doctors`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1058,7 +1058,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addAntibiotic = async (antibioticData: Omit<Antibiotic, 'id' | 'isActive'>, actor: User) => {
     try {
       const authToken = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/antibiotics', {
+      const response = await fetch(`${API_BASE_URL}/antibiotics`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1139,7 +1139,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addBranch = async (branchData: Omit<Branch, 'id'>, actor: User) => {
     try {
       const authToken = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/branches', {
+      const response = await fetch(`${API_BASE_URL}/branches`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1230,17 +1230,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
 
       // Load visits
-      const visitsResponse = await fetch(`${API_BASE_URL}/visits', { headers });
+      const visitsResponse = await fetch(`${API_BASE_URL}/visits`, { headers });
       const visits = visitsResponse.ok ? await visitsResponse.json() : [];
       console.log('Reloaded visits:', visits.length);
 
       // Load visit tests
-      const visitTestsResponse = await fetch(`${API_BASE_URL}/visit-tests', { headers });
+      const visitTestsResponse = await fetch(`${API_BASE_URL}/visit-tests`, { headers });
       const visitTests = visitTestsResponse.ok ? await visitTestsResponse.json() : [];
       console.log('Reloaded visit tests:', visitTests.length);
 
       // Load users
-      const usersResponse = await fetch(`${API_BASE_URL}/users', { headers });
+      const usersResponse = await fetch(`${API_BASE_URL}/users`, { headers });
       const usersData = usersResponse.ok ? await usersResponse.json() : [];
       const users = usersData.map((user: any) => ({
         id: user.id,
@@ -1253,27 +1253,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.log('Reloaded users:', users.length);
 
       // Load test templates
-      const testTemplatesResponse = await fetch(`${API_BASE_URL}/test-templates', { headers });
+      const testTemplatesResponse = await fetch(`${API_BASE_URL}/test-templates`, { headers });
       const testTemplates = testTemplatesResponse.ok ? await testTemplatesResponse.json() : [];
       console.log('Reloaded test templates:', testTemplates.length);
 
       // Load clients
-      const clientsResponse = await fetch(`${API_BASE_URL}/clients', { headers });
+      const clientsResponse = await fetch(`${API_BASE_URL}/clients`, { headers });
       const clients = clientsResponse.ok ? await clientsResponse.json() : [];
       console.log('Reloaded clients:', clients.length);
 
       // Load antibiotics
-      const antibioticsResponse = await fetch(`${API_BASE_URL}/antibiotics', { headers });
+      const antibioticsResponse = await fetch(`${API_BASE_URL}/antibiotics`, { headers });
       const antibiotics = antibioticsResponse.ok ? await antibioticsResponse.json() : [];
       console.log('Reloaded antibiotics:', antibiotics.length);
 
       // Load referral doctors
-      const referralDoctorsResponse = await fetch(`${API_BASE_URL}/referral-doctors', { headers });
+      const referralDoctorsResponse = await fetch(`${API_BASE_URL}/referral-doctors`, { headers });
       const referralDoctors = referralDoctorsResponse.ok ? await referralDoctorsResponse.json() : [];
       console.log('Reloaded referral doctors:', referralDoctors.length);
 
       // Load branches
-      const branchesResponse = await fetch(`${API_BASE_URL}/branches', { headers });
+      const branchesResponse = await fetch(`${API_BASE_URL}/branches`, { headers });
       const branches = branchesResponse.ok ? await branchesResponse.json() : [];
       console.log('Reloaded branches:', branches.length);
 
