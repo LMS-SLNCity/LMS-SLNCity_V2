@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { Visit, VisitTest } from '../types';
 import { ResultEntryForm } from './ResultEntryForm';
 
@@ -37,15 +38,42 @@ const EmptyState: React.FC<{ title: string; message: string }> = ({ title, messa
 
 
 export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
-  const { visits, visitTests } = useAppContext();
+  const { visits, visitTests, updateVisitTestStatus } = useAppContext();
+  const { user } = useAuth();
   const [selectedTest, setSelectedTest] = useState<VisitTest | null>(null);
+  const [rejectingSampleId, setRejectingSampleId] = useState<number | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   // Only show SAMPLE_COLLECTED tests for result entry (not IN_PROGRESS)
   const pendingResults = visitTests.filter(test => test.status === 'SAMPLE_COLLECTED');
   const processedTests = visitTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED'].includes(test.status)).sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
-  
+
   const findVisitForTest = (test: VisitTest): Visit | undefined => {
     return visits.find(v => v.id === test.visitId);
+  }
+
+  const handleRejectSample = async (testId: number) => {
+    if (!user) {
+      alert("User session has expired. Please log in again.");
+      return;
+    }
+    if (!rejectionReason.trim()) {
+      alert("Please provide a reason for rejecting the sample.");
+      return;
+    }
+
+    try {
+      // Send sample back to PENDING status for phlebotomy to re-draw
+      await updateVisitTestStatus(testId, 'PENDING', user, {
+        rejectionReason: rejectionReason.trim()
+      });
+      alert('Sample rejected successfully. Phlebotomy will be notified to re-draw the sample.');
+      setRejectingSampleId(null);
+      setRejectionReason('');
+    } catch (error) {
+      console.error('Error rejecting sample:', error);
+      alert('Failed to reject sample. Please try again.');
+    }
   }
 
   return (
@@ -70,6 +98,7 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visit Code</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient Name</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sample Type</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collected At</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                   </tr>
@@ -80,14 +109,52 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{test.visitCode}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{test.patientName}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{test.template.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{test.specimen_type || 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{new Date(test.collectedAt!).toLocaleString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button
-                          onClick={() => setSelectedTest(test)}
-                          className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors text-xs"
-                        >
-                          Enter Results
-                        </button>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                        {rejectingSampleId === test.id ? (
+                          <div className="flex flex-col space-y-2">
+                            <textarea
+                              value={rejectionReason}
+                              onChange={(e) => setRejectionReason(e.target.value)}
+                              placeholder="Reason for rejection (e.g., hemolyzed, insufficient quantity, clotted)"
+                              rows={2}
+                              className="w-64 px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                            />
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleRejectSample(test.id)}
+                                className="px-3 py-1 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors text-xs"
+                              >
+                                Confirm Reject
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setRejectingSampleId(null);
+                                  setRejectionReason('');
+                                }}
+                                className="px-3 py-1 bg-gray-300 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors text-xs"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => setSelectedTest(test)}
+                              className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors text-xs"
+                            >
+                              Enter Results
+                            </button>
+                            <button
+                              onClick={() => setRejectingSampleId(test.id)}
+                              className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors text-xs"
+                            >
+                              Reject Sample
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}

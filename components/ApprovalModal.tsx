@@ -36,24 +36,33 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
   };
 
   const handleReject = async () => {
+    console.log('🔴 Rejection initiated:', { testId: test.id, status: test.status, user: user?.username });
+
     if (!user) {
+        console.error('❌ No user found');
         alert("User session has expired. Please log in again.");
         return;
     }
     if (!rejectionReason.trim()) {
+        console.error('❌ No rejection reason provided');
         alert("Please provide a reason for rejection.");
         return;
     }
     if (test.status !== 'AWAITING_APPROVAL') {
+        console.error('❌ Invalid test status:', test.status);
         alert(`Cannot reject. Test status is ${test.status}. Only AWAITING_APPROVAL tests can be rejected.`);
         return;
     }
+
+    console.log('✅ Validation passed, calling rejectTestResult...');
     setIsSubmitting(true);
     try {
       await rejectTestResult(test.id, rejectionReason, user);
+      console.log('✅ Rejection successful');
       onClose();
     } catch (error) {
-      alert('Failed to reject test result');
+      console.error('❌ Rejection failed:', error);
+      alert(`Failed to reject test result: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }

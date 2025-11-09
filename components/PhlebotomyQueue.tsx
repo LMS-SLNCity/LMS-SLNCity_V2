@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { VisitTest, Visit } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { SampleCollectionModal } from './SampleCollectionModal';
 
 interface PhlebotomyQueueProps {
   onInitiateReport: (visit: Visit) => void;
@@ -38,11 +39,12 @@ const EmptyState: React.FC<{ title: string; message: string }> = ({ title, messa
 export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateReport }) => {
   const { visits, visitTests, updateVisitTestStatus } = useAppContext();
   const { user } = useAuth();
+  const [collectingTest, setCollectingTest] = useState<VisitTest | null>(null);
 
   const pendingSamples = visitTests.filter(test => test.status === 'PENDING');
   const collectedSamples = visitTests.filter(test => ['SAMPLE_COLLECTED', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS'].includes(test.status)).sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
 
-  const handleCollectSample = async (testId: number) => {
+  const handleInitiateCollection = (testId: number) => {
     if (!user) {
         alert("User session has expired. Please log in again.");
         return;
@@ -56,15 +58,33 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
         alert(`Cannot collect sample. Test status is ${test.status}. Only PENDING tests can have samples collected.`);
         return;
     }
-    await updateVisitTestStatus(testId, 'SAMPLE_COLLECTED', user, { collectedBy: user.username, specimen_type: 'WB EDTA-2511599' });
+    setCollectingTest(test);
+  };
+
+  const handleConfirmCollection = async (sampleType: string) => {
+    if (!user || !collectingTest) return;
+
+    await updateVisitTestStatus(collectingTest.id, 'SAMPLE_COLLECTED', user, {
+      collectedBy: user.username,
+      specimen_type: sampleType
+    });
+    setCollectingTest(null);
   };
 
   const findVisitForTest = (test: VisitTest): Visit | undefined => {
     return visits.find(v => v.id === test.visitId);
   }
-  
+
   return (
-    <div className="bg-white p-8 rounded-xl shadow-lg space-y-8 max-w-6xl mx-auto">
+    <>
+      {collectingTest && (
+        <SampleCollectionModal
+          test={collectingTest}
+          onClose={() => setCollectingTest(null)}
+          onConfirm={handleConfirmCollection}
+        />
+      )}
+      <div className="bg-white p-8 rounded-xl shadow-lg space-y-8 max-w-6xl mx-auto">
       <h2 className="text-2xl font-bold text-gray-800 border-b pb-4">Phlebotomy Queue</h2>
       
       {/* Pending Samples Section */}
@@ -93,7 +113,7 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button
-                        onClick={() => handleCollectSample(test.id)}
+                        onClick={() => handleInitiateCollection(test.id)}
                         className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors text-xs"
                       >
                         Collect Sample
@@ -158,6 +178,7 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
         )}
       </div>
 
-    </div>
+      </div>
+    </>
   );
 };

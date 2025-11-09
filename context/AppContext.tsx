@@ -48,6 +48,7 @@ interface AddVisitData {
 interface UpdateStatusDetails {
     collectedBy?: string;
     specimen_type?: string;
+    rejectionReason?: string;
 }
 
 interface AddResultData {
