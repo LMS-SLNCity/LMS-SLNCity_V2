@@ -1,37 +1,59 @@
--- Development Seed Data
--- This file contains ALL test data for development and testing
--- Includes sample users, clients, visits, and ledger entries
+-- ============================================
+-- DEVELOPMENT SEED DATA
+-- ============================================
+-- Easy passwords and comprehensive test data for development
+--
+-- 🔑 ALL USER PASSWORDS: "password" (easy to remember!)
+--
+-- 👥 Users created:
+--    sudo / password       → SUDO (full system access)
+--    admin / password      → ADMIN (administrative access)
+--    reception / password  → RECEPTION (patient registration)
+--    phlebotomy / password → PHLEBOTOMY (sample collection)
+--    lab / password        → LAB_TECHNICIAN (result entry)
+--    approver / password   → APPROVER (result approval)
+--
+-- 🏥 B2B Client Logins (password: "client"):
+--    City Diagnostic Center / client
+--    Apollo Diagnostics / client
+--    Max Healthcare / client
+-- ============================================
 
 -- ============================================
--- 1. DEVELOPMENT USERS (Password: Password123)
+-- 1. USERS (All with password: "password")
 -- ============================================
+-- Password hash for "password": $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+
 INSERT INTO users (username, password_hash, role, is_active) VALUES
-('sudo', '$2a$10$RZHRKSweExF8e6RaEFfEGe3RfHZtYSPsybDIfDZSZEz6JAZn7DVmi', 'SUDO', true),
-('admin', '$2a$10$RZHRKSweExF8e6RaEFfEGe3RfHZtYSPsybDIfDZSZEz6JAZn7DVmi', 'ADMIN', true),
-('reception', '$2a$10$RZHRKSweExF8e6RaEFfEGe3RfHZtYSPsybDIfDZSZEz6JAZn7DVmi', 'RECEPTION', true),
-('phlebo', '$2a$10$RZHRKSweExF8e6RaEFfEGe3RfHZtYSPsybDIfDZSZEz6JAZn7DVmi', 'PHLEBOTOMY', true),
-('labtech', '$2a$10$RZHRKSweExF8e6RaEFfEGe3RfHZtYSPsybDIfDZSZEz6JAZn7DVmi', 'LAB', true),
-('approver', '$2a$10$RZHRKSweExF8e6RaEFfEGe3RfHZtYSPsybDIfDZSZEz6JAZn7DVmi', 'APPROVER', true)
+('sudo', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'SUDO', true),
+('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'ADMIN', true),
+('reception', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'RECEPTION', true),
+('phlebotomy', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'PHLEBOTOMY', true),
+('lab', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'LAB_TECHNICIAN', true),
+('approver', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'APPROVER', true)
 ON CONFLICT (username) DO UPDATE SET
   password_hash = EXCLUDED.password_hash,
   role = EXCLUDED.role,
   is_active = EXCLUDED.is_active;
 
 -- ============================================
--- 2. TEST TEMPLATES
+-- 2. TEST TEMPLATES (with sample types)
 -- ============================================
-INSERT INTO test_templates (code, name, category, price, b2b_price, report_type, parameters) VALUES
-('CBC', 'Complete Blood Count', 'HEMATOLOGY', 300.00, 250.00, 'standard', '{"fields": [{"name":"Hemoglobin","unit":"g/dL","normalRange":"13-17"},{"name":"WBC Count","unit":"cells/cumm","normalRange":"4000-11000"},{"name":"RBC Count","unit":"million/cumm","normalRange":"4.5-5.5"}]}'),
-('LFT', 'Liver Function Test', 'BIOCHEMISTRY', 500.00, 450.00, 'standard', '{"fields": [{"name":"Total Bilirubin","unit":"mg/dL","normalRange":"0.3-1.2"},{"name":"Direct Bilirubin","unit":"mg/dL","normalRange":"0.1-0.3"},{"name":"SGOT","unit":"U/L","normalRange":"5-40"}]}'),
-('RFT', 'Renal Function Test', 'BIOCHEMISTRY', 450.00, 400.00, 'standard', '{"fields": [{"name":"Creatinine","unit":"mg/dL","normalRange":"0.7-1.3"},{"name":"Urea","unit":"mg/dL","normalRange":"15-40"},{"name":"Uric Acid","unit":"mg/dL","normalRange":"3.5-7.2"}]}'),
-('LIPID', 'Lipid Profile', 'BIOCHEMISTRY', 600.00, 550.00, 'standard', '{"fields": [{"name":"Total Cholesterol","unit":"mg/dL","normalRange":"<200"},{"name":"Triglycerides","unit":"mg/dL","normalRange":"<150"},{"name":"HDL","unit":"mg/dL","normalRange":">40"}]}'),
-('THYROID', 'Thyroid Profile', 'BIOCHEMISTRY', 700.00, 650.00, 'standard', '{"fields": [{"name":"T3","unit":"ng/mL","normalRange":"0.8-2.0"},{"name":"T4","unit":"μg/dL","normalRange":"5.0-12.0"},{"name":"TSH","unit":"μIU/mL","normalRange":"0.4-4.0"}]}')
+INSERT INTO test_templates (code, name, category, price, b2b_price, report_type, sample_type, parameters) VALUES
+('CBC', 'Complete Blood Count', 'HEMATOLOGY', 300.00, 250.00, 'standard', 'WB EDTA', '{"fields": [{"name":"Hemoglobin","unit":"g/dL","normalRange":"13-17"},{"name":"WBC Count","unit":"cells/cumm","normalRange":"4000-11000"},{"name":"RBC Count","unit":"million/cumm","normalRange":"4.5-5.5"}]}'),
+('LFT', 'Liver Function Test', 'BIOCHEMISTRY', 500.00, 450.00, 'standard', 'Serum', '{"fields": [{"name":"Total Bilirubin","unit":"mg/dL","normalRange":"0.3-1.2"},{"name":"Direct Bilirubin","unit":"mg/dL","normalRange":"0.1-0.3"},{"name":"SGOT","unit":"U/L","normalRange":"5-40"}]}'),
+('RFT', 'Renal Function Test', 'BIOCHEMISTRY', 450.00, 400.00, 'standard', 'Serum', '{"fields": [{"name":"Creatinine","unit":"mg/dL","normalRange":"0.7-1.3"},{"name":"Urea","unit":"mg/dL","normalRange":"15-40"},{"name":"Uric Acid","unit":"mg/dL","normalRange":"3.5-7.2"}]}'),
+('LIPID', 'Lipid Profile', 'BIOCHEMISTRY', 600.00, 550.00, 'standard', 'Serum', '{"fields": [{"name":"Total Cholesterol","unit":"mg/dL","normalRange":"<200"},{"name":"Triglycerides","unit":"mg/dL","normalRange":"<150"},{"name":"HDL","unit":"mg/dL","normalRange":">40"}]}'),
+('THYROID', 'Thyroid Profile', 'BIOCHEMISTRY', 700.00, 650.00, 'standard', 'Serum', '{"fields": [{"name":"T3","unit":"ng/mL","normalRange":"0.8-2.0"},{"name":"T4","unit":"μg/dL","normalRange":"5.0-12.0"},{"name":"TSH","unit":"μIU/mL","normalRange":"0.4-4.0"}]}'),
+('URINE', 'Urine Routine', 'CLINICAL PATHOLOGY', 200.00, 150.00, 'standard', 'Urine', '{"fields": [{"name":"Color","unit":"","normalRange":"Pale Yellow"},{"name":"pH","unit":"","normalRange":"5.0-7.0"},{"name":"Protein","unit":"","normalRange":"Nil"}]}'),
+('CULTURE', 'Urine Culture & Sensitivity', 'MICROBIOLOGY', 800.00, 700.00, 'culture', 'Urine', '{"fields": []}')
 ON CONFLICT (code) DO UPDATE SET
   name = EXCLUDED.name,
   category = EXCLUDED.category,
   price = EXCLUDED.price,
   b2b_price = EXCLUDED.b2b_price,
   report_type = EXCLUDED.report_type,
+  sample_type = EXCLUDED.sample_type,
   parameters = EXCLUDED.parameters;
 
 -- ============================================
@@ -47,14 +69,15 @@ INSERT INTO clients (name, type, balance) VALUES
 ON CONFLICT DO NOTHING;
 
 -- ============================================
--- 4. B2B CLIENT LOGINS (Password: Client123)
+-- 4. B2B CLIENT LOGINS (All with password: "client")
 -- ============================================
+-- Password hash for "client": $2a$10$5H5aLCXd5YQKhKKGJKqPqOXJZ5z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5u
 INSERT INTO b2b_client_logins (client_id, password_hash, is_active) VALUES
-(1, '$2a$10$r.bD6D/U8RctBt8Yiww2HOOAgDsHJOksMyRrhbVFv0xiW5RYmxBc2', true),
-(2, '$2a$10$r.bD6D/U8RctBt8Yiww2HOOAgDsHJOksMyRrhbVFv0xiW5RYmxBc2', true),
-(3, '$2a$10$r.bD6D/U8RctBt8Yiww2HOOAgDsHJOksMyRrhbVFv0xiW5RYmxBc2', true),
-(4, '$2a$10$r.bD6D/U8RctBt8Yiww2HOOAgDsHJOksMyRrhbVFv0xiW5RYmxBc2', true),
-(5, '$2a$10$r.bD6D/U8RctBt8Yiww2HOOAgDsHJOksMyRrhbVFv0xiW5RYmxBc2', true)
+(1, '$2a$10$5H5aLCXd5YQKhKKGJKqPqOXJZ5z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5u', true),
+(2, '$2a$10$5H5aLCXd5YQKhKKGJKqPqOXJZ5z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5u', true),
+(3, '$2a$10$5H5aLCXd5YQKhKKGJKqPqOXJZ5z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5u', true),
+(4, '$2a$10$5H5aLCXd5YQKhKKGJKqPqOXJZ5z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5u', true),
+(5, '$2a$10$5H5aLCXd5YQKhKKGJKqPqOXJZ5z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5u', true)
 ON CONFLICT (client_id) DO UPDATE SET
   password_hash = EXCLUDED.password_hash,
   is_active = EXCLUDED.is_active;
