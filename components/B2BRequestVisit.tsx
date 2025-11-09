@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../config/api';
 
 interface Patient {
   id: number;
@@ -42,9 +43,9 @@ export const B2BRequestVisit: React.FC = () => {
   const fetchTestTemplates = async () => {
     try {
       const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
-      
+
       // Fetch all test templates
-      const response = await fetch('http://localhost:5001/api/test-templates', {
+      const response = await fetch(`${API_BASE_URL}/test-templates`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -91,9 +92,9 @@ export const B2BRequestVisit: React.FC = () => {
 
       // First, create or find patient
       let patientId: number;
-      
+
       // Check if patient exists by phone
-      const patientsResponse = await fetch('http://localhost:5001/api/patients', {
+      const patientsResponse = await fetch(`${API_BASE_URL}/patients`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -107,7 +108,7 @@ export const B2BRequestVisit: React.FC = () => {
           patientId = existingPatient.id;
         } else {
           // Create new patient
-          const createPatientResponse = await fetch('http://localhost:5001/api/patients', {
+          const createPatientResponse = await fetch(`${API_BASE_URL}/patients`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -147,7 +148,7 @@ export const B2BRequestVisit: React.FC = () => {
         amountPaid: 0, // No payment upfront for B2B
       };
 
-      const visitResponse = await fetch('http://localhost:5001/api/visits', {
+      const visitResponse = await fetch(`${API_BASE_URL}/visits`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../config/api';
 
 interface Waiver {
   id: number;
@@ -37,13 +38,13 @@ export const WaiversManagement: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       if (view === 'list') {
-        const response = await fetch('http://localhost:5001/api/waivers');
+        const response = await fetch(`${API_BASE_URL}/waivers`);
         const data = await response.json();
         setWaivers(data.waivers);
       } else {
-        const response = await fetch('http://localhost:5001/api/waivers/summary');
+        const response = await fetch(`${API_BASE_URL}/waivers/summary`);
         const data = await response.json();
         setSummary(data.summary);
       }

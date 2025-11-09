@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../config/api';
 
 interface Patient {
   id: number;
@@ -36,7 +37,7 @@ export const PatientSearchModal: React.FC<PatientSearchModalProps> = ({ isOpen, 
 
     setIsSearching(true);
     try {
-      const response = await fetch(`http://localhost:5001/api/patients/search/${encodeURIComponent(searchQuery.trim())}`);
+      const response = await fetch(`${API_BASE_URL}/patients/search/${encodeURIComponent(searchQuery.trim())}`);
       if (!response.ok) throw new Error('Search failed');
 
       const results = await response.json();

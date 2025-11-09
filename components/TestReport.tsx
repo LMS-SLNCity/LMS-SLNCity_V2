@@ -313,6 +313,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { VisitTest, Visit, Signatory, Approver } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { QRCodeSVG } from 'qrcode.react';
+import { API_BASE_URL } from '../config/api';
 
 // Barcode component using jsbarcode - SMALLER SIZE
 const BarcodeComponent: React.FC<{ value: string }> = ({ value }) => {
@@ -496,6 +497,9 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
   const { visitTests } = useAppContext();
   const [approvers, setApprovers] = useState<Approver[]>([]);
 
+  // Get base URL for images (remove /api suffix)
+  const IMAGE_BASE_URL = API_BASE_URL.replace('/api', '');
+
   // Fetch actual approvers who approved tests for this visit
   useEffect(() => {
     const fetchActualApprovers = async () => {
@@ -514,7 +518,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
 
         if (approverUsernames.length === 0) {
           // Fallback to default approvers if no specific approvers found
-          const response = await fetch('http://localhost:5001/api/approvers');
+          const response = await fetch(`${API_BASE_URL}/approvers`);
           const data = await response.json();
           setApprovers(data.filter((a: Approver) => a.show_on_print));
           return;
@@ -523,7 +527,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
         // Fetch user details for each approver
         const authToken = localStorage.getItem('authToken');
         const approverPromises = approverUsernames.map(async (username) => {
-          const response = await fetch('http://localhost:5001/api/users', {
+          const response = await fetch(`${API_BASE_URL}/users`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
           });
           const users = await response.json();
@@ -548,7 +552,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
         console.error('Error fetching approvers:', err);
         // Fallback to default approvers on error
         try {
-          const response = await fetch('http://localhost:5001/api/approvers');
+          const response = await fetch(`${API_BASE_URL}/approvers`);
           const data = await response.json();
           setApprovers(data.filter((a: Approver) => a.show_on_print));
         } catch (fallbackErr) {
@@ -895,12 +899,12 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                     {/* Show signature image if present, otherwise just show name */}
                     {approver.signature_image_url && (
                       <img
-                        src={`http://localhost:5001${approver.signature_image_url}`}
+                        src={`${IMAGE_BASE_URL}${approver.signature_image_url}`}
                         alt="Signature"
                         style={{ maxWidth: '80px', maxHeight: '25px', marginBottom: '2px', display: 'block', margin: index === 0 ? '0 0 2px 0' : index === approvers.length - 1 ? '0 0 2px auto' : '0 auto 2px' }}
                         onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
                           console.error('Failed to load signature image:', approver.signature_image_url);
-                          console.error('Full URL:', `http://localhost:5001${approver.signature_image_url}`);
+                          console.error('Full URL:', `${IMAGE_BASE_URL}${approver.signature_image_url}`);
                           e.currentTarget.style.display = 'none';
                         }}
                       />

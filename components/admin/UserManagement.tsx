@@ -6,6 +6,7 @@ import { Select } from '../form/Select';
 import { UserPermissionsModal } from './UserPermissionsModal';
 import { SignatureUploadModal } from './SignatureUploadModal';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../config/api';
 
 export const UserManagement: React.FC = () => {
     const { users, addUser, reloadData } = useAppContext();
@@ -37,7 +38,7 @@ export const UserManagement: React.FC = () => {
 
         try {
             const authToken = localStorage.getItem('authToken');
-            const response = await fetch(`http://localhost:5001/api/users/${userToDelete.id}`, {
+            const response = await fetch(`${API_BASE_URL}/users/${userToDelete.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,

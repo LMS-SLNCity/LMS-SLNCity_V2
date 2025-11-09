@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Client } from '../../types';
+import { API_BASE_URL } from '../../config/api';
 
 interface B2BLoginStatus {
   clientId: number;
@@ -29,7 +30,7 @@ export const B2BAccountManagementModal: React.FC<B2BAccountManagementModalProps>
   const fetchLoginStatus = async () => {
     try {
       const authToken = localStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:5001/api/clients/${client.id}/login-status`, {
+      const response = await fetch(`${API_BASE_URL}/clients/${client.id}/login-status`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
         },
@@ -66,7 +67,7 @@ export const B2BAccountManagementModal: React.FC<B2BAccountManagementModalProps>
     setIsLoading(true);
     try {
       const authToken = localStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:5001/api/clients/${client.id}/setup-login`, {
+      const response = await fetch(`${API_BASE_URL}/clients/${client.id}/setup-login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +101,7 @@ export const B2BAccountManagementModal: React.FC<B2BAccountManagementModalProps>
     setIsLoading(true);
     try {
       const authToken = localStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:5001/api/clients/${client.id}/disable-login`, {
+      const response = await fetch(`${API_BASE_URL}/clients/${client.id}/disable-login`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,

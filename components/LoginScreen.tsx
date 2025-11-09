@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../config/api';
 
 type LoginTab = 'staff' | 'client';
 
@@ -35,7 +36,7 @@ export const LoginScreen: React.FC = () => {
         throw new Error('Client ID and password are required');
       }
 
-      const response = await fetch('http://localhost:5001/api/auth/client-login', {
+      const response = await fetch(`${API_BASE_URL}/auth/client-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -5,6 +5,7 @@ import { Select } from './form/Select';
 import { useAppContext } from '../context/AppContext';
 import { CollectDueModal } from './CollectDueModal';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../config/api';
 
 type AgeUnit = 'Years' | 'Months' | 'Days';
 type PaymentMode = 'Cash' | 'Card' | 'UPI' | '';
@@ -160,7 +161,7 @@ export const CreateVisitForm: React.FC<CreateVisitFormProps> = ({ onInitiateRepo
   useEffect(() => {
     const fetchReferralDoctors = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/referral-doctors');
+        const response = await fetch(`${API_BASE_URL}/referral-doctors`);
         if (!response.ok) throw new Error('Failed to fetch referral doctors');
         const data = await response.json();
         console.log('✅ Loaded referral doctors:', data);
@@ -249,7 +250,7 @@ export const CreateVisitForm: React.FC<CreateVisitFormProps> = ({ onInitiateRepo
     setSearchResults([]);
 
     try {
-      const response = await fetch(`http://localhost:5001/api/patients/search/${encodeURIComponent(searchQuery.trim())}`);
+      const response = await fetch(`${API_BASE_URL}/patients/search/${encodeURIComponent(searchQuery.trim())}`);
       if (!response.ok) throw new Error('Search failed');
 
       const results = await response.json();

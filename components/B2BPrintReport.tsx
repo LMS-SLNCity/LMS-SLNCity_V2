@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAppContext } from '../context/AppContext';
 import { ReportModal } from './ReportModal';
 import { Visit as FullVisit, Signatory } from '../types';
+import { API_BASE_URL } from '../config/api';
 
 interface Visit {
   id: number;
@@ -37,7 +38,7 @@ export const B2BPrintReport: React.FC = () => {
       const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
 
       // Fetch all visits for this client
-      const response = await fetch('http://localhost:5001/api/visits', {
+      const response = await fetch(`${API_BASE_URL}/visits`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

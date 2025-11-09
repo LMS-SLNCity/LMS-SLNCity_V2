@@ -3,6 +3,7 @@ import { Client, LedgerEntry } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import { Input } from '../form/Input';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../config/api';
 
 interface ClientLedgerModalProps {
   client: Client;
@@ -22,7 +23,7 @@ export const ClientLedgerModal: React.FC<ClientLedgerModalProps> = ({ client, on
         const fetchLedger = async () => {
             try {
                 const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
-                const response = await fetch(`http://localhost:5001/api/clients/${client.id}/ledger`, {
+                const response = await fetch(`${API_BASE_URL}/clients/${client.id}/ledger`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -67,7 +68,7 @@ export const ClientLedgerModal: React.FC<ClientLedgerModalProps> = ({ client, on
 
                 // Refresh ledger entries
                 const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
-                const response = await fetch(`http://localhost:5001/api/clients/${client.id}/ledger`, {
+                const response = await fetch(`${API_BASE_URL}/clients/${client.id}/ledger`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },

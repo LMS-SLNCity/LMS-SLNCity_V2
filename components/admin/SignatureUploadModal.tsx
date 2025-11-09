@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { User } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../config/api';
 
 interface SignatureUploadModalProps {
     approver: User;
@@ -118,7 +119,7 @@ export const SignatureUploadModal: React.FC<SignatureUploadModalProps> = ({ appr
 
             console.log('Uploading signature for user:', approver.id);
 
-            const response = await fetch(`http://localhost:5001/api/signatures/upload/${approver.id}`, {
+            const response = await fetch(`${API_BASE_URL}/signatures/upload/${approver.id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

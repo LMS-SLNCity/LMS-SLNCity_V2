@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { B2BRequestVisit } from './B2BRequestVisit';
 import { B2BPrintReport } from './B2BPrintReport';
+import { API_BASE_URL } from '../config/api';
 
 interface LedgerEntry {
   id: number;
@@ -46,7 +47,7 @@ export const B2BClientDashboard: React.FC = () => {
         console.log('📡 Fetching ledger for client:', clientId);
 
         // Fetch ledger entries
-        const ledgerResponse = await fetch(`http://localhost:5001/api/clients/${clientId}/ledger`, {
+        const ledgerResponse = await fetch(`${API_BASE_URL}/clients/${clientId}/ledger`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },

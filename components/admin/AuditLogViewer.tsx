@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuditLog } from '../../types';
+import { API_BASE_URL } from '../../config/api';
 
 export const AuditLogViewer: React.FC = () => {
     const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -42,13 +43,13 @@ export const AuditLogViewer: React.FC = () => {
             const authToken = localStorage.getItem('authToken');
 
             const [usernamesRes, actionsRes, resourcesRes] = await Promise.all([
-                fetch('http://localhost:5001/api/audit-logs/users', {
+                fetch(`${API_BASE_URL}/audit-logs/users`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 }),
-                fetch('http://localhost:5001/api/audit-logs/actions', {
+                fetch(`${API_BASE_URL}/audit-logs/actions`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 }),
-                fetch('http://localhost:5001/api/audit-logs/resources', {
+                fetch(`${API_BASE_URL}/audit-logs/resources`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 })
             ]);
@@ -79,7 +80,7 @@ export const AuditLogViewer: React.FC = () => {
             if (endDate) params.append('end_date', endDate);
             if (searchQuery) params.append('search', searchQuery);
 
-            const response = await fetch(`http://localhost:5001/api/audit-logs?${params}`, {
+            const response = await fetch(`${API_BASE_URL}/audit-logs?${params}`, {
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
 
