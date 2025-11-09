@@ -314,6 +314,7 @@ import { VisitTest, Visit, Signatory, Approver } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE_URL } from '../config/api';
+import { MicrobiologyReportDisplay } from './MicrobiologyReportDisplay';
 
 // Barcode component using jsbarcode - SMALLER SIZE
 const BarcodeComponent: React.FC<{ value: string }> = ({ value }) => {
@@ -496,6 +497,18 @@ interface TestReportProps {
 export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
   const { visitTests } = useAppContext();
   const [approvers, setApprovers] = useState<Approver[]>([]);
+
+  // Get all tests for this visit
+  const testsForVisit = visitTests.filter(t => visit.tests.includes(t.id));
+
+  // Get the earliest collection date from all tests
+  const sampleDrawnDate = testsForVisit
+    .map(t => t.collectedAt)
+    .filter(date => date)
+    .sort()[0];
+
+  // Get unique sample types from all tests (comma-separated if multiple)
+  const sampleTypes = [...new Set(testsForVisit.map(t => t.specimen_type).filter(Boolean))].join(', ');
 
   // Get base URL for images (remove /api suffix)
   const IMAGE_BASE_URL = API_BASE_URL.replace('/api', '');
@@ -764,11 +777,11 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                 </div>
                 <div style={{ marginBottom: '4px' }}>
                   <span style={{ fontWeight: 'bold', display: 'inline-block', width: '130px' }}>Sample Type</span>
-                  <span>: {visit.sample_type || 'N/A'}</span>
+                  <span>: {sampleTypes || 'N/A'}</span>
                 </div>
                 <div style={{ marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '130px' }}>Client Code</span>
-                  <span>: {visit.ref_customer_id || 'N/A'}</span>
+                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '130px' }}>Client Name</span>
+                  <span>: {visit.b2bClient?.name || visit.other_ref_customer || 'Walk-in'}</span>
                 </div>
                 <div>
                   <span style={{ fontWeight: 'bold', display: 'inline-block', width: '130px' }}>Referred By</span>
@@ -801,7 +814,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
               </div>
               <div style={{ padding: '6px 12px', borderRight: '1px solid #000' }}>
                 <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Sample Drawn</div>
-                <div>{formatDate(visit.sample_drawn_datetime)}</div>
+                <div>{formatDate(sampleDrawnDate)}</div>
               </div>
               <div style={{ padding: '6px 12px', borderRight: '1px solid #000' }}>
                 <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Registration</div>
@@ -838,22 +851,31 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                         <td colSpan={4}>{test.template.name}</td>
                       </tr>
 
-                      {/* Parameter Rows */}
-                      {test.template.parameters?.fields && test.template.parameters.fields.length > 0 ? (
-                        test.template.parameters.fields.map((param: any) => (
-                          <tr key={param.name}>
-                            <td>{param.name}</td>
-                            <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
-                              {String(test.results?.[param.name] ?? '-')}
-                            </td>
-                            <td style={{ textAlign: 'center' }}>{param.unit ?? ''}</td>
-                            <td>{param.reference_range ?? ''}</td>
-                          </tr>
-                        ))
-                      ) : (
+                      {/* Check if this is a microbiology test with culture results */}
+                      {test.cultureResult ? (
                         <tr>
-                          <td colSpan={4} style={{ textAlign: 'center' }}>No parameters</td>
+                          <td colSpan={4} style={{ padding: 0 }}>
+                            <MicrobiologyReportDisplay test={test} visit={visit} />
+                          </td>
                         </tr>
+                      ) : (
+                        /* Parameter Rows for regular tests */
+                        test.template.parameters?.fields && test.template.parameters.fields.length > 0 ? (
+                          test.template.parameters.fields.map((param: any) => (
+                            <tr key={param.name}>
+                              <td>{param.name}</td>
+                              <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                                {String(test.results?.[param.name] ?? '-')}
+                              </td>
+                              <td style={{ textAlign: 'center' }}>{param.unit ?? ''}</td>
+                              <td>{param.reference_range ?? ''}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={4} style={{ textAlign: 'center' }}>No parameters</td>
+                          </tr>
+                        )
                       )}
                     </React.Fragment>
                   ))}

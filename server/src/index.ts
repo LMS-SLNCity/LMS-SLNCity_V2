@@ -28,6 +28,7 @@ import auditLogManagementRoutes from './routes/auditLogManagement.js';
 import reportsRoutes from './routes/reports.js';
 import b2bFinancialRoutes from './routes/b2bFinancial.js';
 import waiversRoutes from './routes/waivers.js';
+import unitsRoutes from './routes/units.js';
 import { initializeCleanupScheduler } from './services/auditLogCleanup.js';
 
 dotenv.config();
@@ -170,6 +171,7 @@ app.use('/api/audit-log-management', auditLogManagementRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/b2b-financial', b2bFinancialRoutes);
 app.use('/api/waivers', waiversRoutes);
+app.use('/api/units', unitsRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

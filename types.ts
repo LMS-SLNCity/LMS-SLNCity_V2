@@ -255,3 +255,12 @@ export interface User {
 }
 
 export type UserWithPassword = User & { password_hash: string };
+
+export interface Unit {
+  id: number;
+  name: string;
+  symbol: string;
+  category?: string;
+  description?: string;
+  isActive: boolean;
+}

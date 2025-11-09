@@ -24,10 +24,12 @@ const emptyTemplate: Omit<TestTemplate, 'id'> = {
 };
 
 export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ templateToEdit, onClose }) => {
-    const { addTestTemplate, updateTestTemplate, antibiotics } = useAppContext();
+    const { addTestTemplate, updateTestTemplate, antibiotics, units } = useAppContext();
     const { user: actor } = useAuth();
     const [formData, setFormData] = useState(templateToEdit || emptyTemplate);
-    
+
+    console.log('Units in TestTemplateFormModal:', units);
+
     const isCultureTest = formData.reportType === 'culture';
     
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -166,7 +168,22 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                                                     </select>
                                                 </div>
                                                 <div className="col-span-6 sm:col-span-2">
-                                                    <input type="text" placeholder="Unit" value={param.unit || ''} onChange={e => handleParamChange(index, 'unit', e.target.value)} className="w-full px-2 py-1 text-sm border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary" />
+                                                    <select
+                                                        value={param.unit || ''}
+                                                        onChange={e => handleParamChange(index, 'unit', e.target.value)}
+                                                        className="w-full px-2 py-1 text-sm border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary"
+                                                    >
+                                                        <option value="">Select Unit</option>
+                                                        {units && units.length > 0 ? (
+                                                            units.map(unit => (
+                                                                <option key={unit.id} value={unit.symbol}>
+                                                                    {unit.name} ({unit.symbol})
+                                                                </option>
+                                                            ))
+                                                        ) : (
+                                                            <option disabled>Loading units...</option>
+                                                        )}
+                                                    </select>
                                                 </div>
                                                 <div className="col-span-11 sm:col-span-3">
                                                     <input type="text" placeholder="Reference Range" value={param.reference_range || ''} onChange={e => handleParamChange(index, 'reference_range', e.target.value)} className="w-full px-2 py-1 text-sm border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary" />

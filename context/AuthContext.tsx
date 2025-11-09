@@ -33,6 +33,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       try {
+        const API_BASE_URL = import.meta.env.VITE_API_URL
+          ? `${import.meta.env.VITE_API_URL}/api`
+          : 'http://localhost:5002/api';
+
         // Decode JWT to check role (without verification)
         let payload;
         try {
@@ -55,7 +59,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Check if it's a B2B client token based on role
         if (payload.role === 'B2B_CLIENT') {
           console.log('🏢 Detected B2B_CLIENT token, using verify-client endpoint');
-          response = await fetch('http://localhost:5001/api/auth/verify-client', {
+          response = await fetch(`${API_BASE_URL}/auth/verify-client`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -64,7 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           });
         } else {
           console.log('👤 Detected staff token, using verify endpoint');
-          response = await fetch('http://localhost:5001/api/auth/verify', {
+          response = await fetch(`${API_BASE_URL}/auth/verify`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -124,7 +128,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (user) {
       try {
         const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
-        await fetch('http://localhost:5001/api/auth/logout', {
+        const API_BASE_URL = import.meta.env.VITE_API_URL
+          ? `${import.meta.env.VITE_API_URL}/api`
+          : 'http://localhost:5002/api';
+        await fetch(`${API_BASE_URL}/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

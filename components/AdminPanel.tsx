@@ -13,8 +13,9 @@ import { Dashboard } from './admin/Dashboard';
 import { ApproverManagement } from './admin/ApproverManagement';
 import { BranchManagement } from './admin/BranchManagement';
 import { VisitsManagement } from './admin/VisitsManagement';
+import { UnitManagement } from './admin/UnitManagement';
 
-type AdminTab = 'dashboard' | 'users' | 'roles' | 'tests' | 'pricing' | 'b2b' | 'referral_doctors' | 'approvers' | 'branches' | 'audit' | 'antibiotics' | 'visits';
+type AdminTab = 'dashboard' | 'users' | 'roles' | 'tests' | 'pricing' | 'b2b' | 'referral_doctors' | 'approvers' | 'branches' | 'audit' | 'antibiotics' | 'visits' | 'units';
 
 interface AdminPanelProps {
     user: User;
@@ -40,6 +41,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ user }) => {
         if(hasPermission('MANAGE_USERS')) tabs.push({name: 'branches', label: 'Branch Management', permission: 'MANAGE_USERS'});
         if(hasPermission('MANAGE_ROLES')) tabs.push({name: 'roles', label: 'Role Management', permission: 'MANAGE_ROLES'});
         if(hasPermission('MANAGE_TESTS')) tabs.push({name: 'tests', label: 'Test Management', permission: 'MANAGE_TESTS'});
+        if(hasPermission('MANAGE_TESTS')) tabs.push({name: 'units', label: 'Unit Management', permission: 'MANAGE_TESTS'});
         if(hasPermission('MANAGE_ANTIBIOTICS')) tabs.push({name: 'antibiotics', label: 'Manage Antibiotics', permission: 'MANAGE_ANTIBIOTICS'});
         if(hasPermission('MANAGE_PRICES')) tabs.push({name: 'pricing', label: 'Price Management', permission: 'MANAGE_PRICES'});
         if(hasPermission('MANAGE_B2B')) tabs.push({name: 'b2b', label: 'B2B Management', permission: 'MANAGE_B2B'});
@@ -135,6 +137,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ user }) => {
         {activeTab === 'branches' && hasPermission('MANAGE_USERS') && <BranchManagement />}
         {activeTab === 'roles' && hasPermission('MANAGE_ROLES') && <RoleManagement />}
         {activeTab === 'tests' && hasPermission('MANAGE_TESTS') && <TestTemplateManagement />}
+        {activeTab === 'units' && hasPermission('MANAGE_TESTS') && <UnitManagement />}
         {activeTab === 'antibiotics' && hasPermission('MANAGE_ANTIBIOTICS') && <AntibioticManagement />}
         {activeTab === 'pricing' && hasPermission('MANAGE_PRICES') && <PriceManagement />}
         {activeTab === 'b2b' && hasPermission('MANAGE_B2B') && <B2BManagement />}

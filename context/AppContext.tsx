@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import type { Visit, VisitTest, Patient, TestTemplate, VisitTestStatus, User, Role, UserWithPassword, Client, ClientPrice, LedgerEntry, RolePermissions, Permission, CultureResult, AuditLog, Antibiotic, Branch } from '../types';
+import type { Visit, VisitTest, Patient, TestTemplate, VisitTestStatus, User, Role, UserWithPassword, Client, ClientPrice, LedgerEntry, RolePermissions, Permission, CultureResult, AuditLog, Antibiotic, Branch, Unit } from '../types';
 
 // API Base URL - uses environment variable or falls back to localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
-  : 'http://localhost:5001/api';
+  : 'http://localhost:5002/api';
 
 // Define a type for user creation data to avoid exposing password hash elsewhere
 type UserCreationData = Omit<User, 'id' | 'isActive' | 'permissions'> & { password_hash: string };
@@ -30,6 +30,7 @@ interface AppState {
   referralDoctors: ReferralDoctor[];
   branches: Branch[];
   signatories: any[];
+  units: Unit[];
 }
 
 interface AddVisitData {
@@ -113,6 +114,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     referralDoctors: [],
     branches: [],
     signatories: [],
+    units: [],
   });
 
   // Helper function to get auth token from sessionStorage (current session) or localStorage (remember me)
@@ -161,6 +163,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const antibiotics = antibioticsResponse.ok ? await antibioticsResponse.json() : [];
         console.log('Loaded antibiotics:', antibiotics.length);
 
+        // Load units
+        const unitsResponse = await fetch(`${API_BASE_URL}/units/active`, { headers });
+        const units = unitsResponse.ok ? await unitsResponse.json() : [];
+        console.log('Loaded units:', units.length);
+
         // Load visits
         const visitsResponse = await fetch(`${API_BASE_URL}/visits`, { headers });
         const visits = visitsResponse.ok ? await visitsResponse.json() : [];
@@ -178,6 +185,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           testTemplates: testTemplates,
           branches: branches,
           antibiotics: antibiotics,
+          units: units.map((u: any) => ({
+            id: u.id,
+            name: u.name,
+            symbol: u.symbol,
+            category: u.category,
+            description: u.description,
+            isActive: true
+          })),
           visits: visits,
           visitTests: visitTests,
         }));
