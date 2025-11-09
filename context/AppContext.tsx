@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { Visit, VisitTest, Patient, TestTemplate, VisitTestStatus, User, Role, UserWithPassword, Client, ClientPrice, LedgerEntry, RolePermissions, Permission, CultureResult, AuditLog, Antibiotic, Branch } from '../types';
 
+// API Base URL - uses environment variable or falls back to localhost
+const API_BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : `${API_BASE_URL}';
+
 // Define a type for user creation data to avoid exposing password hash elsewhere
 type UserCreationData = Omit<User, 'id' | 'isActive' | 'permissions'> & { password_hash: string };
 
@@ -111,7 +116,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Helper function to get auth token from sessionStorage (current session) or localStorage (remember me)
   const getAuthToken = (): string | null => {
-    return sessionStorage.getItem('authToken') || getAuthToken();
+    return sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
   };
 
   // Load clients, referral doctors, test templates, branches, antibiotics, and visit tests from API on mount and when auth token changes
@@ -131,37 +136,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         };
 
         // Load clients
-        const clientsResponse = await fetch('http://localhost:5001/api/clients', { headers });
+        const clientsResponse = await fetch(`${API_BASE_URL}/clients`, { headers });
         const clients = clientsResponse.ok ? await clientsResponse.json() : [];
         console.log('Loaded clients:', clients.length);
 
         // Load referral doctors
-        const doctorsResponse = await fetch('http://localhost:5001/api/referral-doctors', { headers });
+        const doctorsResponse = await fetch(`${API_BASE_URL}/referral-doctors`, { headers });
         const referralDoctors = doctorsResponse.ok ? await doctorsResponse.json() : [];
         console.log('Loaded referral doctors:', referralDoctors.length);
 
         // Load test templates
-        const templatesResponse = await fetch('http://localhost:5001/api/test-templates', { headers });
+        const templatesResponse = await fetch(`${API_BASE_URL}/test-templates`, { headers });
         const testTemplates = templatesResponse.ok ? await templatesResponse.json() : [];
         console.log('Loaded test templates:', testTemplates.length);
 
         // Load branches
-        const branchesResponse = await fetch('http://localhost:5001/api/branches', { headers });
+        const branchesResponse = await fetch(`${API_BASE_URL}/branches`, { headers });
         const branches = branchesResponse.ok ? await branchesResponse.json() : [];
         console.log('Loaded branches:', branches.length);
 
         // Load antibiotics
-        const antibioticsResponse = await fetch('http://localhost:5001/api/antibiotics', { headers });
+        const antibioticsResponse = await fetch(`${API_BASE_URL}/antibiotics`, { headers });
         const antibiotics = antibioticsResponse.ok ? await antibioticsResponse.json() : [];
         console.log('Loaded antibiotics:', antibiotics.length);
 
         // Load visits
-        const visitsResponse = await fetch('http://localhost:5001/api/visits', { headers });
+        const visitsResponse = await fetch(`${API_BASE_URL}/visits`, { headers });
         const visits = visitsResponse.ok ? await visitsResponse.json() : [];
         console.log('Loaded visits:', visits.length);
 
         // Load visit tests
-        const visitTestsResponse = await fetch('http://localhost:5001/api/visit-tests', { headers });
+        const visitTestsResponse = await fetch(`${API_BASE_URL}/visit-tests`, { headers });
         const visitTests = visitTestsResponse.ok ? await visitTestsResponse.json() : [];
         console.log('Loaded visit tests:', visitTests.length);
 
@@ -210,7 +215,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       if (!patientId) {
         // Create new patient
-        const patientResponse = await fetch('http://localhost:5001/api/patients', {
+        const patientResponse = await fetch(`${API_BASE_URL}/patients`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -228,7 +233,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       // Now create the visit with the patient_id
-      const visitResponse = await fetch('http://localhost:5001/api/visits', {
+      const visitResponse = await fetch(`${API_BASE_URL}/visits`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -255,7 +260,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Create visit_tests in the database
       for (const testTemplateId of visitData.testIds) {
-        const visitTestResponse = await fetch('http://localhost:5001/api/visit-tests', {
+        const visitTestResponse = await fetch(`${API_BASE_URL}/visit-tests', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -277,7 +282,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const client = state.clients.find(c => c.id === visitData.ref_customer_id);
         if (client && client.type === 'REFERRAL_LAB') {
           const newBalance = client.balance + visitData.total_cost;
-          await fetch(`http://localhost:5001/api/clients/${visitData.ref_customer_id}`, {
+          await fetch(`${API_BASE_URL}/clients/${visitData.ref_customer_id}`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
@@ -308,7 +313,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (details?.specimen_type) updateData.specimen_type = details.specimen_type;
       if (status === 'SAMPLE_COLLECTED') updateData.collected_at = new Date().toISOString();
 
-      const response = await fetch(`http://localhost:5001/api/visit-tests/${visitTestId}`, {
+      const response = await fetch(`${API_BASE_URL}/visit-tests/${visitTestId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -354,7 +359,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (data.results) updateData.results = data.results;
       if (data.cultureResult) updateData.culture_result = data.cultureResult;
 
-      const response = await fetch(`http://localhost:5001/api/visit-tests/${visitTestId}`, {
+      const response = await fetch(`${API_BASE_URL}/visit-tests/${visitTestId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -397,7 +402,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (data.results) updateData.results = data.results;
       if (data.cultureResult) updateData.culture_result = data.cultureResult;
 
-      const response = await fetch(`http://localhost:5001/api/visit-tests/${visitTestId}`, {
+      const response = await fetch(`${API_BASE_URL}/visit-tests/${visitTestId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -441,7 +446,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         approved_at: new Date().toISOString(),
       };
 
-      const response = await fetch(`http://localhost:5001/api/visit-tests/${visitTestId}`, {
+      const response = await fetch(`${API_BASE_URL}/visit-tests/${visitTestId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -495,7 +500,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       console.log('Sending rejection data:', rejectionData);
 
-      const response = await fetch('http://localhost:5001/api/result-rejections', {
+      const response = await fetch(`${API_BASE_URL}/result-rejections', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -548,7 +553,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addUser = async (userData: UserCreationData, actor: User) => {
     try {
       const authToken = getAuthToken();
-      const response = await fetch('http://localhost:5001/api/users', {
+      const response = await fetch(`${API_BASE_URL}/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -597,7 +602,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         // Call backend API to save permissions
         const authToken = getAuthToken();
-        const response = await fetch(`http://localhost:5001/api/users/${userId}/permissions`, {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}/permissions`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -641,7 +646,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         defaultAntibioticIds: templateData.defaultAntibioticIds || [],
       };
 
-      const response = await fetch('http://localhost:5001/api/test-templates', {
+      const response = await fetch(`${API_BASE_URL}/test-templates', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -682,7 +687,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         is_active: templateData.isActive,
       };
 
-      const response = await fetch(`http://localhost:5001/api/test-templates/${templateData.id}`, {
+      const response = await fetch(`${API_BASE_URL}/test-templates/${templateData.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -712,7 +717,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (!template) return;
 
       const authToken = getAuthToken();
-      const response = await fetch(`http://localhost:5001/api/test-templates/${templateId}`, {
+      const response = await fetch(`${API_BASE_URL}/test-templates/${templateId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -752,7 +757,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       addAuditLog(actor.username, 'MANAGE_ROLES', `Updated permissions for role: ${role}.`);
 
       // Call backend API to save permissions
-      const response = await fetch(`http://localhost:5001/api/role-permissions/${role}`, {
+      const response = await fetch(`${API_BASE_URL}/role-permissions/${role}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -784,7 +789,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       addAuditLog(actor.username, 'MANAGE_B2B', `Created new B2B client: ${clientData.name}.`);
 
       // Call backend API to create client
-      const response = await fetch('http://localhost:5001/api/clients', {
+      const response = await fetch(`${API_BASE_URL}/clients', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -815,7 +820,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       addAuditLog(actor.username, 'MANAGE_B2B', `Deleted B2B client with ID: ${clientId}.`);
 
-      const response = await fetch(`http://localhost:5001/api/clients/${clientId}`, {
+      const response = await fetch(`${API_BASE_URL}/clients/${clientId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -842,7 +847,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       addAuditLog(actor.username, 'MANAGE_B2B', `Settled balance for client ID: ${clientId}. Mode: ${paymentMode || 'N/A'}`);
 
-      const response = await fetch(`http://localhost:5001/api/clients/${clientId}/settle`, {
+      const response = await fetch(`${API_BASE_URL}/clients/${clientId}/settle`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -881,7 +886,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       addAuditLog(actor.username, 'MANAGE_B2B', `Created new referral doctor: ${doctorData.name}.`);
 
       // Call backend API to create referral doctor
-      const response = await fetch('http://localhost:5001/api/referral-doctors', {
+      const response = await fetch(`${API_BASE_URL}/referral-doctors', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -912,7 +917,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       addAuditLog(actor.username, 'MANAGE_B2B', `Updated referral doctor ID ${doctorId}: ${doctorData.name}.`);
 
-      const response = await fetch(`http://localhost:5001/api/referral-doctors/${doctorId}`, {
+      const response = await fetch(`${API_BASE_URL}/referral-doctors/${doctorId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -945,7 +950,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       addAuditLog(actor.username, 'MANAGE_B2B', `Deleted referral doctor with ID: ${doctorId}.`);
 
-      const response = await fetch(`http://localhost:5001/api/referral-doctors/${doctorId}`, {
+      const response = await fetch(`${API_BASE_URL}/referral-doctors/${doctorId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -976,7 +981,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       // Call backend API to update client prices
-      const response = await fetch(`http://localhost:5001/api/clients/${clientId}/prices`, {
+      const response = await fetch(`${API_BASE_URL}/clients/${clientId}/prices`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1015,7 +1020,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       // Call backend API to add payment
-      const response = await fetch(`http://localhost:5001/api/clients/${clientId}/payment`, {
+      const response = await fetch(`${API_BASE_URL}/clients/${clientId}/payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1053,7 +1058,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addAntibiotic = async (antibioticData: Omit<Antibiotic, 'id' | 'isActive'>, actor: User) => {
     try {
       const authToken = getAuthToken();
-      const response = await fetch('http://localhost:5001/api/antibiotics', {
+      const response = await fetch(`${API_BASE_URL}/antibiotics', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1080,7 +1085,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateAntibiotic = async (antibioticData: Antibiotic, actor: User) => {
     try {
       const authToken = getAuthToken();
-      const response = await fetch(`http://localhost:5001/api/antibiotics/${antibioticData.id}`, {
+      const response = await fetch(`${API_BASE_URL}/antibiotics/${antibioticData.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1110,7 +1115,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (!antibiotic) return;
 
       const authToken = getAuthToken();
-      const response = await fetch(`http://localhost:5001/api/antibiotics/${antibioticId}`, {
+      const response = await fetch(`${API_BASE_URL}/antibiotics/${antibioticId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -1134,7 +1139,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addBranch = async (branchData: Omit<Branch, 'id'>, actor: User) => {
     try {
       const authToken = getAuthToken();
-      const response = await fetch('http://localhost:5001/api/branches', {
+      const response = await fetch(`${API_BASE_URL}/branches', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1161,7 +1166,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateBranch = async (branchData: Branch, actor: User) => {
     try {
       const authToken = getAuthToken();
-      const response = await fetch(`http://localhost:5001/api/branches/${branchData.id}`, {
+      const response = await fetch(`${API_BASE_URL}/branches/${branchData.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1191,7 +1196,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (!branch) return;
 
       const authToken = getAuthToken();
-      const response = await fetch(`http://localhost:5001/api/branches/${branchId}`, {
+      const response = await fetch(`${API_BASE_URL}/branches/${branchId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -1225,17 +1230,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
 
       // Load visits
-      const visitsResponse = await fetch('http://localhost:5001/api/visits', { headers });
+      const visitsResponse = await fetch(`${API_BASE_URL}/visits', { headers });
       const visits = visitsResponse.ok ? await visitsResponse.json() : [];
       console.log('Reloaded visits:', visits.length);
 
       // Load visit tests
-      const visitTestsResponse = await fetch('http://localhost:5001/api/visit-tests', { headers });
+      const visitTestsResponse = await fetch(`${API_BASE_URL}/visit-tests', { headers });
       const visitTests = visitTestsResponse.ok ? await visitTestsResponse.json() : [];
       console.log('Reloaded visit tests:', visitTests.length);
 
       // Load users
-      const usersResponse = await fetch('http://localhost:5001/api/users', { headers });
+      const usersResponse = await fetch(`${API_BASE_URL}/users', { headers });
       const usersData = usersResponse.ok ? await usersResponse.json() : [];
       const users = usersData.map((user: any) => ({
         id: user.id,
@@ -1248,27 +1253,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.log('Reloaded users:', users.length);
 
       // Load test templates
-      const testTemplatesResponse = await fetch('http://localhost:5001/api/test-templates', { headers });
+      const testTemplatesResponse = await fetch(`${API_BASE_URL}/test-templates', { headers });
       const testTemplates = testTemplatesResponse.ok ? await testTemplatesResponse.json() : [];
       console.log('Reloaded test templates:', testTemplates.length);
 
       // Load clients
-      const clientsResponse = await fetch('http://localhost:5001/api/clients', { headers });
+      const clientsResponse = await fetch(`${API_BASE_URL}/clients', { headers });
       const clients = clientsResponse.ok ? await clientsResponse.json() : [];
       console.log('Reloaded clients:', clients.length);
 
       // Load antibiotics
-      const antibioticsResponse = await fetch('http://localhost:5001/api/antibiotics', { headers });
+      const antibioticsResponse = await fetch(`${API_BASE_URL}/antibiotics', { headers });
       const antibiotics = antibioticsResponse.ok ? await antibioticsResponse.json() : [];
       console.log('Reloaded antibiotics:', antibiotics.length);
 
       // Load referral doctors
-      const referralDoctorsResponse = await fetch('http://localhost:5001/api/referral-doctors', { headers });
+      const referralDoctorsResponse = await fetch(`${API_BASE_URL}/referral-doctors', { headers });
       const referralDoctors = referralDoctorsResponse.ok ? await referralDoctorsResponse.json() : [];
       console.log('Reloaded referral doctors:', referralDoctors.length);
 
       // Load branches
-      const branchesResponse = await fetch('http://localhost:5001/api/branches', { headers });
+      const branchesResponse = await fetch(`${API_BASE_URL}/branches', { headers });
       const branches = branchesResponse.ok ? await branchesResponse.json() : [];
       console.log('Reloaded branches:', branches.length);
 
