@@ -3,6 +3,11 @@ import { Visit } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useAppContext } from '../../context/AppContext';
 
+// API Base URL from environment variable
+const API_BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : 'http://localhost:5001/api';
+
 export const VisitsManagement: React.FC = () => {
     const { user: actor } = useAuth();
     const { clients } = useAppContext();
@@ -36,8 +41,16 @@ export const VisitsManagement: React.FC = () => {
     const loadVisits = async () => {
         try {
             setLoading(true);
-            const authToken = localStorage.getItem('authToken');
-            const response = await fetch('http://localhost:5001/api/visits', {
+            const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+
+            if (!authToken) {
+                setError('No authentication token found. Please login again.');
+                setLoading(false);
+                return;
+            }
+
+            console.log('Loading visits from:', `${API_BASE_URL}/visits`);
+            const response = await fetch(`${API_BASE_URL}/visits`, {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                 },
@@ -45,14 +58,17 @@ export const VisitsManagement: React.FC = () => {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log('Loaded visits:', data.length);
                 setVisits(data);
                 setError(null);
             } else {
-                setError('Failed to load visits');
+                const errorText = await response.text();
+                console.error('Failed to load visits:', response.status, errorText);
+                setError(`Failed to load visits: ${response.status} ${response.statusText}`);
             }
         } catch (err) {
-            setError('Error loading visits');
-            console.error(err);
+            console.error('Error loading visits:', err);
+            setError(`Error loading visits: ${err instanceof Error ? err.message : 'Unknown error'}`);
         } finally {
             setLoading(false);
         }

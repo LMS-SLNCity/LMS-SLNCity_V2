@@ -3,6 +3,7 @@ import type { Patient, Salutation, Sex, Visit } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { PatientSearchModal } from './PatientSearchModal';
+import { API_BASE_URL } from '../config/api';
 
 type AgeUnit = 'Years' | 'Months' | 'Days';
 type PaymentMode = 'CASH' | 'CARD' | 'UPI' | 'CREDIT' | '';
@@ -70,7 +71,7 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
   useEffect(() => {
     const fetchReferralDoctors = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/referral-doctors');
+        const response = await fetch(`${API_BASE_URL}/referral-doctors`);
         if (!response.ok) throw new Error('Failed to fetch referral doctors');
         const data = await response.json();
         setReferralDoctors(data);
