@@ -18,6 +18,27 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        // Optimize build for production
+        target: 'es2015',
+        minify: 'terser',
+        terserOptions: {
+          compress: {
+            drop_console: true, // Remove console.logs in production
+          }
+        },
+        // Reduce chunk size warnings
+        chunkSizeWarningLimit: 1000,
+        // Optimize chunking
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+              'ui-vendor': ['lucide-react'],
+            }
+          }
+        }
       }
     };
 });
