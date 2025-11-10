@@ -1,24 +1,64 @@
 #!/bin/bash
 # Production Database Setup Script
-# This script sets up the database with ONLY essential data for production
+# ⚠️ WARNING: This script DELETES ALL DATA and resets the database
+# 🛡️ ONLY use this for INITIAL setup - NEVER on a running production system with real data
 
 set -e
 
 echo "=========================================="
-echo "⚠️  PRODUCTION DATABASE SETUP"
+echo "🚨 CRITICAL WARNING - PRODUCTION DATABASE SETUP"
 echo "=========================================="
 echo ""
-echo "This will set up a PRODUCTION database with:"
-echo "  - Essential schema only"
-echo "  - 2 default users (sudo, admin)"
-echo "  - 3 sample test templates"
-echo "  - NO test data"
-echo "  - NO sample visits"
+echo "⚠️  THIS SCRIPT WILL DELETE ALL EXISTING DATA!"
 echo ""
-read -p "Are you sure you want to continue? (yes/no): " confirm
+echo "This script is ONLY for:"
+echo "  ✓ Initial production setup (first time)"
+echo "  ✓ Setting up a new empty production database"
+echo ""
+echo "❌ NEVER run this if you have:"
+echo "  ✗ Real patient data"
+echo "  ✗ Real visit records"
+echo "  ✗ Real test results"
+echo "  ✗ Any production data you want to keep"
+echo ""
+echo "This will:"
+echo "  - DELETE ALL existing data (TRUNCATE all tables)"
+echo "  - Reset all sequences to 1"
+echo "  - Load only 2 default users (sudo, admin)"
+echo "  - Load 3 sample test templates"
+echo "  - Load NO test data or sample visits"
+echo ""
+echo "=========================================="
+echo ""
 
-if [ "$confirm" != "yes" ]; then
-    echo "Setup cancelled."
+# Check if this is truly a fresh installation
+read -p "Is this a FRESH installation with NO production data? (yes/no): " fresh_install
+
+if [ "$fresh_install" != "yes" ]; then
+    echo ""
+    echo "❌ Setup cancelled."
+    echo ""
+    echo "If you need to update an existing production database:"
+    echo "  1. Create a backup first: ~/backup-database.sh"
+    echo "  2. Use migration scripts instead of this setup script"
+    echo "  3. Never run TRUNCATE on production data"
+    echo ""
+    exit 0
+fi
+
+echo ""
+read -p "Type 'DELETE ALL DATA' to confirm (case-sensitive): " confirm
+
+if [ "$confirm" != "DELETE ALL DATA" ]; then
+    echo "❌ Confirmation failed. Setup cancelled."
+    exit 0
+fi
+
+echo ""
+read -p "Final confirmation - Type 'I UNDERSTAND' to proceed: " final_confirm
+
+if [ "$final_confirm" != "I UNDERSTAND" ]; then
+    echo "❌ Final confirmation failed. Setup cancelled."
     exit 0
 fi
 
@@ -40,7 +80,34 @@ else
 fi
 
 echo ""
-echo "Step 1: Clearing existing data..."
+echo "=========================================="
+echo "⚠️  CREATING BACKUP BEFORE CLEARING DATA..."
+echo "=========================================="
+
+# Create backup before clearing (if data exists)
+BACKUP_DIR=~/backups
+mkdir -p $BACKUP_DIR
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="${BACKUP_DIR}/BEFORE_SETUP_${DATE}.sql"
+
+if [ -f /.dockerenv ]; then
+    pg_dump -U $DB_USER $DB_NAME > $BACKUP_FILE 2>/dev/null || echo "No existing data to backup"
+else
+    PGPASSWORD="$DB_PASSWORD" pg_dump -h $DB_HOST -p $DB_PORT -U $DB_USER $DB_NAME > $BACKUP_FILE 2>/dev/null || echo "No existing data to backup"
+fi
+
+if [ -f "$BACKUP_FILE" ] && [ -s "$BACKUP_FILE" ]; then
+    gzip $BACKUP_FILE
+    echo "✅ Backup created: ${BACKUP_FILE}.gz"
+else
+    rm -f $BACKUP_FILE
+    echo "ℹ️  No existing data to backup (fresh installation)"
+fi
+
+echo ""
+echo "=========================================="
+echo "⚠️  Step 1: Clearing existing data..."
+echo "=========================================="
 $PSQL_CMD <<EOF
 TRUNCATE TABLE 
     audit_logs,
