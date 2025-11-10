@@ -37,24 +37,31 @@ export const PriceManagement: React.FC = () => {
         setHasChanges(true);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!actor) {
             alert("User session has expired. Please log in again.");
             return;
         }
-        const updates = Object.entries(prices)
-            .filter(([_, priceData]) => priceData !== undefined)
-            .map(([id, priceData]) => {
-                const data = priceData as { price: number; b2b_price: number };
-                return {
-                    id: Number(id),
-                    price: data.price,
-                    b2b_price: data.b2b_price,
-                };
-            });
-        updateTestPrices(updates, actor);
-        setHasChanges(false);
-        alert('Prices updated successfully!');
+
+        try {
+            const updates = Object.entries(prices)
+                .filter(([_, priceData]) => priceData !== undefined)
+                .map(([id, priceData]) => {
+                    const data = priceData as { price: number; b2b_price: number };
+                    return {
+                        id: Number(id),
+                        price: data.price,
+                        b2b_price: data.b2b_price,
+                    };
+                });
+
+            await updateTestPrices(updates, actor);
+            setHasChanges(false);
+            alert('Prices updated successfully!');
+        } catch (error) {
+            console.error('Error updating prices:', error);
+            alert('Failed to update prices. Please try again.');
+        }
     };
 
     const activeTemplates = testTemplates.filter(t => t.isActive);

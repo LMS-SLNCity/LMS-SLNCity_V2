@@ -27,7 +27,6 @@ router.get('/', async (req: Request, res: Response) => {
         al.action,
         al.details,
         al.resource,
-        al.resource_id,
         al.ip_address,
         al.old_values,
         al.new_values,
@@ -62,12 +61,7 @@ router.get('/', async (req: Request, res: Response) => {
       paramIndex++;
     }
 
-    // Filter by resource ID
-    if (resource_id) {
-      query += ` AND al.resource_id = $${paramIndex}`;
-      params.push(parseInt(resource_id as string));
-      paramIndex++;
-    }
+
 
     // Filter by date range
     if (start_date) {
@@ -118,11 +112,7 @@ router.get('/', async (req: Request, res: Response) => {
       countParamIndex++;
     }
 
-    if (resource_id) {
-      countQuery += ` AND al.resource_id = $${countParamIndex}`;
-      countParams.push(parseInt(resource_id as string));
-      countParamIndex++;
-    }
+
 
     if (start_date) {
       countQuery += ` AND al.timestamp >= $${countParamIndex}`;
@@ -205,7 +195,6 @@ router.post('/', async (req: Request, res: Response) => {
       details,
       user_id,
       resource,
-      resource_id,
       ip_address,
       old_values,
       new_values
@@ -218,13 +207,12 @@ router.post('/', async (req: Request, res: Response) => {
         details,
         user_id,
         resource,
-        resource_id,
         ip_address,
         old_values,
         new_values
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING id, timestamp, username, action, details, resource, resource_id, ip_address, old_values, new_values`,
-      [username, action, details, user_id, resource, resource_id, ip_address, old_values ? JSON.stringify(old_values) : null, new_values ? JSON.stringify(new_values) : null]
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id, timestamp, username, action, details, resource, ip_address, old_values, new_values`,
+      [username, action, details, user_id, resource, ip_address, old_values ? JSON.stringify(old_values) : null, new_values ? JSON.stringify(new_values) : null]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -256,7 +244,6 @@ router.get('/export', async (req: Request, res: Response) => {
         al.action,
         al.details,
         al.resource,
-        al.resource_id,
         al.ip_address
       FROM audit_logs al
       WHERE 1=1
@@ -286,12 +273,7 @@ router.get('/export', async (req: Request, res: Response) => {
       paramIndex++;
     }
 
-    // Filter by resource_id
-    if (resource_id) {
-      query += ` AND al.resource_id = $${paramIndex}`;
-      params.push(resource_id);
-      paramIndex++;
-    }
+
 
     // Filter by date range
     if (start_date) {
@@ -325,7 +307,6 @@ router.get('/export', async (req: Request, res: Response) => {
       action: row.action,
       details: row.details,
       resource: row.resource,
-      resourceId: row.resource_id,
     }));
 
     await generateAuditLogsExcel(logs, res);

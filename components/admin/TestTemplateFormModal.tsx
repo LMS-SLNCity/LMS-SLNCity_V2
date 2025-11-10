@@ -3,6 +3,7 @@ import { TestTemplate, TestTemplateParameter, Antibiotic } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import { Input } from '../form/Input';
 import { Select } from '../form/Select';
+import { SearchableSelect } from '../form/SearchableSelect';
 import { useAuth } from '../../context/AuthContext';
 
 interface TestTemplateFormModalProps {
@@ -28,7 +29,7 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
     const { user: actor } = useAuth();
     const [formData, setFormData] = useState(templateToEdit || emptyTemplate);
 
-    console.log('Units in TestTemplateFormModal:', units);
+    console.log('Units in TestTemplateFormModal:', units, 'Length:', units?.length);
 
     const isCultureTest = formData.reportType === 'culture';
     
@@ -168,22 +169,18 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                                                     </select>
                                                 </div>
                                                 <div className="col-span-6 sm:col-span-2">
-                                                    <select
+                                                    <SearchableSelect
+                                                        options={units.map(unit => ({
+                                                            value: unit.symbol,
+                                                            label: `${unit.name} (${unit.symbol})`,
+                                                            category: unit.category
+                                                        }))}
                                                         value={param.unit || ''}
-                                                        onChange={e => handleParamChange(index, 'unit', e.target.value)}
-                                                        className="w-full px-2 py-1 text-sm border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary"
-                                                    >
-                                                        <option value="">Select Unit</option>
-                                                        {units && units.length > 0 ? (
-                                                            units.map(unit => (
-                                                                <option key={unit.id} value={unit.symbol}>
-                                                                    {unit.name} ({unit.symbol})
-                                                                </option>
-                                                            ))
-                                                        ) : (
-                                                            <option disabled>Loading units...</option>
-                                                        )}
-                                                    </select>
+                                                        onChange={(value) => handleParamChange(index, 'unit', value as string)}
+                                                        placeholder="Select Unit"
+                                                        groupByCategory={true}
+                                                        className="text-sm"
+                                                    />
                                                 </div>
                                                 <div className="col-span-11 sm:col-span-3">
                                                     <input type="text" placeholder="Reference Range" value={param.reference_range || ''} onChange={e => handleParamChange(index, 'reference_range', e.target.value)} className="w-full px-2 py-1 text-sm border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary" />

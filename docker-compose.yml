@@ -24,9 +24,13 @@ services:
       # Mount both seed files - the setup script will choose which one to use
       - ./server/db/seed-development.sql:/docker-entrypoint-initdb.d/seed-development.sql
       - ./server/db/seed-production.sql:/docker-entrypoint-initdb.d/seed-production.sql
+      # Mount migrations directory
+      - ./server/db/migrations:/docker-entrypoint-initdb.d/migrations
+      # Mount migration runner script
+      - ./server/db/run-migrations.sh:/docker-entrypoint-initdb.d/03-run-migrations.sh
       # Mount setup scripts
-      - ./server/db/setup-development.sh:/docker-entrypoint-initdb.d/02-setup-development.sh
-      - ./server/db/setup-production.sh:/docker-entrypoint-initdb.d/02-setup-production.sh
+      - ./server/db/setup-development.sh:/docker-entrypoint-initdb.d/04-setup-development.sh
+      - ./server/db/setup-production.sh:/docker-entrypoint-initdb.d/04-setup-production.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U lms_user -d lms_slncity"]
       interval: 10s
@@ -43,21 +47,21 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: development
-      PORT: 5001
+      PORT: 5002
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: lms_user
       DB_PASSWORD: lms_password
       DB_NAME: lms_slncity
       JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
-      FRONTEND_URL: http://localhost:3000
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     ports:
-      - "5002:5001"
+      - "5002:5002"
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5002/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -73,9 +77,11 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      VITE_API_URL: http://localhost:5002
+      # For Docker internal communication, use backend service name
+      # For external access (browser), use the host URL
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:5002}
     ports:
-      - "3001:80"
+      - "3000:80"
     depends_on:
       - backend
     networks:

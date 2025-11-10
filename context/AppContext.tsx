@@ -71,7 +71,7 @@ interface AppContextType extends AppState {
   addTestTemplate: (templateData: Omit<TestTemplate, 'id'>, actor: User) => void;
   updateTestTemplate: (templateData: TestTemplate, actor: User) => void;
   deleteTestTemplate: (templateId: number, actor: User) => void;
-  updateTestPrices: (priceData: { id: number, price: number, b2b_price: number }[], actor: User) => void;
+  updateTestPrices: (priceData: { id: number, price: number, b2b_price: number }[], actor: User) => Promise<void>;
   updateRolePermissions: (role: Role, permissions: Permission[], actor: User) => void;
   // B2B Functions
   addClient: (clientData: { name: string; type: 'PATIENT' | 'REFERRAL_LAB' | 'INTERNAL' }, actor: User) => void;
@@ -166,7 +166,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // Load units
         const unitsResponse = await fetch(`${API_BASE_URL}/units/active`, { headers });
         const units = unitsResponse.ok ? await unitsResponse.json() : [];
-        console.log('Loaded units:', units.length);
+        console.log('Loaded units:', units.length, units);
 
         // Load visits
         const visitsResponse = await fetch(`${API_BASE_URL}/visits`, { headers });
@@ -191,7 +191,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             symbol: u.symbol,
             category: u.category,
             description: u.description,
-            isActive: true
+            isActive: u.is_active ?? true
           })),
           visits: visits,
           visitTests: visitTests,
@@ -754,18 +754,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const updateTestPrices = (priceData: { id: number, price: number, b2b_price: number }[], actor: User) => {
-    addAuditLog(actor.username, 'MANAGE_PRICES', `Updated prices for ${priceData.length} tests.`);
-    setState(prevState => {
-        const updatedTemplates = prevState.testTemplates.map(template => {
-            const update = priceData.find(p => p.id === template.id);
-            if (update) {
-                return { ...template, price: update.price, b2b_price: update.b2b_price };
-            }
-            return template;
+  const updateTestPrices = async (priceData: { id: number, price: number, b2b_price: number }[], actor: User) => {
+    try {
+      addAuditLog(actor.username, 'MANAGE_PRICES', `Updated prices for ${priceData.length} tests.`);
+
+      // Update each test template via API
+      const authToken = getAuthToken();
+      for (const priceUpdate of priceData) {
+        const response = await fetch(`${API_BASE_URL}/test-templates/${priceUpdate.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            price: priceUpdate.price,
+            b2b_price: priceUpdate.b2b_price,
+          }),
         });
-        return { ...prevState, testTemplates: updatedTemplates };
-    });
+
+        if (!response.ok) {
+          throw new Error(`Failed to update price for test ID ${priceUpdate.id}`);
+        }
+      }
+
+      // Update local state after successful API calls
+      setState(prevState => {
+          const updatedTemplates = prevState.testTemplates.map(template => {
+              const update = priceData.find(p => p.id === template.id);
+              if (update) {
+                  return { ...template, price: update.price, b2b_price: update.b2b_price };
+              }
+              return template;
+          });
+          return { ...prevState, testTemplates: updatedTemplates };
+      });
+    } catch (error) {
+      console.error('Error updating test prices:', error);
+      throw error;
+    }
   };
 
   const updateRolePermissions = async (role: Role, permissions: Permission[], actor: User) => {

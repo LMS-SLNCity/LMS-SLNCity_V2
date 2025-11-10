@@ -3,6 +3,7 @@ import type { Patient, Salutation, Sex, Visit } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { PatientSearchModal } from './PatientSearchModal';
+import { SearchableSelect } from './form/SearchableSelect';
 import { API_BASE_URL } from '../config/api';
 
 type AgeUnit = 'Years' | 'Months' | 'Days';
@@ -334,17 +335,23 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                       <div className="space-y-1.5 sm:space-y-2">
                         <div>
                           <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Ref. Doctor</label>
-                          <select name="referred_doctor_id" value={String(formData.referred_doctor_id || '')} onChange={handleChange} className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs">
-                            <option value="">--Select--</option>
-                            {referralDoctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                          </select>
+                          <SearchableSelect
+                            options={referralDoctors.map(d => ({ value: d.id, label: d.name }))}
+                            value={formData.referred_doctor_id || ''}
+                            onChange={(value) => handleChange({ target: { name: 'referred_doctor_id', value: value === '' ? '' : Number(value) } } as any)}
+                            placeholder="--Select--"
+                            className="text-[10px] sm:text-xs"
+                          />
                         </div>
                         <div>
                           <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">B2B Client</label>
-                          <select name="ref_customer_id" value={String(formData.ref_customer_id || '')} onChange={handleChange} className="w-full px-1.5 sm:px-2 py-1 border border-gray-300 rounded text-[10px] sm:text-xs">
-                            <option value="">--Select--</option>
-                            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                          </select>
+                          <SearchableSelect
+                            options={clients.map(c => ({ value: c.id, label: c.name }))}
+                            value={formData.ref_customer_id || ''}
+                            onChange={(value) => handleChange({ target: { name: 'ref_customer_id', value: value === '' ? '' : Number(value) } } as any)}
+                            placeholder="--Select--"
+                            className="text-[10px] sm:text-xs"
+                          />
                         </div>
                         <div>
                           <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Other Ref. Dr</label>

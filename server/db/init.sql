@@ -238,10 +238,154 @@ CREATE TABLE audit_logs (
     username VARCHAR(255) NOT NULL,
     action VARCHAR(255) NOT NULL,
     details TEXT NOT NULL,
+    resource VARCHAR(255),
     user_id INTEGER REFERENCES users(id),
     ip_address VARCHAR(45),
     user_agent TEXT
 );
+
+-- User Permissions table
+CREATE TABLE IF NOT EXISTS user_permissions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    permission VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, permission)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_permissions_user_id ON user_permissions(user_id);
+
+-- Units table for measurement units
+CREATE TABLE IF NOT EXISTS units (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    symbol VARCHAR(20) NOT NULL,
+    category VARCHAR(50),
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_units_category ON units(category);
+CREATE INDEX IF NOT EXISTS idx_units_is_active ON units(is_active);
+
+-- Insert default units
+INSERT INTO units (name, symbol, category, description) VALUES
+-- Concentration units
+('Milligrams per deciliter', 'mg/dL', 'Concentration', 'Common unit for blood chemistry'),
+('Grams per deciliter', 'g/dL', 'Concentration', 'Used for protein, hemoglobin'),
+('Micrograms per deciliter', 'µg/dL', 'Concentration', 'Used for trace elements'),
+('Millimoles per liter', 'mmol/L', 'Concentration', 'SI unit for concentration'),
+('Micromoles per liter', 'µmol/L', 'Concentration', 'SI unit for small concentrations'),
+('Nanograms per milliliter', 'ng/mL', 'Concentration', 'Used for hormones, vitamins'),
+('Picograms per milliliter', 'pg/mL', 'Concentration', 'Used for very small concentrations'),
+('Milligrams per liter', 'mg/L', 'Concentration', 'Alternative concentration unit'),
+('Micrograms per liter', 'µg/L', 'Concentration', 'Used for trace elements'),
+
+-- Count units
+('Cells per microliter', 'cells/µL', 'Count', 'Used for blood cell counts'),
+('Thousands per microliter', '10³/µL', 'Count', 'Used for WBC, platelet counts'),
+('Millions per microliter', '10⁶/µL', 'Count', 'Used for RBC counts'),
+('Lakhs per cubic millimeter', 'lakhs/mm³', 'Count', 'Indian unit for cell counts'),
+('Cells per cubic millimeter', 'cells/mm³', 'Count', 'Alternative cell count unit'),
+('Colony forming units per milliliter', 'CFU/mL', 'Count', 'Used for bacterial counts'),
+
+-- Volume units
+('Milliliters', 'mL', 'Volume', 'Common volume unit'),
+('Liters', 'L', 'Volume', 'Larger volume unit'),
+('Microliters', 'µL', 'Volume', 'Small volume unit'),
+('Femtoliters', 'fL', 'Volume', 'Used for cell volumes (MCV)'),
+
+-- Mass units
+('Grams', 'g', 'Mass', 'Standard mass unit'),
+('Milligrams', 'mg', 'Mass', 'Small mass unit'),
+('Micrograms', 'µg', 'Mass', 'Very small mass unit'),
+('Picograms', 'pg', 'Mass', 'Used for MCH'),
+
+-- Percentage and ratio
+('Percentage', '%', 'Ratio', 'Used for percentages'),
+('Ratio', 'ratio', 'Ratio', 'Used for ratios'),
+
+-- Time units
+('Seconds', 'sec', 'Time', 'Used for clotting times'),
+('Minutes', 'min', 'Time', 'Used for various tests'),
+('Hours', 'hr', 'Time', 'Used for glucose tolerance'),
+
+-- Activity units
+('Units per liter', 'U/L', 'Activity', 'Enzyme activity'),
+('International units per liter', 'IU/L', 'Activity', 'International enzyme units'),
+('Millimeters per hour', 'mm/hr', 'Activity', 'Used for ESR'),
+
+-- Other units
+('pH units', 'pH', 'Other', 'Acidity/alkalinity'),
+('Milliosmoles per kilogram', 'mOsm/kg', 'Other', 'Osmolality'),
+('Milliequivalents per liter', 'mEq/L', 'Other', 'Electrolyte concentration'),
+('Micrograms per gram creatinine', 'µg/g Cr', 'Other', 'Urine analyte concentration'),
+('Milligrams per gram creatinine', 'mg/g Cr', 'Other', 'Urine protein concentration'),
+('Milligrams per 24 hours', 'mg/24h', 'Other', 'Urine collection measurement'),
+('Grams per 24 hours', 'g/24h', 'Other', 'Urine collection measurement')
+ON CONFLICT (name) DO NOTHING;
+
+-- Approvers table
+CREATE TABLE IF NOT EXISTS approvers (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    test_category VARCHAR(100) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, test_category)
+);
+
+CREATE INDEX IF NOT EXISTS idx_approvers_user_id ON approvers(user_id);
+CREATE INDEX IF NOT EXISTS idx_approvers_test_category ON approvers(test_category);
+CREATE INDEX IF NOT EXISTS idx_approvers_is_active ON approvers(is_active);
+
+-- Patient Edit Requests table
+CREATE TABLE IF NOT EXISTS patient_edit_requests (
+    id SERIAL PRIMARY KEY,
+    visit_id INTEGER NOT NULL REFERENCES visits(id) ON DELETE CASCADE,
+    requested_by VARCHAR(255) NOT NULL,
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    approved_by VARCHAR(255),
+    approved_at TIMESTAMP,
+    rejected_by VARCHAR(255),
+    rejected_at TIMESTAMP,
+    rejection_reason TEXT,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    old_data JSONB NOT NULL,
+    new_data JSONB NOT NULL,
+    reason TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_patient_edit_requests_visit_id ON patient_edit_requests(visit_id);
+CREATE INDEX IF NOT EXISTS idx_patient_edit_requests_status ON patient_edit_requests(status);
+
+-- Result Rejections table
+CREATE TABLE IF NOT EXISTS result_rejections (
+    id SERIAL PRIMARY KEY,
+    visit_test_id INTEGER NOT NULL REFERENCES visit_tests(id) ON DELETE CASCADE,
+    rejected_by VARCHAR(255) NOT NULL,
+    rejected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    rejection_reason TEXT NOT NULL,
+    old_results JSONB,
+    old_culture_result JSONB
+);
+
+CREATE INDEX IF NOT EXISTS idx_result_rejections_visit_test_id ON result_rejections(visit_test_id);
+
+-- Waivers table
+CREATE TABLE IF NOT EXISTS waivers (
+    id SERIAL PRIMARY KEY,
+    visit_id INTEGER NOT NULL REFERENCES visits(id) ON DELETE CASCADE,
+    waived_amount DECIMAL(12, 2) NOT NULL,
+    reason TEXT NOT NULL,
+    waived_by VARCHAR(255) NOT NULL,
+    waived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_waivers_visit_id ON waivers(visit_id);
 
 -- Create indexes for better query performance
 CREATE INDEX idx_visits_patient_id ON visits(patient_id);
@@ -521,3 +665,89 @@ COMMENT ON FUNCTION update_client_balance_on_visit() IS 'Automatically updates B
 COMMENT ON FUNCTION reverse_client_balance_on_visit_delete() IS 'Reverses B2B client balance when a visit is deleted';
 COMMENT ON VIEW b2b_balance_reconciliation IS 'Shows B2B client balance reconciliation between ledger entries and actual balance';
 
+-- ============================================
+-- SEED DATA FOR DEVELOPMENT
+-- ============================================
+-- Password for all users: "password"
+-- Password hash: $2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO
+
+-- Insert Users
+INSERT INTO users (username, password_hash, role, is_active) VALUES
+('sudo', '$2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO', 'SUDO', true),
+('admin', '$2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO', 'ADMIN', true),
+('reception', '$2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO', 'RECEPTION', true),
+('phlebotomy', '$2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO', 'PHLEBOTOMY', true),
+('lab', '$2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO', 'LAB', true),
+('approver', '$2a$10$2bS04Rn1y9ulyoNxDPFV7u6gfG1ZdVWRs9XnsgyAbeQbTkoCtlgTO', 'APPROVER', true)
+ON CONFLICT (username) DO NOTHING;
+
+-- Insert Branches
+INSERT INTO branches (name, address, phone, email, city, state, pincode, is_active) VALUES
+('Main Branch', '123 Main Street', '1234567890', 'main@slncity.com', 'Hyderabad', 'Telangana', '500001', true),
+('Branch 2', '456 Second Street', '0987654321', 'branch2@slncity.com', 'Hyderabad', 'Telangana', '500002', true)
+ON CONFLICT DO NOTHING;
+
+-- Insert Antibiotics
+INSERT INTO antibiotics (name, abbreviation, is_active) VALUES
+('Amikacin', 'AK', true),
+('Amoxicillin', 'AMX', true),
+('Azithromycin', 'AZM', true),
+('Cefepime', 'CPM', true),
+('Ceftriaxone', 'CTR', true),
+('Ciprofloxacin', 'CIP', true),
+('Clindamycin', 'CD', true),
+('Doxycycline', 'DO', true),
+('Gentamicin', 'GEN', true),
+('Imipenem', 'IPM', true),
+('Levofloxacin', 'LEV', true),
+('Linezolid', 'LZ', true),
+('Meropenem', 'MRP', true),
+('Nitrofurantoin', 'NIT', true),
+('Penicillin', 'P', true),
+('Piperacillin-Tazobactam', 'PIT', true),
+('Tetracycline', 'TE', true),
+('Vancomycin', 'VA', true)
+ON CONFLICT DO NOTHING;
+
+-- Insert Test Templates
+INSERT INTO test_templates (code, name, category, price, b2b_price, report_type, sample_type, parameters, default_antibiotic_ids) VALUES
+('CBC', 'Complete Blood Count', 'Hematology', 300, 250, 'standard', 'WB EDTA', '{"fields": [{"name": "Hemoglobin", "type": "number", "unit": "g/dL", "reference_range": "13-17"}, {"name": "WBC", "type": "number", "unit": "10³/µL", "reference_range": "4.5-11.0"}, {"name": "Platelets", "type": "number", "unit": "lakhs/mm³", "reference_range": "1.5-4.5"}]}', ARRAY[]::INTEGER[]),
+('LFT', 'Liver Function Test', 'Biochemistry', 500, 450, 'standard', 'Serum', '{"fields": [{"name": "Bilirubin", "type": "number", "unit": "mg/dL", "reference_range": "0.1-1.2"}, {"name": "ALT", "type": "number", "unit": "U/L", "reference_range": "7-56"}]}', ARRAY[]::INTEGER[]),
+('RFT', 'Renal Function Test', 'Biochemistry', 450, 400, 'standard', 'Serum', '{"fields": [{"name": "Urea", "type": "number", "unit": "mg/dL", "reference_range": "17-43"}, {"name": "Creatinine", "type": "number", "unit": "mg/dL", "reference_range": "0.6-1.2"}]}', ARRAY[]::INTEGER[]),
+('LIPID', 'Lipid Profile', 'Biochemistry', 600, 550, 'standard', 'Serum', '{"fields": [{"name": "Total Cholesterol", "type": "number", "unit": "mg/dL", "reference_range": "<200"}, {"name": "Triglycerides", "type": "number", "unit": "mg/dL", "reference_range": "<150"}]}', ARRAY[]::INTEGER[]),
+('THYROID', 'Thyroid Profile', 'Hormones', 700, 650, 'standard', 'Serum', '{"fields": [{"name": "T3", "type": "number", "unit": "ng/mL", "reference_range": "0.8-2.0"}, {"name": "T4", "type": "number", "unit": "µg/dL", "reference_range": "5.0-12.0"}, {"name": "TSH", "type": "number", "unit": "µIU/mL", "reference_range": "0.4-4.0"}]}', ARRAY[]::INTEGER[]),
+('URINE', 'Urine Routine', 'Clinical Pathology', 200, 150, 'standard', 'Urine', '{"fields": [{"name": "Color", "type": "text", "unit": "", "reference_range": "Pale Yellow"}, {"name": "pH", "type": "number", "unit": "pH", "reference_range": "5.0-7.0"}]}', ARRAY[]::INTEGER[]),
+('CULTURE-U', 'Urine Culture & Sensitivity', 'Microbiology', 800, 700, 'culture', 'Urine', '{"fields": []}', ARRAY[1, 6, 11, 14]::INTEGER[])
+ON CONFLICT (code) DO NOTHING;
+
+-- Insert Referral Doctors
+INSERT INTO referral_doctors (name) VALUES
+('Dr. John Doe'),
+('Dr. Jane Smith'),
+('Dr. Emily Brown'),
+('Dr. Michael Johnson')
+ON CONFLICT DO NOTHING;
+
+-- Insert Clients
+INSERT INTO clients (name, type, balance) VALUES
+('CDCMARKAPUR', 'REFERRAL_LAB', 0),
+('General Hospital', 'REFERRAL_LAB', 0),
+('City Clinic', 'REFERRAL_LAB', 0),
+('Walk-in Patient', 'PATIENT', 0)
+ON CONFLICT DO NOTHING;
+
+-- Insert Signatories
+INSERT INTO signatories (name, title) VALUES
+('Dr. Ramesh Kumar', 'MD Pathology'),
+('Dr. Priya Sharma', 'MD Microbiology')
+ON CONFLICT DO NOTHING;
+
+-- Insert Role Permissions
+INSERT INTO role_permissions (role, permissions) VALUES
+('SUDO', ARRAY['ALL']),
+('ADMIN', ARRAY['MANAGE_USERS', 'MANAGE_TESTS', 'MANAGE_PRICES', 'VIEW_REPORTS', 'MANAGE_BRANCHES']),
+('RECEPTION', ARRAY['CREATE_VISIT', 'VIEW_VISITS', 'COLLECT_PAYMENT']),
+('PHLEBOTOMY', ARRAY['COLLECT_SAMPLE', 'VIEW_VISITS']),
+('LAB', ARRAY['ENTER_RESULTS', 'VIEW_VISITS']),
+('APPROVER', ARRAY['APPROVE_RESULTS', 'VIEW_REPORTS'])
+ON CONFLICT (role) DO NOTHING;
