@@ -14,7 +14,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
               v.registration_datetime, v.visit_code, v.total_cost, v.amount_paid, v.payment_mode, v.due_amount, v.created_at,
               p.salutation, p.name, p.age_years, p.age_months, p.age_days, p.sex, p.phone, p.address, p.email, p.clinical_history,
               c.id as client_id, c.name as client_name, c.type as client_type, c.balance as client_balance,
-              rd.name as referred_doctor_name
+              rd.name as referred_doctor_name, rd.designation as referred_doctor_designation
        FROM visits v
        JOIN patients p ON v.patient_id = p.id
        LEFT JOIN clients c ON v.ref_customer_id = c.id
@@ -105,7 +105,7 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
       `SELECT v.id, v.patient_id, v.referred_doctor_id, v.ref_customer_id, v.other_ref_doctor, v.other_ref_customer,
               v.registration_datetime, v.visit_code, v.total_cost, v.amount_paid, v.payment_mode, v.due_amount, v.created_at,
               p.salutation, p.name, p.age_years, p.age_months, p.age_days, p.sex, p.phone, p.address, p.email, p.clinical_history,
-              rd.name as referred_doctor_name
+              rd.name as referred_doctor_name, rd.designation as referred_doctor_designation
        FROM visits v
        JOIN patients p ON v.patient_id = p.id
        LEFT JOIN referral_doctors rd ON v.referred_doctor_id = rd.id

@@ -114,6 +114,7 @@ export interface Visit {
   patient: Patient;
   referred_doctor_id?: number;
   referred_doctor_name?: string;
+  referred_doctor_designation?: string;
   ref_customer_id?: number;
   other_ref_doctor?: string;
   other_ref_customer?: string;

@@ -591,12 +591,12 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
 
   const firstTest = approvedTestsForVisit[0];
 
-  // Get referred doctor name
+  // Get referred doctor name (don't add "Dr." prefix as it's already in the name)
   const doctorName = visit.referred_doctor_name
-    ? `Dr. ${visit.referred_doctor_name}`
-    : visit.other_ref_doctor
-    ? `Dr. ${visit.other_ref_doctor}`
-    : 'N/A';
+    ? visit.referred_doctor_designation
+      ? `${visit.referred_doctor_name}, ${visit.referred_doctor_designation}`
+      : visit.referred_doctor_name
+    : visit.other_ref_doctor || 'N/A';
 
   // Group tests by category
   const testsByCategory = approvedTestsForVisit.reduce((acc, test) => {
@@ -846,36 +846,38 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                 <tbody>
                   {group.tests.map((test) => (
                     <React.Fragment key={test.id}>
-                      {/* Test Group Row */}
-                      <tr className="test-group-row">
-                        <td colSpan={4}>{test.template.name}</td>
-                      </tr>
-
                       {/* Check if this is a microbiology test with culture results */}
                       {test.cultureResult ? (
+                        /* For microbiology tests, skip the test name row and show C&S report directly */
                         <tr>
                           <td colSpan={4} style={{ padding: 0 }}>
                             <MicrobiologyReportDisplay test={test} visit={visit} />
                           </td>
                         </tr>
                       ) : (
-                        /* Parameter Rows for regular tests */
-                        test.template.parameters?.fields && test.template.parameters.fields.length > 0 ? (
-                          test.template.parameters.fields.map((param: any) => (
-                            <tr key={param.name}>
-                              <td>{param.name}</td>
-                              <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
-                                {String(test.results?.[param.name] ?? '-')}
-                              </td>
-                              <td style={{ textAlign: 'center' }}>{param.unit ?? ''}</td>
-                              <td>{param.reference_range ?? ''}</td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={4} style={{ textAlign: 'center' }}>No parameters</td>
+                        <>
+                          {/* Test Group Row - only for non-microbiology tests */}
+                          <tr className="test-group-row">
+                            <td colSpan={4}>{test.template.name}</td>
                           </tr>
-                        )
+                          {/* Parameter Rows for regular tests */}
+                          {test.template.parameters?.fields && test.template.parameters.fields.length > 0 ? (
+                            test.template.parameters.fields.map((param: any) => (
+                              <tr key={param.name}>
+                                <td>{param.name}</td>
+                                <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                                  {String(test.results?.[param.name] ?? '-')}
+                                </td>
+                                <td style={{ textAlign: 'center' }}>{param.unit ?? ''}</td>
+                                <td>{param.reference_range ?? ''}</td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={4} style={{ textAlign: 'center' }}>No parameters</td>
+                            </tr>
+                          )}
+                        </>
                       )}
                     </React.Fragment>
                   ))}

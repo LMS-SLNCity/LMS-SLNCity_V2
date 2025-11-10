@@ -13,6 +13,7 @@ type UserCreationData = Omit<User, 'id' | 'isActive' | 'permissions'> & { passwo
 interface ReferralDoctor {
   id: number;
   name: string;
+  designation?: string;
 }
 
 interface AppState {

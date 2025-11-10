@@ -7,7 +7,7 @@ const router = express.Router();
 // GET all referral doctors (no auth required for reading)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const result = await pool.query('SELECT id, name FROM referral_doctors ORDER BY id');
+    const result = await pool.query('SELECT id, name, designation FROM referral_doctors ORDER BY id');
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching referral doctors:', error);
@@ -18,7 +18,7 @@ router.get('/', async (req: Request, res: Response) => {
 // GET single referral doctor (no auth required for reading)
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const result = await pool.query('SELECT id, name FROM referral_doctors WHERE id = $1', [req.params.id]);
+    const result = await pool.query('SELECT id, name, designation FROM referral_doctors WHERE id = $1', [req.params.id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Referral doctor not found' });
     res.json(result.rows[0]);
   } catch (error) {
@@ -30,15 +30,15 @@ router.get('/:id', async (req: Request, res: Response) => {
 // POST - Create new referral doctor (requires auth and MANAGE_B2B permission)
 router.post('/', authMiddleware, requirePermission(['MANAGE_B2B']), async (req: Request, res: Response) => {
   try {
-    const { name } = req.body;
+    const { name, designation } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Doctor name is required' });
     }
 
     const result = await pool.query(
-      'INSERT INTO referral_doctors (name) VALUES ($1) RETURNING id, name',
-      [name.trim()]
+      'INSERT INTO referral_doctors (name, designation) VALUES ($1, $2) RETURNING id, name, designation',
+      [name.trim(), designation?.trim() || null]
     );
     console.log('✅ Created referral doctor:', result.rows[0]);
     res.status(201).json(result.rows[0]);
@@ -51,15 +51,15 @@ router.post('/', authMiddleware, requirePermission(['MANAGE_B2B']), async (req: 
 // PATCH - Update referral doctor (requires auth and MANAGE_B2B permission)
 router.patch('/:id', authMiddleware, requirePermission(['MANAGE_B2B']), async (req: Request, res: Response) => {
   try {
-    const { name } = req.body;
+    const { name, designation } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Doctor name is required' });
     }
 
     const result = await pool.query(
-      'UPDATE referral_doctors SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, name',
-      [name.trim(), req.params.id]
+      'UPDATE referral_doctors SET name = $1, designation = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING id, name, designation',
+      [name.trim(), designation?.trim() || null, req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Referral doctor not found' });
     console.log('✅ Updated referral doctor:', result.rows[0]);
@@ -74,7 +74,7 @@ router.patch('/:id', authMiddleware, requirePermission(['MANAGE_B2B']), async (r
 router.delete('/:id', authMiddleware, requirePermission(['MANAGE_B2B']), async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      'DELETE FROM referral_doctors WHERE id = $1 RETURNING id, name',
+      'DELETE FROM referral_doctors WHERE id = $1 RETURNING id, name, designation',
       [req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Referral doctor not found' });

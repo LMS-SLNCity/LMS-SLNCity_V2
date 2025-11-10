@@ -98,6 +98,7 @@ CREATE TABLE patients (
 CREATE TABLE referral_doctors (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
+    designation VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

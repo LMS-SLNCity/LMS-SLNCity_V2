@@ -28,8 +28,6 @@ router.get('/', async (req: Request, res: Response) => {
         al.details,
         al.resource,
         al.ip_address,
-        al.old_values,
-        al.new_values,
         u.id as user_id,
         u.role as user_role
       FROM audit_logs al
@@ -196,8 +194,8 @@ router.post('/', async (req: Request, res: Response) => {
       user_id,
       resource,
       ip_address,
-      old_values,
-      new_values
+      user_agent,
+      session_id
     } = req.body;
 
     const result = await pool.query(
@@ -208,11 +206,13 @@ router.post('/', async (req: Request, res: Response) => {
         user_id,
         resource,
         ip_address,
-        old_values,
-        new_values
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING id, timestamp, username, action, details, resource, ip_address, old_values, new_values`,
-      [username, action, details, user_id, resource, ip_address, old_values ? JSON.stringify(old_values) : null, new_values ? JSON.stringify(new_values) : null]
+        user_agent,
+        session_id,
+        retention_category,
+        timestamp
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'PERMANENT', CURRENT_TIMESTAMP)
+      RETURNING id, timestamp, username, action, details, resource, ip_address, user_agent, session_id`,
+      [username, action, details, user_id || null, resource || null, ip_address || null, user_agent || null, session_id || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {

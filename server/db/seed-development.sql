@@ -101,10 +101,10 @@ ON CONFLICT DO NOTHING;
 -- ============================================
 -- 7. REFERRAL DOCTORS
 -- ============================================
-INSERT INTO referral_doctors (name) VALUES
-('Dr. Suresh Reddy'),
-('Dr. Lakshmi Devi'),
-('Dr. Venkat Rao')
+INSERT INTO referral_doctors (name, designation) VALUES
+('Dr. Suresh Reddy', 'MD, General Physician'),
+('Dr. Lakshmi Devi', 'MBBS, Cardiologist'),
+('Dr. Venkat Rao', 'MD, Pediatrician')
 ON CONFLICT DO NOTHING;
 
 -- ============================================

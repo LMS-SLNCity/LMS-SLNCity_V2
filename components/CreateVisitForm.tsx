@@ -512,7 +512,10 @@ export const CreateVisitForm: React.FC<CreateVisitFormProps> = ({ onInitiateRepo
                     <div className="sm:col-span-6">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Ref Doctor</label>
                         <SearchableSelect
-                            options={referralDoctors.map(d => ({ value: d.id, label: d.name }))}
+                            options={referralDoctors.map(d => ({
+                                value: d.id,
+                                label: d.designation ? `${d.name}, ${d.designation}` : d.name
+                            }))}
                             value={formData.referred_doctor_id || ''}
                             onChange={(value) => handleChange({ target: { name: 'referred_doctor_id', value: value === '' ? '' : Number(value) } } as any)}
                             placeholder="--Select Doctor--"

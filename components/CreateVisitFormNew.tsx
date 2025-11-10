@@ -336,7 +336,10 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                         <div>
                           <label className="block text-[10px] sm:text-xs font-medium text-gray-700 mb-0.5">Ref. Doctor</label>
                           <SearchableSelect
-                            options={referralDoctors.map(d => ({ value: d.id, label: d.name }))}
+                            options={referralDoctors.map(d => ({
+                                value: d.id,
+                                label: d.designation ? `${d.name}, ${d.designation}` : d.name
+                            }))}
                             value={formData.referred_doctor_id || ''}
                             onChange={(value) => handleChange({ target: { name: 'referred_doctor_id', value: value === '' ? '' : Number(value) } } as any)}
                             placeholder="--Select--"

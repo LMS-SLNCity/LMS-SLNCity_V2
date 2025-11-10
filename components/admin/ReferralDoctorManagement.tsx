@@ -5,15 +5,18 @@ import { useAuth } from '../../context/AuthContext';
 interface ReferralDoctor {
   id: number;
   name: string;
+  designation?: string;
 }
 
 export const ReferralDoctorManagement: React.FC = () => {
     const { referralDoctors, addReferralDoctor, updateReferralDoctor, deleteReferralDoctor } = useAppContext();
     const { user: actor } = useAuth();
     const [doctorName, setDoctorName] = useState('');
+    const [doctorDesignation, setDoctorDesignation] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editingName, setEditingName] = useState('');
+    const [editingDesignation, setEditingDesignation] = useState('');
     const [deletingId, setDeletingId] = useState<number | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -31,8 +34,9 @@ export const ReferralDoctorManagement: React.FC = () => {
 
         setIsLoading(true);
         try {
-            await addReferralDoctor({ name: doctorName }, actor);
+            await addReferralDoctor({ name: doctorName, designation: doctorDesignation }, actor);
             setDoctorName('');
+            setDoctorDesignation('');
         } catch (error) {
             console.error('Failed to add referral doctor:', error);
             alert('Failed to add referral doctor');
@@ -44,6 +48,7 @@ export const ReferralDoctorManagement: React.FC = () => {
     const handleEditStart = (doctor: ReferralDoctor) => {
         setEditingId(doctor.id);
         setEditingName(doctor.name);
+        setEditingDesignation(doctor.designation || '');
     };
 
     const handleEditSave = async (doctorId: number) => {
@@ -58,9 +63,10 @@ export const ReferralDoctorManagement: React.FC = () => {
         }
 
         try {
-            await updateReferralDoctor(doctorId, { name: editingName }, actor);
+            await updateReferralDoctor(doctorId, { name: editingName, designation: editingDesignation }, actor);
             setEditingId(null);
             setEditingName('');
+            setEditingDesignation('');
             alert('Doctor updated successfully');
         } catch (error) {
             console.error('Failed to update doctor:', error);
@@ -99,13 +105,27 @@ export const ReferralDoctorManagement: React.FC = () => {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Doctor Name
+                                Doctor Name *
                             </label>
                             <input
                                 type="text"
                                 value={doctorName}
                                 onChange={(e) => setDoctorName(e.target.value)}
                                 placeholder="e.g., Dr. John Doe"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                disabled={isLoading}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Designation
+                            </label>
+                            <input
+                                type="text"
+                                value={doctorDesignation}
+                                onChange={(e) => setDoctorDesignation(e.target.value)}
+                                placeholder="e.g., MD, General Physician"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary"
                                 disabled={isLoading}
                             />
@@ -130,6 +150,7 @@ export const ReferralDoctorManagement: React.FC = () => {
                             <tr>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ID</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Doctor Name</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Designation</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -145,9 +166,23 @@ export const ReferralDoctorManagement: React.FC = () => {
                                                     value={editingName}
                                                     onChange={(e) => setEditingName(e.target.value)}
                                                     className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                                    placeholder="Doctor Name"
                                                 />
                                             ) : (
                                                 doctor.name
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-gray-600">
+                                            {editingId === doctor.id ? (
+                                                <input
+                                                    type="text"
+                                                    value={editingDesignation}
+                                                    onChange={(e) => setEditingDesignation(e.target.value)}
+                                                    className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                                    placeholder="Designation"
+                                                />
+                                            ) : (
+                                                doctor.designation || '-'
                                             )}
                                         </td>
                                         <td className="px-4 py-3 text-sm space-x-2">
