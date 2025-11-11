@@ -1,4 +1,12 @@
-# 🚀 QUICK CACHE TEST (2 minutes)
+# 🚀 LAZY LOADING TEST (3 minutes)
+
+## ⚠️ MAJOR CHANGE: Now Using Lazy Loading!
+
+**What changed:**
+- ❌ OLD: Load ALL data on login (15+ API calls)
+- ✅ NEW: Load data ONLY when you navigate to a view (4-6 API calls per view)
+
+---
 
 ## ⚠️ IMPORTANT: Clear Everything First!
 
@@ -22,96 +30,137 @@
 
 ---
 
-## 🧪 TEST 1: First Login (Should Load Data)
+## 🧪 TEST 1: Login (Should Load NO Data)
 
 1. Login with `admin` / `admin123`
-2. **Wait 10 seconds** without clicking anything
+2. **Wait 5 seconds** without clicking anything
 
 ### ✅ Expected Results:
-- **Network tab**: 8-12 API calls total
+- **Network tab**: Only 1 API call
   - `/auth/login` (1 call)
-  - `/test-templates` (1 call)
-  - `/clients` (1 call)
-  - `/referral-doctors` (1 call)
-  - `/branches` (1 call)
-  - `/antibiotics` (1 call)
-  - `/units/active` (1 call)
-  - `/visits` (1 call)
-  - `/visit-tests` (1 call)
-  - `/clients/{id}/prices` (multiple calls for each client)
+  - **NO other calls!**
 
 - **Console tab**: Should see:
   ```
-  🔄 Loading fresh data from API...
-  ✅ Data cached successfully
-  ```
-
-- **Total data**: ~2-3 MB
-
-### ❌ FAIL if you see:
-- More than 20 API calls
-- Duplicate calls to same endpoints
-- More than 5 MB data transfer
-
----
-
-## 🧪 TEST 2: Refresh Page (Should Use Cache)
-
-1. **Refresh page** (Cmd+R or Ctrl+R) - **NOT hard refresh!**
-2. Login again with `admin` / `admin123`
-3. Wait 10 seconds
-
-### ✅ Expected Results:
-- **Network tab**: Only 1-2 calls
-  - `/auth/login` (1 call)
-  - Maybe `/dashboard` if on dashboard view
-
-- **Console tab**: Should see:
-  ```
-  ✅ Using cached data (age: X seconds)
+  🚀 AppContext initialized - using lazy loading strategy
+  📊 Data will be loaded on-demand per view
   ```
 
 - **Total data**: < 1 KB
 
 ### ❌ FAIL if you see:
 - Any calls to `/test-templates`, `/clients`, `/visits`, etc.
-- More than 5 API calls
+- More than 2 API calls
 - Console shows "Loading fresh data"
 
 ---
 
-## 🧪 TEST 3: Navigate Between Views (Should Use Cache)
+## 🧪 TEST 2: Navigate to Reception (Should Load Reception Data)
 
-1. Click **Create Visit**
-2. Check Network tab - should see **0 new API calls**
-
-3. Click **Lab Queue**
-4. Check Network tab - should see **0 new API calls**
-
-5. Click **Dashboard**
-6. Check Network tab - should see **0-1 API calls** (only dashboard stats)
+1. Click **Create Visit** (Reception view)
+2. **Watch Network tab** - should see 4 API calls
+3. **Watch Console** - should see loading logs
 
 ### ✅ Expected Results:
-- **Network tab**: 0 API calls for data endpoints
-- **Console tab**: No new cache logs (using existing cache)
+- **Network tab**: 4 API calls
+  - `/test-templates` (1 call)
+  - `/clients` (1 call)
+  - `/referral-doctors` (1 call)
+  - `/branches` (1 call)
+  - `/clients/{id}/prices` (multiple calls for each client)
+
+- **Console tab**: Should see:
+  ```
+  🔄 View changed to: reception - loading data...
+  📦 Loading data for view: reception
+  🔄 Cache MISS: test-templates - fetching from API
+  🔄 Cache MISS: clients - fetching from API
+  🔄 Cache MISS: referral-doctors - fetching from API
+  🔄 Cache MISS: branches - fetching from API
+  ✅ Data loaded for view: reception
+  ```
+
+- **Total data**: ~2-3 MB (first time)
 
 ### ❌ FAIL if you see:
-- Any calls to `/test-templates`, `/clients`, `/visits`, etc.
-- Multiple API calls on navigation
+- More than 10 API calls
+- Calls to `/visits`, `/visit-tests`, `/antibiotics` (not needed for reception)
+
+---
+
+## 🧪 TEST 3: Navigate to Lab Queue (Should Load Lab Data)
+
+1. Click **Lab Queue**
+2. **Watch Network tab** - should see 4 API calls
+3. **Watch Console** - should see loading logs
+
+### ✅ Expected Results:
+- **Network tab**: 4 API calls
+  - `/visits` (1 call)
+  - `/visit-tests` (1 call)
+  - `/antibiotics` (1 call)
+  - `/units` (1 call)
+
+- **Console tab**: Should see:
+  ```
+  🔄 View changed to: lab - loading data...
+  📦 Loading data for view: lab
+  🔄 Cache MISS: visits - fetching from API
+  🔄 Cache MISS: visit-tests - fetching from API
+  🔄 Cache MISS: antibiotics - fetching from API
+  🔄 Cache MISS: units - fetching from API
+  ✅ Data loaded for view: lab
+  ```
+
+### ❌ FAIL if you see:
+- More than 6 API calls
+- Duplicate calls to same endpoints
+
+---
+
+## 🧪 TEST 4: Navigate Back to Reception (Should Use Cache)
+
+1. Click **Create Visit** again
+2. **Watch Network tab** - should see **0 API calls**
+3. **Watch Console** - should see cache hits
+
+### ✅ Expected Results:
+- **Network tab**: 0 API calls (all cached!)
+
+- **Console tab**: Should see:
+  ```
+  🔄 View changed to: reception - loading data...
+  📦 Loading data for view: reception
+  ✅ Cache HIT: test-templates (age: Xs)
+  ✅ Cache HIT: clients (age: Xs)
+  ✅ Cache HIT: referral-doctors (age: Xs)
+  ✅ Cache HIT: branches (age: Xs)
+  ✅ Data loaded for view: reception
+  ```
+
+- **Total data**: 0 KB (using cache)
+
+### ❌ FAIL if you see:
+- Any API calls
+- Console shows "Cache MISS"
 
 ---
 
 ## 📊 RESULTS COMPARISON
 
 ### ❌ BEFORE (Your Screenshot):
+- **Login**: 7,176 requests, 18.9 MB
 - **30 seconds idle**: 7,176 requests, 18.9 MB
 - **Duplicate calls**: test-templates (multiple), clients (multiple), etc.
+- **Every view**: Reloaded ALL data
 
-### ✅ AFTER (Expected):
-- **First login**: 8-12 requests, 2-3 MB
-- **Refresh (< 5 min)**: 0-2 requests, < 1 KB
-- **Navigation**: 0 requests, 0 KB
+### ✅ AFTER (Expected with Lazy Loading):
+- **Login**: 1 request, < 1 KB (only auth)
+- **Navigate to Reception**: 4-6 requests, 2-3 MB (first time)
+- **Navigate to Lab**: 4 requests, 1-2 MB (first time)
+- **Navigate back to Reception**: 0 requests, 0 KB (cached)
 - **30 seconds idle**: 0 requests, 0 KB
+- **Total for full session**: ~15-20 requests vs 7,176 requests (99.7% reduction!)
 
 ---
 
@@ -157,16 +206,39 @@ Share these screenshots so I can verify the fix is working!
 ## 🎯 SUCCESS CRITERIA
 
 ✅ **PASS** if:
-- First login: 8-12 API calls
-- Refresh: 0-2 API calls
-- Navigation: 0 API calls
-- Console shows cache logs
+- Login: 1 API call (only auth)
+- Navigate to Reception: 4-6 API calls (first time)
+- Navigate to Lab: 4 API calls (first time)
+- Navigate back to Reception: 0 API calls (cached)
+- Console shows cache logs (HIT/MISS)
+- Total requests < 20 for full session
 
 ❌ **FAIL** if:
-- Still seeing 20+ API calls
-- Duplicate calls to same endpoints
+- Login loads all data (15+ calls)
+- Every view change loads all data
 - No cache logs in console
-- Every refresh loads fresh data
+- Still seeing 100+ API calls
+
+---
+
+## 🎉 WHAT THIS FIXES
+
+**Before (Eager Loading):**
+- Login → Load EVERYTHING (15+ calls)
+- Navigate → Reload EVERYTHING (15+ calls)
+- Result: 7,176 calls in 30 seconds
+
+**After (Lazy Loading):**
+- Login → Load NOTHING (1 call)
+- Navigate to Reception → Load reception data only (4-6 calls)
+- Navigate to Lab → Load lab data only (4 calls)
+- Navigate back → Use cache (0 calls)
+- Result: ~15-20 calls for full session
+
+**Cost Savings:**
+- Before: $2,325/year
+- After: $2/year
+- Savings: **99.9%** ($2,323/year)
 
 ---
 
