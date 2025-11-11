@@ -222,10 +222,9 @@ http://13.201.165.54:3000
 ```
 
 3. **Test Login**:
-Use the default credentials:
-- **Admin**: admin / admin123
-- **Lab Technician**: lab_tech / lab123
-- **Phlebotomist**: phlebo / phlebo123
+Use the production credentials:
+- **Username**: sudo
+- **Password**: $iva@V3nna21
 
 ---
 

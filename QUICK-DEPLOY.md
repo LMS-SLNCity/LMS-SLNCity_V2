@@ -68,9 +68,9 @@ curl http://localhost:3000
 ### 5. Access Application
 Open browser: **http://13.201.165.54:3000**
 
-**Default Login**:
-- Username: `admin`
-- Password: `admin123`
+**Production Login**:
+- Username: `sudo`
+- Password: `$iva@V3nna21`
 
 ---
 

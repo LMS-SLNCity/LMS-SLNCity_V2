@@ -3,14 +3,14 @@
 -- No test data, no sample visits, no dummy clients
 
 -- ============================================
--- 1. ESSENTIAL USERS (with secure passwords)
+-- 1. ESSENTIAL USER (Single sudo account)
 -- ============================================
--- Default password for all users: ChangeMe@123
--- IMPORTANT: Change these passwords immediately after deployment!
+-- Username: sudo
+-- Password: $iva@V3nna21
+-- IMPORTANT: Keep this password secure!
 
 INSERT INTO users (username, password_hash, role, is_active) VALUES
-('sudo', '$2a$10$RZHRKSweExF8e6RaEFfEGe3RfHZtYSPsybDIfDZSZEz6JAZn7DVmi', 'SUDO', true),
-('admin', '$2a$10$RZHRKSweExF8e6RaEFfEGe3RfHZtYSPsybDIfDZSZEz6JAZn7DVmi', 'ADMIN', true)
+('sudo', '$2a$10$KRtBtpLSUFljP48ZLuEswu06rxR8C9M1vGio.2DUdFCujf7I5EYPa', 'SUDO', true)
 ON CONFLICT (username) DO UPDATE SET
   password_hash = EXCLUDED.password_hash,
   role = EXCLUDED.role,

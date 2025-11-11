@@ -214,9 +214,9 @@ Open your browser and navigate to:
 http://13.201.165.54:3000
 ```
 
-**Default Login Credentials**:
-- **Username**: `admin`
-- **Password**: `admin123`
+**Production Login Credentials**:
+- **Username**: `sudo`
+- **Password**: `$iva@V3nna21`
 
 **Test the following**:
 1. ✅ Login page loads
