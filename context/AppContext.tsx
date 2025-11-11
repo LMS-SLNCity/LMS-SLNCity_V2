@@ -169,6 +169,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const visitTestsResponse = await fetch(`${API_BASE_URL}/visit-tests`, { headers });
         const visitTests = visitTestsResponse.ok ? await visitTestsResponse.json() : [];
 
+        // Load client prices for all clients
+        const clientPricesPromises = clients.map(async (client: Client) => {
+          const pricesResponse = await fetch(`${API_BASE_URL}/clients/${client.id}/prices`, { headers });
+          return pricesResponse.ok ? await pricesResponse.json() : [];
+        });
+        const clientPricesArrays = await Promise.all(clientPricesPromises);
+        const clientPrices = clientPricesArrays.flat();
+
         setState(prevState => ({
           ...prevState,
           clients: clients,
@@ -186,6 +194,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           })),
           visits: visits,
           visitTests: visitTests,
+          clientPrices: clientPrices,
         }));
       } catch (error) {
         console.error('Error loading data:', error);
@@ -1302,6 +1311,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const branchesResponse = await fetch(`${API_BASE_URL}/branches`, { headers });
       const branches = branchesResponse.ok ? await branchesResponse.json() : [];
 
+      // Load client prices for all clients
+      const clientPricesPromises = clients.map(async (client: Client) => {
+        const pricesResponse = await fetch(`${API_BASE_URL}/clients/${client.id}/prices`, { headers });
+        return pricesResponse.ok ? await pricesResponse.json() : [];
+      });
+      const clientPricesArrays = await Promise.all(clientPricesPromises);
+      const clientPrices = clientPricesArrays.flat();
+
       setState(prevState => ({
         ...prevState,
         visits: visits,
@@ -1312,6 +1329,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         antibiotics: antibiotics,
         referralDoctors: referralDoctors,
         branches: branches,
+        clientPrices: clientPrices,
       }));
     } catch (error) {
       console.error('Error reloading data:', error);
