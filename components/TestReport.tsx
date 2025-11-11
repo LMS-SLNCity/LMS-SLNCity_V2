@@ -789,10 +789,10 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                 </div>
               </div>
 
-              {/* Right: Barcode */}
+              {/* Right: Barcode - COMPACT */}
               <div style={{
-                width: '200px',
-                padding: '8px 12px',
+                width: '140px',
+                padding: '8px 8px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
