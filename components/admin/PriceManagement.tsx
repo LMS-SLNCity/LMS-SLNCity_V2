@@ -16,7 +16,8 @@ export const PriceManagement: React.FC = () => {
     const [prices, setPrices] = useState<PriceState>({});
     const [hasChanges, setHasChanges] = useState(false);
 
-    // Load prices from testTemplates whenever they change, but don't overwrite if user has made changes
+    // Load prices from testTemplates only on first load
+    // DO NOT reload when testTemplates changes - causes excessive re-renders
     useEffect(() => {
         if (testTemplates.length > 0 && Object.keys(prices).length === 0) {
             // Only initialize if prices is empty (first load)
@@ -29,7 +30,7 @@ export const PriceManagement: React.FC = () => {
             }, {} as PriceState);
             setPrices(initialPrices);
         }
-    }, [testTemplates]);
+    }, [testTemplates, prices]);
 
     const handleChange = (id: number, field: 'price' | 'b2b_price', value: string) => {
         // Allow only numbers and decimal point

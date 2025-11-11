@@ -311,8 +311,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       addAuditLog(actor.username, 'CREATE_VISIT', `Created visit for patient ${visitData.patient.name} with ${visitData.testIds.length} tests.`);
 
-      // Reload all data from database to ensure everything is in sync
-      await reloadData();
+      // Only reload visits and visitTests (not ALL data) to save API calls
+      const reloadHeaders = { 'Authorization': `Bearer ${authToken}` };
+
+      const [visitsResponse, visitTestsResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/visits`, { headers: reloadHeaders }),
+        fetch(`${API_BASE_URL}/visit-tests`, { headers: reloadHeaders })
+      ]);
+
+      const updatedVisits = visitsResponse.ok ? await visitsResponse.json() : [];
+      const updatedVisitTests = visitTestsResponse.ok ? await visitTestsResponse.json() : [];
+
+      setState(prevState => ({
+        ...prevState,
+        visits: updatedVisits,
+        visitTests: updatedVisitTests
+      }));
     } catch (error) {
       console.error('Error creating visit:', error);
       throw error;
@@ -530,8 +544,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (response.ok) {
         const responseData = await response.json();
         console.log('Rejection successful:', responseData);
-        // Reload data to get updated test status and rejection count
-        await reloadData();
+
+        // Only reload visitTests (not ALL data) to save API calls
+        const reloadHeaders = { 'Authorization': `Bearer ${authToken}` };
+        const visitTestsResponse = await fetch(`${API_BASE_URL}/visit-tests`, { headers: reloadHeaders });
+        const updatedVisitTests = visitTestsResponse.ok ? await visitTestsResponse.json() : [];
+
+        setState(prevState => ({
+          ...prevState,
+          visitTests: updatedVisitTests
+        }));
+
         alert('Test result rejected successfully. Lab technician will be notified.');
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
