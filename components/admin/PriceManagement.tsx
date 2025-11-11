@@ -15,11 +15,11 @@ export const PriceManagement: React.FC = () => {
     const { user: actor } = useAuth();
     const [prices, setPrices] = useState<PriceState>({});
     const [hasChanges, setHasChanges] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false);
 
-    // Initialize prices only once when component mounts or when testTemplates first loads
+    // Load prices from testTemplates whenever they change, but don't overwrite if user has made changes
     useEffect(() => {
-        if (testTemplates.length > 0 && !isInitialized) {
+        if (testTemplates.length > 0 && Object.keys(prices).length === 0) {
+            // Only initialize if prices is empty (first load)
             const initialPrices = testTemplates.reduce((acc, t) => {
                 acc[t.id] = {
                     price: t.price.toString(),
@@ -28,10 +28,8 @@ export const PriceManagement: React.FC = () => {
                 return acc;
             }, {} as PriceState);
             setPrices(initialPrices);
-            setHasChanges(false);
-            setIsInitialized(true);
         }
-    }, [testTemplates, isInitialized]);
+    }, [testTemplates]);
 
     const handleChange = (id: number, field: 'price' | 'b2b_price', value: string) => {
         // Store the string value directly to allow proper typing
@@ -64,9 +62,12 @@ export const PriceManagement: React.FC = () => {
                 });
 
             await updateTestPrices(updates, actor);
+
+            // After successful save, reload prices from updated testTemplates
+            // Clear prices state so useEffect will reload them
+            setPrices({});
             setHasChanges(false);
-            // Reset initialization flag so that updated prices from database are loaded
-            setIsInitialized(false);
+
             alert('Prices updated successfully!');
         } catch (error) {
             console.error('Error updating prices:', error);
