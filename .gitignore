@@ -28,6 +28,11 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Credentials (NEVER commit)
+CREDENTIALS.md
+*credentials*
+*CREDENTIALS*
+
 # Docker volumes
 postgres_data/
 
