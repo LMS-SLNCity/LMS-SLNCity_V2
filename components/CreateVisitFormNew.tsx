@@ -60,11 +60,10 @@ interface CreateVisitFormNewProps {
 }
 
 export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitiateReport }) => {
-  const { addVisit, testTemplates, clients, clientPrices, loadTestTemplates, loadClients, loadBranches } = useAppContext();
+  const { addVisit, testTemplates, clients, clientPrices, referralDoctors, loadTestTemplates, loadClients, loadBranches, loadReferralDoctors } = useAppContext();
   const { user: actor } = useAuth();
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [referralDoctors, setReferralDoctors] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [testSearchQuery, setTestSearchQuery] = useState('');
 
@@ -75,25 +74,11 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
       loadTestTemplates(),
       loadClients(),
       loadBranches(),
+      loadReferralDoctors(), // FIX: Use AppContext function instead of direct fetch
     ]).then(() => {
       console.log('✅ CreateVisitForm: Data loaded');
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Load referral doctors
-  useEffect(() => {
-    const fetchReferralDoctors = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/referral-doctors`);
-        if (!response.ok) throw new Error('Failed to fetch referral doctors');
-        const data = await response.json();
-        setReferralDoctors(data);
-      } catch (error) {
-        console.error('❌ Failed to fetch referral doctors:', error);
-      }
-    };
-    fetchReferralDoctors();
-  }, []);
 
   // Auto-set sex based on salutation
   useEffect(() => {
