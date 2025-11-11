@@ -774,21 +774,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Failed to update price for test ID ${priceUpdate.id}:`, errorText);
           throw new Error(`Failed to update price for test ID ${priceUpdate.id}`);
         }
       }
 
-      // Update local state after successful API calls
-      setState(prevState => {
-          const updatedTemplates = prevState.testTemplates.map(template => {
-              const update = priceData.find(p => p.id === template.id);
-              if (update) {
-                  return { ...template, price: update.price, b2b_price: update.b2b_price };
-              }
-              return template;
-          });
-          return { ...prevState, testTemplates: updatedTemplates };
+      // Reload test templates from database to ensure UI is in sync
+      const templatesResponse = await fetch(`${API_BASE_URL}/test-templates`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
       });
+
+      if (templatesResponse.ok) {
+        const testTemplates = await templatesResponse.json();
+        setState(prevState => ({
+          ...prevState,
+          testTemplates: testTemplates,
+        }));
+      }
     } catch (error) {
       console.error('Error updating test prices:', error);
       throw error;
