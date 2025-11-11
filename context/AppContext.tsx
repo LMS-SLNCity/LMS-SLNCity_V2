@@ -128,10 +128,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const loadData = async () => {
       try {
         const authToken = getAuthToken();
-        console.log('Auth token:', authToken ? 'Present' : 'Missing');
 
         if (!authToken) {
-          console.log('No auth token, skipping data load');
           return;
         }
 
@@ -142,42 +140,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // Load clients
         const clientsResponse = await fetch(`${API_BASE_URL}/clients`, { headers });
         const clients = clientsResponse.ok ? await clientsResponse.json() : [];
-        console.log('Loaded clients:', clients.length);
 
         // Load referral doctors
         const doctorsResponse = await fetch(`${API_BASE_URL}/referral-doctors`, { headers });
         const referralDoctors = doctorsResponse.ok ? await doctorsResponse.json() : [];
-        console.log('Loaded referral doctors:', referralDoctors.length);
 
         // Load test templates
         const templatesResponse = await fetch(`${API_BASE_URL}/test-templates`, { headers });
         const testTemplates = templatesResponse.ok ? await templatesResponse.json() : [];
-        console.log('Loaded test templates:', testTemplates.length);
 
         // Load branches
         const branchesResponse = await fetch(`${API_BASE_URL}/branches`, { headers });
         const branches = branchesResponse.ok ? await branchesResponse.json() : [];
-        console.log('Loaded branches:', branches.length);
 
         // Load antibiotics
         const antibioticsResponse = await fetch(`${API_BASE_URL}/antibiotics`, { headers });
         const antibiotics = antibioticsResponse.ok ? await antibioticsResponse.json() : [];
-        console.log('Loaded antibiotics:', antibiotics.length);
 
         // Load units
         const unitsResponse = await fetch(`${API_BASE_URL}/units/active`, { headers });
         const units = unitsResponse.ok ? await unitsResponse.json() : [];
-        console.log('Loaded units:', units.length, units);
 
         // Load visits
         const visitsResponse = await fetch(`${API_BASE_URL}/visits`, { headers });
         const visits = visitsResponse.ok ? await visitsResponse.json() : [];
-        console.log('Loaded visits:', visits.length);
 
         // Load visit tests
         const visitTestsResponse = await fetch(`${API_BASE_URL}/visit-tests`, { headers });
         const visitTests = visitTestsResponse.ok ? await visitTestsResponse.json() : [];
-        console.log('Loaded visit tests:', visitTests.length);
 
         setState(prevState => ({
           ...prevState,
@@ -1265,7 +1255,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const authToken = getAuthToken();
       if (!authToken) {
-        console.log('No auth token, skipping data reload');
         return;
       }
 
@@ -1276,12 +1265,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // Load visits
       const visitsResponse = await fetch(`${API_BASE_URL}/visits`, { headers });
       const visits = visitsResponse.ok ? await visitsResponse.json() : [];
-      console.log('Reloaded visits:', visits.length);
 
       // Load visit tests
       const visitTestsResponse = await fetch(`${API_BASE_URL}/visit-tests`, { headers });
       const visitTests = visitTestsResponse.ok ? await visitTestsResponse.json() : [];
-      console.log('Reloaded visit tests:', visitTests.length);
 
       // Load users
       const usersResponse = await fetch(`${API_BASE_URL}/users`, { headers });
@@ -1294,32 +1281,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         password_hash: '',
         permissions: state.rolePermissions[user.role] || []
       }));
-      console.log('Reloaded users:', users.length);
 
       // Load test templates
       const testTemplatesResponse = await fetch(`${API_BASE_URL}/test-templates`, { headers });
       const testTemplates = testTemplatesResponse.ok ? await testTemplatesResponse.json() : [];
-      console.log('Reloaded test templates:', testTemplates.length);
 
       // Load clients
       const clientsResponse = await fetch(`${API_BASE_URL}/clients`, { headers });
       const clients = clientsResponse.ok ? await clientsResponse.json() : [];
-      console.log('Reloaded clients:', clients.length);
 
       // Load antibiotics
       const antibioticsResponse = await fetch(`${API_BASE_URL}/antibiotics`, { headers });
       const antibiotics = antibioticsResponse.ok ? await antibioticsResponse.json() : [];
-      console.log('Reloaded antibiotics:', antibiotics.length);
 
       // Load referral doctors
       const referralDoctorsResponse = await fetch(`${API_BASE_URL}/referral-doctors`, { headers });
       const referralDoctors = referralDoctorsResponse.ok ? await referralDoctorsResponse.json() : [];
-      console.log('Reloaded referral doctors:', referralDoctors.length);
 
       // Load branches
       const branchesResponse = await fetch(`${API_BASE_URL}/branches`, { headers });
       const branches = branchesResponse.ok ? await branchesResponse.json() : [];
-      console.log('Reloaded branches:', branches.length);
 
       setState(prevState => ({
         ...prevState,
