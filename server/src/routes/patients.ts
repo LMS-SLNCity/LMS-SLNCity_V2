@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      'SELECT id, salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history FROM patients ORDER BY id'
+      'SELECT id, patient_code, salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history FROM patients ORDER BY id'
     );
     res.json(result.rows);
   } catch (error) {
@@ -27,7 +27,7 @@ router.get('/search/:query', async (req: Request, res: Response) => {
 
     // Search by phone (exact match) OR name (partial match, case-insensitive)
     const result = await pool.query(
-      `SELECT id, salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history
+      `SELECT id, patient_code, salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history
        FROM patients
        WHERE phone = $1 OR LOWER(name) LIKE LOWER($2)
        ORDER BY
@@ -47,7 +47,7 @@ router.get('/search/:query', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      'SELECT id, salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history FROM patients WHERE id = $1',
+      'SELECT id, patient_code, salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history FROM patients WHERE id = $1',
       [req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Patient not found' });
@@ -64,7 +64,7 @@ router.post('/', async (req: Request, res: Response) => {
     const result = await pool.query(
       `INSERT INTO patients (salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       RETURNING id, salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history`,
+       RETURNING id, patient_code, salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history`,
       [salutation, name, age_years, age_months, age_days, sex, guardian_name, phone, address, email, clinical_history]
     );
 

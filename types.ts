@@ -3,6 +3,7 @@ export type Sex = 'Male' | 'Female' | 'Other' | '';
 
 export interface Patient {
   id?: number; // Unique patient ID for searching
+  patient_code?: string; // Auto-generated patient code (e.g., P202511120001)
   salutation: Salutation;
   name: string;
   age_years: number;

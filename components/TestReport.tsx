@@ -816,6 +816,10 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
             }}>
               <div style={{ padding: '6px 12px', borderRight: '1px solid #000' }}>
                 <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Patient Id</div>
+                <div>{visit.patient.patient_code || 'N/A'}</div>
+              </div>
+              <div style={{ padding: '6px 12px', borderRight: '1px solid #000' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Visit Id</div>
                 <div>{visit.visit_code}</div>
               </div>
               <div style={{ padding: '6px 12px', borderRight: '1px solid #000' }}>
