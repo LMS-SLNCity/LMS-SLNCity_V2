@@ -1,10 +1,11 @@
-# 🚀 LAZY LOADING TEST (3 minutes)
+# 🚀 TRUE LAZY LOADING TEST (3 minutes)
 
-## ⚠️ MAJOR CHANGE: Now Using Lazy Loading!
+## ⚠️ MAJOR CHANGE: Component-Level Lazy Loading!
 
 **What changed:**
 - ❌ OLD: Load ALL data on login (15+ API calls)
-- ✅ NEW: Load data ONLY when you navigate to a view (4-6 API calls per view)
+- ❌ PREVIOUS FIX: Load data when view changes (still 15+ calls on login)
+- ✅ NEW: Load data ONLY when component mounts (0 calls on login!)
 
 ---
 
@@ -33,36 +34,42 @@
 ## 🧪 TEST 1: Login (Should Load NO Data)
 
 1. Login with `admin` / `admin123`
-2. **Wait 5 seconds** without clicking anything
+2. **You'll see the default view (probably Dashboard or Create Visit)**
+3. **IMPORTANT: Don't click anything yet!**
+4. **Check Network tab immediately**
 
 ### ✅ Expected Results:
 - **Network tab**: Only 1 API call
   - `/auth/login` (1 call)
-  - **NO other calls!**
+  - **NO other calls yet!**
 
 - **Console tab**: Should see:
   ```
   🚀 AppContext initialized - using lazy loading strategy
   📊 Data will be loaded on-demand per view
+  📍 View changed to: [view name]
+  ⏳ Data will be loaded by components as needed
   ```
 
 - **Total data**: < 1 KB
 
 ### ❌ FAIL if you see:
-- Any calls to `/test-templates`, `/clients`, `/visits`, etc.
+- Any calls to `/test-templates`, `/clients`, `/visits`, etc. immediately after login
 - More than 2 API calls
-- Console shows "Loading fresh data"
+- Console shows "Loading fresh data" or "Cache MISS"
+
+**NOTE:** The default view will load its data, but ONLY after the component mounts (next test).
 
 ---
 
-## 🧪 TEST 2: Navigate to Reception (Should Load Reception Data)
+## 🧪 TEST 2: Wait and Watch (Component Loads Its Data)
 
-1. Click **Create Visit** (Reception view)
-2. **Watch Network tab** - should see 4 API calls
-3. **Watch Console** - should see loading logs
+1. **After login, wait 2-3 seconds**
+2. **Watch Network tab** - should see API calls NOW
+3. **Watch Console** - should see component loading logs
 
-### ✅ Expected Results:
-- **Network tab**: 4 API calls
+### ✅ Expected Results (if default view is Create Visit):
+- **Network tab**: 4-6 API calls (after 1-2 seconds)
   - `/test-templates` (1 call)
   - `/clients` (1 call)
   - `/referral-doctors` (1 call)
@@ -71,18 +78,17 @@
 
 - **Console tab**: Should see:
   ```
-  🔄 View changed to: reception - loading data...
-  📦 Loading data for view: reception
-  🔄 Cache MISS: test-templates - fetching from API
+  � CreateVisitForm: Loading required data...
+   Cache MISS: test-templates - fetching from API
   🔄 Cache MISS: clients - fetching from API
-  🔄 Cache MISS: referral-doctors - fetching from API
   🔄 Cache MISS: branches - fetching from API
-  ✅ Data loaded for view: reception
+  ✅ CreateVisitForm: Data loaded
   ```
 
 - **Total data**: ~2-3 MB (first time)
 
 ### ❌ FAIL if you see:
+- Data loads immediately on login (before component mounts)
 - More than 10 API calls
 - Calls to `/visits`, `/visit-tests`, `/antibiotics` (not needed for reception)
 
@@ -103,22 +109,24 @@
 
 - **Console tab**: Should see:
   ```
-  🔄 View changed to: lab - loading data...
-  📦 Loading data for view: lab
+  � View changed to: lab
+  ⏳ Data will be loaded by components as needed
+  📦 LabQueue: Loading required data...
   🔄 Cache MISS: visits - fetching from API
   🔄 Cache MISS: visit-tests - fetching from API
   🔄 Cache MISS: antibiotics - fetching from API
   🔄 Cache MISS: units - fetching from API
-  ✅ Data loaded for view: lab
+  ✅ LabQueue: Data loaded
   ```
 
 ### ❌ FAIL if you see:
 - More than 6 API calls
 - Duplicate calls to same endpoints
+- Data loads before component mounts
 
 ---
 
-## 🧪 TEST 4: Navigate Back to Reception (Should Use Cache)
+## 🧪 TEST 4: Navigate Back to Create Visit (Should Use Cache)
 
 1. Click **Create Visit** again
 2. **Watch Network tab** - should see **0 API calls**
@@ -129,13 +137,13 @@
 
 - **Console tab**: Should see:
   ```
-  🔄 View changed to: reception - loading data...
-  📦 Loading data for view: reception
+  � View changed to: reception
+  ⏳ Data will be loaded by components as needed
+  📦 CreateVisitForm: Loading required data...
   ✅ Cache HIT: test-templates (age: Xs)
   ✅ Cache HIT: clients (age: Xs)
-  ✅ Cache HIT: referral-doctors (age: Xs)
   ✅ Cache HIT: branches (age: Xs)
-  ✅ Data loaded for view: reception
+  ✅ CreateVisitForm: Data loaded
   ```
 
 - **Total data**: 0 KB (using cache)
