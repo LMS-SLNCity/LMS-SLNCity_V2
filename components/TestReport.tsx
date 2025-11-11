@@ -513,8 +513,10 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
   // Get base URL for images (remove /api suffix)
   const IMAGE_BASE_URL = API_BASE_URL.replace('/api', '');
 
-  // Fetch actual approvers who approved tests for this visit
+  // Fetch actual approvers who approved tests for this visit - OPTIMIZED to run only once
   useEffect(() => {
+    let isMounted = true;
+
     const fetchActualApprovers = async () => {
       try {
         // Get all approved tests for this visit
@@ -533,7 +535,9 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           // Fallback to default approvers if no specific approvers found
           const response = await fetch(`${API_BASE_URL}/approvers`);
           const data = await response.json();
-          setApprovers(data.filter((a: Approver) => a.show_on_print));
+          if (isMounted) {
+            setApprovers(data.filter((a: Approver) => a.show_on_print));
+          }
           return;
         }
 
@@ -559,15 +563,18 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
         });
 
         const fetchedApprovers = (await Promise.all(approverPromises)).filter(Boolean) as Approver[];
-        console.log('Fetched approvers for report:', fetchedApprovers);
-        setApprovers(fetchedApprovers);
+        if (isMounted) {
+          setApprovers(fetchedApprovers);
+        }
       } catch (err) {
         console.error('Error fetching approvers:', err);
         // Fallback to default approvers on error
         try {
           const response = await fetch(`${API_BASE_URL}/approvers`);
           const data = await response.json();
-          setApprovers(data.filter((a: Approver) => a.show_on_print));
+          if (isMounted) {
+            setApprovers(data.filter((a: Approver) => a.show_on_print));
+          }
         } catch (fallbackErr) {
           console.error('Error fetching fallback approvers:', fallbackErr);
         }
@@ -575,7 +582,11 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
     };
 
     fetchActualApprovers();
-  }, [visit.tests, visitTests]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [visit.id]); // Only re-run when visit changes, not on every visitTests update
 
   if (!visit) {
     return <div className="bg-white p-8 max-w-4xl mx-auto text-red-500">Error: Visit data not found.</div>;
