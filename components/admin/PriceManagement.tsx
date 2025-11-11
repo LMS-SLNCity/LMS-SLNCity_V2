@@ -15,15 +15,20 @@ export const PriceManagement: React.FC = () => {
     const { user: actor } = useAuth();
     const [prices, setPrices] = useState<PriceState>({});
     const [hasChanges, setHasChanges] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
 
+    // Initialize prices only once when component mounts or when testTemplates first loads
     useEffect(() => {
-        const initialPrices = testTemplates.reduce((acc, t) => {
-            acc[t.id] = { price: t.price, b2b_price: t.b2b_price };
-            return acc;
-        }, {} as PriceState);
-        setPrices(initialPrices);
-        setHasChanges(false);
-    }, [testTemplates]);
+        if (testTemplates.length > 0 && !isInitialized) {
+            const initialPrices = testTemplates.reduce((acc, t) => {
+                acc[t.id] = { price: t.price, b2b_price: t.b2b_price };
+                return acc;
+            }, {} as PriceState);
+            setPrices(initialPrices);
+            setHasChanges(false);
+            setIsInitialized(true);
+        }
+    }, [testTemplates, isInitialized]);
 
     const handleChange = (id: number, field: 'price' | 'b2b_price', value: string) => {
         const numericValue = Number(value) || 0;
@@ -57,6 +62,8 @@ export const PriceManagement: React.FC = () => {
 
             await updateTestPrices(updates, actor);
             setHasChanges(false);
+            // Reset initialization flag so that updated prices from database are loaded
+            setIsInitialized(false);
             alert('Prices updated successfully!');
         } catch (error) {
             console.error('Error updating prices:', error);
