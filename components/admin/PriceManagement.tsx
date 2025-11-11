@@ -32,6 +32,11 @@ export const PriceManagement: React.FC = () => {
     }, [testTemplates]);
 
     const handleChange = (id: number, field: 'price' | 'b2b_price', value: string) => {
+        // Allow only numbers and decimal point
+        if (value !== '' && !/^\d*\.?\d*$/.test(value)) {
+            return; // Ignore non-numeric input
+        }
+
         // Store the string value directly to allow proper typing
         setPrices(prev => ({
             ...prev,
@@ -107,16 +112,20 @@ export const PriceManagement: React.FC = () => {
                             <tr key={template.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50 hover:bg-gray-100'}>
                                 <td className="px-4 py-2 text-sm font-medium text-gray-800">{template.name}</td>
                                 <td className="px-4 py-2">
-                                    <input 
-                                        type="number"
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
                                         value={prices[template.id]?.price ?? ''}
                                         onChange={(e) => handleChange(template.id, 'price', e.target.value)}
                                         className="w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
                                     />
                                 </td>
                                 <td className="px-4 py-2">
-                                     <input 
-                                        type="number"
+                                     <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
                                         value={prices[template.id]?.b2b_price ?? ''}
                                         onChange={(e) => handleChange(template.id, 'b2b_price', e.target.value)}
                                         className="w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
