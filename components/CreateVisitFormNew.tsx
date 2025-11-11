@@ -60,7 +60,7 @@ interface CreateVisitFormNewProps {
 }
 
 export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitiateReport }) => {
-  const { addVisit, testTemplates, clients, clientPrices, referralDoctors, loadTestTemplates, loadClients, loadBranches, loadReferralDoctors } = useAppContext();
+  const { addVisit, testTemplates, clients, clientPrices, referralDoctors, loadTestTemplates, loadClients, loadClientPrices, loadBranches, loadReferralDoctors } = useAppContext();
   const { user: actor } = useAuth();
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -79,6 +79,14 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
       console.log('✅ CreateVisitForm: Data loaded');
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load client prices when B2B client is selected
+  useEffect(() => {
+    if (formData.ref_customer_id && isB2BClient) {
+      console.log(`📦 Loading prices for client ${formData.ref_customer_id}...`);
+      loadClientPrices(formData.ref_customer_id);
+    }
+  }, [formData.ref_customer_id, isB2BClient]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-set sex based on salutation
   useEffect(() => {

@@ -95,6 +95,7 @@ interface AppContextType extends AppState {
   // Data loading - LAZY LOADING
   loadTestTemplates: () => Promise<void>;
   loadClients: () => Promise<void>;
+  loadClientPrices: (clientId?: number) => Promise<void>; // Load prices for specific client or all
   loadReferralDoctors: () => Promise<void>;
   loadBranches: () => Promise<void>;
   loadAntibiotics: () => Promise<void>;
@@ -1245,20 +1246,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const data = await getCachedData<Client[]>('clients');
       setState(prevState => ({ ...prevState, clients: data }));
 
-      // Load client prices for all clients
+      // CRITICAL FIX: DO NOT load client prices here!
+      // Loading prices for 100+ clients = 100+ API calls
+      // Prices should be loaded ONLY when:
+      // 1. User selects a specific client in the form
+      // 2. Or create a batch endpoint: GET /clients/prices (all prices at once)
+      // For now, prices will be loaded on-demand when client is selected
+      console.log('✅ Clients loaded (prices will be loaded on-demand)');
+    } catch (error) {
+      console.error('Error loading clients:', error);
+    }
+  };
+
+  // Load client prices - either for specific client or all clients
+  const loadClientPrices = async (clientId?: number) => {
+    try {
       const authToken = getAuthToken();
-      if (authToken) {
-        const headers = { 'Authorization': `Bearer ${authToken}` };
-        const clientPricesPromises = data.map(async (client: Client) => {
+      if (!authToken) return;
+
+      const headers = { 'Authorization': `Bearer ${authToken}` };
+
+      if (clientId) {
+        // Load prices for specific client only
+        console.log(`📦 Loading prices for client ${clientId}...`);
+        const pricesResponse = await fetch(`${API_BASE_URL}/clients/${clientId}/prices`, { headers });
+        if (pricesResponse.ok) {
+          const prices = await pricesResponse.json();
+          // Merge with existing prices (replace prices for this client)
+          setState(prevState => ({
+            ...prevState,
+            clientPrices: [
+              ...prevState.clientPrices.filter((p: any) => p.clientId !== clientId),
+              ...prices
+            ]
+          }));
+          console.log(`✅ Loaded ${prices.length} prices for client ${clientId}`);
+        }
+      } else {
+        // Load prices for ALL clients (use sparingly!)
+        console.log('📦 Loading prices for ALL clients...');
+        const clientPricesPromises = state.clients.map(async (client: Client) => {
           const pricesResponse = await fetch(`${API_BASE_URL}/clients/${client.id}/prices`, { headers });
           return pricesResponse.ok ? await pricesResponse.json() : [];
         });
         const clientPricesArrays = await Promise.all(clientPricesPromises);
         const clientPrices = clientPricesArrays.flat();
         setState(prevState => ({ ...prevState, clientPrices }));
+        console.log(`✅ Loaded prices for ${state.clients.length} clients`);
       }
     } catch (error) {
-      console.error('Error loading clients:', error);
+      console.error('Error loading client prices:', error);
     }
   };
 
@@ -1496,6 +1533,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Lazy loading functions
     loadTestTemplates,
     loadClients,
+    loadClientPrices,
     loadReferralDoctors,
     loadBranches,
     loadAntibiotics,
