@@ -923,13 +923,13 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
             marginBottom: '6px',
             minHeight: '35px'
           }}>
-            {approvers.length > 0 && (
+            {approvers.length > 0 ? (
               <>
                 {/* Dynamic Approvers */}
                 {approvers.map((approver: Approver, index: number) => (
                   <div key={approver.id} style={{ textAlign: index === 0 ? 'left' : index === approvers.length - 1 ? 'right' : 'center', flex: 1 }}>
-                    {/* Show signature image if present, otherwise just show name */}
-                    {approver.signature_image_url && (
+                    {/* Show signature image if present, otherwise show signature line */}
+                    {approver.signature_image_url ? (
                       <img
                         src={`${IMAGE_BASE_URL}${approver.signature_image_url}`}
                         alt="Signature"
@@ -940,6 +940,14 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                           e.currentTarget.style.display = 'none';
                         }}
                       />
+                    ) : (
+                      <div style={{
+                        width: '80px',
+                        height: '20px',
+                        borderBottom: '1px solid #000',
+                        marginBottom: '2px',
+                        margin: index === 0 ? '0 0 2px 0' : index === approvers.length - 1 ? '0 0 2px auto' : '0 auto 2px'
+                      }}></div>
                     )}
                     <div style={{ fontWeight: 'bold', fontSize: '8px', marginBottom: '1px' }}>
                       {approver.name}
@@ -950,14 +958,46 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                   </div>
                 ))}
 
-                {/* QR Code - SMALL - in center if 2 approvers */}
-                {approvers.length === 2 && (
-                  <div style={{ textAlign: 'center', flex: 1 }}>
-                    <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
-                      <QRCodeSVG value={qrValue} size={40} level="M" includeMargin={false} />
-                    </div>
+                {/* QR Code - ALWAYS SHOW - positioned based on approver count */}
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
+                    <QRCodeSVG value={qrValue} size={40} level="M" includeMargin={false} />
                   </div>
-                )}
+                  <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
+                    Scan to verify
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Fallback: Show default signatory and QR code */}
+                <div style={{ textAlign: 'left', flex: 1 }}>
+                  <div style={{
+                    width: '80px',
+                    height: '20px',
+                    borderBottom: '1px solid #000',
+                    marginBottom: '2px'
+                  }}></div>
+                  <div style={{ fontWeight: 'bold', fontSize: '8px', marginBottom: '1px' }}>
+                    Lab Director
+                  </div>
+                  <div style={{ fontSize: '7px', color: '#555' }}>
+                    Pathologist
+                  </div>
+                </div>
+
+                {/* QR Code - Center */}
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
+                    <QRCodeSVG value={qrValue} size={40} level="M" includeMargin={false} />
+                  </div>
+                  <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
+                    Scan to verify
+                  </div>
+                </div>
+
+                {/* Empty space for balance */}
+                <div style={{ flex: 1 }}></div>
               </>
             )}
           </div>
