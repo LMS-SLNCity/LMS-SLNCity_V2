@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User, Permission } from '../types';
 import { UserManagement } from './admin/UserManagement';
 import { TestTemplateManagement } from './admin/TestTemplateManagement';
@@ -14,6 +14,7 @@ import { ApproverManagement } from './admin/ApproverManagement';
 import { BranchManagement } from './admin/BranchManagement';
 import { VisitsManagement } from './admin/VisitsManagement';
 import { UnitManagement } from './admin/UnitManagement';
+import { useAppContext } from '../context/AppContext';
 
 type AdminTab = 'dashboard' | 'users' | 'roles' | 'tests' | 'pricing' | 'b2b' | 'referral_doctors' | 'approvers' | 'branches' | 'audit' | 'antibiotics' | 'visits' | 'units';
 
@@ -30,7 +31,23 @@ interface TabOption {
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ user }) => {
     const { hasPermission } = useAuth();
+    const { loadUsers, loadTestTemplates, loadClients, loadBranches, loadAntibiotics, loadUnits } = useAppContext();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+    // LAZY LOADING: Load data only when this component mounts
+    useEffect(() => {
+        console.log('📦 AdminPanel: Loading required data...');
+        Promise.all([
+            loadUsers(),
+            loadTestTemplates(),
+            loadClients(),
+            loadBranches(),
+            loadAntibiotics(),
+            loadUnits(),
+        ]).then(() => {
+            console.log('✅ AdminPanel: Data loaded');
+        });
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const allTabs = useMemo(() => {
         const tabs: TabOption[] = [];

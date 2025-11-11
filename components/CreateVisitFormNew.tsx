@@ -60,13 +60,25 @@ interface CreateVisitFormNewProps {
 }
 
 export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitiateReport }) => {
-  const { addVisit, testTemplates, clients, clientPrices } = useAppContext();
+  const { addVisit, testTemplates, clients, clientPrices, loadTestTemplates, loadClients, loadBranches } = useAppContext();
   const { user: actor } = useAuth();
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [referralDoctors, setReferralDoctors] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [testSearchQuery, setTestSearchQuery] = useState('');
+
+  // LAZY LOADING: Load data only when this component mounts
+  useEffect(() => {
+    console.log('📦 CreateVisitForm: Loading required data...');
+    Promise.all([
+      loadTestTemplates(),
+      loadClients(),
+      loadBranches(),
+    ]).then(() => {
+      console.log('✅ CreateVisitForm: Data loaded');
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load referral doctors
   useEffect(() => {

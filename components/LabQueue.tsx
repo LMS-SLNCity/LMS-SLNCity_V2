@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { Visit, VisitTest } from '../types';
@@ -38,11 +38,24 @@ const EmptyState: React.FC<{ title: string; message: string }> = ({ title, messa
 
 
 export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
-  const { visits, visitTests, updateVisitTestStatus } = useAppContext();
+  const { visits, visitTests, updateVisitTestStatus, loadVisits, loadVisitTests, loadAntibiotics, loadUnits } = useAppContext();
   const { user } = useAuth();
   const [selectedTest, setSelectedTest] = useState<VisitTest | null>(null);
   const [rejectingSampleId, setRejectingSampleId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+
+  // LAZY LOADING: Load data only when this component mounts
+  useEffect(() => {
+    console.log('📦 LabQueue: Loading required data...');
+    Promise.all([
+      loadVisits(),
+      loadVisitTests(),
+      loadAntibiotics(),
+      loadUnits(),
+    ]).then(() => {
+      console.log('✅ LabQueue: Data loaded');
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Only show SAMPLE_COLLECTED tests for result entry (not IN_PROGRESS)
   const pendingResults = visitTests.filter(test => test.status === 'SAMPLE_COLLECTED');

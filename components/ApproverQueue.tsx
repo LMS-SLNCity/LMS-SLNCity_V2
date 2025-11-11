@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Visit, VisitTest } from '../types';
 import { ApprovalModal } from './ApprovalModal';
@@ -34,8 +34,20 @@ const EmptyState: React.FC<{ title: string; message: string }> = ({ title, messa
 
 
 export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }) => {
-  const { visits, visitTests } = useAppContext();
+  const { visits, visitTests, loadVisits, loadVisitTests, loadUsers } = useAppContext();
   const [selectedTest, setSelectedTest] = useState<VisitTest | null>(null);
+
+  // LAZY LOADING: Load data only when this component mounts
+  useEffect(() => {
+    console.log('📦 ApproverQueue: Loading required data...');
+    Promise.all([
+      loadVisits(),
+      loadVisitTests(),
+      loadUsers(),
+    ]).then(() => {
+      console.log('✅ ApproverQueue: Data loaded');
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const awaitingApproval = visitTests.filter(test => test.status === 'AWAITING_APPROVAL');
   const recentlyApproved = visitTests.filter(test => test.status === 'APPROVED').sort((a, b) => new Date(b.approvedAt!).getTime() - new Date(a.approvedAt!).getTime());

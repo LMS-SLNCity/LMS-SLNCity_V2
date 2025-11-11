@@ -49,15 +49,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
   // FIX: Initialize with undefined and let useEffect handle setting the initial view.
   const [currentView, setCurrentView] = useState<View | undefined>(undefined);
 
-  // LAZY LOADING: Load data only when view changes
-  const { loadViewData } = useAppContext();
-
+  // LAZY LOADING: Data will be loaded by individual components when they mount
+  // DO NOT load data on view change - let components load their own data
   useEffect(() => {
     if (currentView) {
-      console.log(`🔄 View changed to: ${currentView} - loading data...`);
-      loadViewData(currentView);
+      console.log(`📍 View changed to: ${currentView}`);
+      console.log(`⏳ Data will be loaded by components as needed`);
     }
-  }, [currentView]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentView]);
 
   useEffect(() => {
     const defaultView = allowedViews.length > 0 ? allowedViews[0] : undefined;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { VisitTest, Visit } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -37,11 +37,22 @@ const EmptyState: React.FC<{ title: string; message: string }> = ({ title, messa
 
 
 export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateReport }) => {
-  const { visits, visitTests, updateVisitTestStatus } = useAppContext();
+  const { visits, visitTests, updateVisitTestStatus, loadVisits, loadVisitTests } = useAppContext();
   const { user } = useAuth();
   const [collectingTest, setCollectingTest] = useState<VisitTest | null>(null);
   const [rejectingSampleId, setRejectingSampleId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+
+  // LAZY LOADING: Load data only when this component mounts
+  useEffect(() => {
+    console.log('📦 PhlebotomyQueue: Loading required data...');
+    Promise.all([
+      loadVisits(),
+      loadVisitTests(),
+    ]).then(() => {
+      console.log('✅ PhlebotomyQueue: Data loaded');
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pendingSamples = visitTests.filter(test => test.status === 'PENDING');
   const collectedSamples = visitTests.filter(test => ['SAMPLE_COLLECTED', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS'].includes(test.status)).sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
