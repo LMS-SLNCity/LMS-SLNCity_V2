@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import type { Patient, Salutation, Sex, Visit } from '../types';
+import type { Patient, Salutation, Sex, Visit, VisitTest } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { PatientSearchModal } from './PatientSearchModal';
@@ -60,7 +60,7 @@ interface CreateVisitFormNewProps {
 }
 
 export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitiateReport }) => {
-  const { addVisit, testTemplates, clients, clientPrices, referralDoctors, loadTestTemplates, loadClients, loadClientPrices, loadBranches, loadReferralDoctors } = useAppContext();
+  const { addVisit, testTemplates, clients, clientPrices, referralDoctors, visits, visitTests, loadTestTemplates, loadClients, loadClientPrices, loadBranches, loadReferralDoctors, loadVisits, loadVisitTests } = useAppContext();
   const { user: actor } = useAuth();
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -79,6 +79,8 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
       loadClients(),
       loadBranches(),
       loadReferralDoctors(), // FIX: Use AppContext function instead of direct fetch
+      loadVisits(), // Load visits for the recent registrations table
+      loadVisitTests(), // Load visit tests for status display
     ]).then(() => {
       console.log('✅ CreateVisitForm: Data loaded');
     });
@@ -128,6 +130,13 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
   }, [formData.selected_tests, formData.ref_customer_id, testTemplates, clientPrices, isB2BClient]);
 
   const amountDue = useMemo(() => totalCost - formData.amount_paid, [totalCost, formData.amount_paid]);
+
+  // Sort visits by created_at DESC (most recent first) and limit to 20
+  const sortedVisits = useMemo(() => {
+    return [...visits]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 20);
+  }, [visits]);
 
   const filteredTests = useMemo(() => {
     const activeTests = testTemplates.filter(t => t.isActive);
@@ -546,7 +555,113 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
         onClose={() => setIsSearchModalOpen(false)}
         onSelectPatient={handleSelectPatient}
       />
+
+      {/* Recent Registrations Table */}
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg mt-4">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Recent Registrations</h3>
+        <div className="overflow-x-auto border rounded-lg">
+          <table className="min-w-full bg-white">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visit Code</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Statuses</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {sortedVisits.map(visit => {
+                const visitTestsForVisit = visit.tests.map(testId => visitTests.find(vt => vt.id === testId)).filter(Boolean) as VisitTest[];
+                const client = clients.find(c => c.id === visit.ref_customer_id);
+                const isB2BVisit = client?.type === 'REFERRAL_LAB';
+                const allTestsApproved = visitTestsForVisit.length > 0 && visitTestsForVisit.every(vt => vt.status === 'APPROVED');
+
+                const canPrintDirectly = isB2BVisit || visit.due_amount <= 0;
+                const needsDueCollection = !isB2BVisit && visit.due_amount > 0;
+
+                let button;
+                if (allTestsApproved) {
+                  if (canPrintDirectly) {
+                    button = (
+                      <button
+                        onClick={() => onInitiateReport(visit)}
+                        className="px-2 sm:px-3 py-1 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors text-xs"
+                      >
+                        Print Report
+                      </button>
+                    );
+                  } else if (needsDueCollection) {
+                    button = (
+                      <button
+                        disabled
+                        title="Collect due payment before printing"
+                        className="px-2 sm:px-3 py-1 bg-gray-400 text-white font-semibold rounded-lg shadow-md cursor-not-allowed text-xs"
+                      >
+                        Collect Due
+                      </button>
+                    );
+                  }
+                } else {
+                  button = (
+                    <button
+                      disabled
+                      title="Report cannot be printed until all tests are approved."
+                      className="px-2 sm:px-3 py-1 bg-gray-400 text-white font-semibold rounded-lg shadow-md cursor-not-allowed text-xs"
+                    >
+                      Print Report
+                    </button>
+                  );
+                }
+
+                return (
+                  <tr key={visit.id} className="hover:bg-gray-50">
+                    <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">{visit.visit_code}</td>
+                    <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">{visit.patient.name}</td>
+                    <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">{new Date(visit.created_at).toLocaleDateString()}</td>
+                    <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
+                      <div className="flex flex-wrap gap-1">
+                        {visitTestsForVisit.map(vt => <StatusBadge key={vt.id} status={vt.status} />)}
+                      </div>
+                    </td>
+                    <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+                      {visit.due_amount > 0 ? (
+                        <span className="text-red-600 font-semibold">Due: ₹{visit.due_amount.toFixed(2)}</span>
+                      ) : (
+                        <span className="text-green-600 font-semibold">Paid</span>
+                      )}
+                    </td>
+                    <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+                      {button}
+                    </td>
+                  </tr>
+                );
+              })}
+              {sortedVisits.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-xs sm:text-sm text-gray-500">No visits have been created yet.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </>
   );
+};
+
+// StatusBadge component for displaying test status
+const StatusBadge: React.FC<{ status: VisitTest['status'] }> = ({ status }) => {
+  const baseClasses = "px-2 py-0.5 text-xs font-medium rounded-full inline-block";
+  const statusMap: Record<VisitTest['status'], string> = {
+    'PENDING': `${baseClasses} bg-gray-200 text-gray-700`,
+    'SAMPLE_COLLECTED': `${baseClasses} bg-blue-200 text-blue-700`,
+    'IN_PROGRESS': `${baseClasses} bg-yellow-200 text-yellow-700`,
+    'AWAITING_APPROVAL': `${baseClasses} bg-orange-200 text-orange-700`,
+    'APPROVED': `${baseClasses} bg-green-200 text-green-700`,
+    'COMPLETED': `${baseClasses} bg-purple-200 text-purple-700`,
+  };
+  return <span className={statusMap[status]}>{status.replace(/_/g, ' ')}</span>;
 };
 
