@@ -1327,12 +1327,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const reloadData = async () => {
+  const reloadData = async (forceRefresh: boolean = false) => {
     try {
       const authToken = getAuthToken();
       if (!authToken) {
         return;
       }
+
+      // Check cache first (unless force refresh)
+      if (!forceRefresh) {
+        const cacheKey = 'lms_app_data_cache';
+        const cacheTimestampKey = 'lms_app_data_cache_timestamp';
+        const cachedData = localStorage.getItem(cacheKey);
+        const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
+        const now = Date.now();
+        const cacheAge = cacheTimestamp ? now - parseInt(cacheTimestamp) : Infinity;
+
+        // Use cache if less than 5 minutes old
+        if (cachedData && cacheAge < 5 * 60 * 1000) {
+          console.log('✅ reloadData: Using cached data (age:', Math.floor(cacheAge / 1000), 'seconds)');
+          const parsed = JSON.parse(cachedData);
+          setState(prevState => ({
+            ...prevState,
+            ...parsed
+          }));
+          return;
+        }
+      }
+
+      console.log('🔄 reloadData: Loading fresh data from API...');
 
       const headers = {
         'Authorization': `Bearer ${authToken}`,
@@ -1386,8 +1409,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const clientPricesArrays = await Promise.all(clientPricesPromises);
       const clientPrices = clientPricesArrays.flat();
 
-      setState(prevState => ({
-        ...prevState,
+      const newState = {
         visits: visits,
         visitTests: visitTests,
         users: users,
@@ -1397,6 +1419,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         referralDoctors: referralDoctors,
         branches: branches,
         clientPrices: clientPrices,
+      };
+
+      // Cache the data
+      const cacheKey = 'lms_app_data_cache';
+      const cacheTimestampKey = 'lms_app_data_cache_timestamp';
+      const now = Date.now();
+      localStorage.setItem(cacheKey, JSON.stringify(newState));
+      localStorage.setItem(cacheTimestampKey, now.toString());
+      console.log('✅ reloadData: Data cached successfully');
+
+      setState(prevState => ({
+        ...prevState,
+        ...newState
       }));
     } catch (error) {
       console.error('Error reloading data:', error);

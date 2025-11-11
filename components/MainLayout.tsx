@@ -49,11 +49,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
   // FIX: Initialize with undefined and let useEffect handle setting the initial view.
   const [currentView, setCurrentView] = useState<View | undefined>(undefined);
 
-  // Reload data only once when component mounts (user logs in)
-  // DO NOT reload on every user change - causes excessive API calls
-  useEffect(() => {
-    reloadData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Data is loaded by AppContext useEffect - no need to reload here
+  // Removing this to prevent duplicate API calls
+  // useEffect(() => {
+  //   reloadData();
+  // }, []);
 
   useEffect(() => {
     const defaultView = allowedViews.length > 0 ? allowedViews[0] : undefined;
