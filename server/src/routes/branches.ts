@@ -1,10 +1,11 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
+import { longCache } from '../middleware/cache.js';
 
 const router = express.Router();
 
-// Get all branches
-router.get('/', async (req: Request, res: Response) => {
+// Get all branches (cached for 1 hour - rarely changes)
+router.get('/', longCache, async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       'SELECT id, name, address, phone, email, city, state, pincode, is_active FROM branches ORDER BY id'

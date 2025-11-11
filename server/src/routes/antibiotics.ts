@@ -1,9 +1,11 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
+import { longCache } from '../middleware/cache.js';
 
 const router = express.Router();
 
-router.get('/', async (req: Request, res: Response) => {
+// Cache for 1 hour - antibiotics list rarely changes
+router.get('/', longCache, async (req: Request, res: Response) => {
   try {
     const result = await pool.query('SELECT id, name, abbreviation, is_active FROM antibiotics ORDER BY id');
     res.json(result.rows.map(row => ({

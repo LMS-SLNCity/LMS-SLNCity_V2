@@ -1,11 +1,12 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
 import { authMiddleware, requirePermission } from '../middleware/auth.js';
+import { longCache } from '../middleware/cache.js';
 
 const router = express.Router();
 
-// GET all referral doctors (no auth required for reading)
-router.get('/', async (req: Request, res: Response) => {
+// GET all referral doctors (cached for 1 hour - rarely changes)
+router.get('/', longCache, async (req: Request, res: Response) => {
   try {
     const result = await pool.query('SELECT id, name, designation FROM referral_doctors ORDER BY id');
     res.json(result.rows);

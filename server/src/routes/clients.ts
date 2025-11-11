@@ -8,10 +8,12 @@ import {
   validateAllLedgers,
   generateValidationReport
 } from '../utils/ledgerValidator.js';
+import { mediumCache } from '../middleware/cache.js';
 
 const router = express.Router();
 
-router.get('/', async (req: Request, res: Response) => {
+// Cache for 5 minutes - client list changes occasionally
+router.get('/', mediumCache, async (req: Request, res: Response) => {
   try {
     const result = await pool.query('SELECT id, name, type, balance FROM clients ORDER BY id');
     res.json(result.rows.map(row => ({

@@ -135,38 +135,58 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         const headers = {
           'Authorization': `Bearer ${authToken}`,
+          'Cache-Control': 'max-age=300', // Cache for 5 minutes
         };
 
-        // Load clients
-        const clientsResponse = await fetch(`${API_BASE_URL}/clients`, { headers });
+        // Check if we have cached data (less than 5 minutes old)
+        const cacheKey = 'lms_app_data_cache';
+        const cacheTimestampKey = 'lms_app_data_cache_timestamp';
+        const cachedData = localStorage.getItem(cacheKey);
+        const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
+        const now = Date.now();
+        const cacheAge = cacheTimestamp ? now - parseInt(cacheTimestamp) : Infinity;
+
+        // Use cache if less than 5 minutes old
+        if (cachedData && cacheAge < 5 * 60 * 1000) {
+          console.log('✅ Using cached data (age:', Math.floor(cacheAge / 1000), 'seconds)');
+          const parsed = JSON.parse(cachedData);
+          setState(prevState => ({
+            ...prevState,
+            ...parsed
+          }));
+          return;
+        }
+
+        console.log('🔄 Loading fresh data from API...');
+
+        // Load all data in parallel for better performance
+        const [
+          clientsResponse,
+          doctorsResponse,
+          templatesResponse,
+          branchesResponse,
+          antibioticsResponse,
+          unitsResponse,
+          visitsResponse,
+          visitTestsResponse
+        ] = await Promise.all([
+          fetch(`${API_BASE_URL}/clients`, { headers }),
+          fetch(`${API_BASE_URL}/referral-doctors`, { headers }),
+          fetch(`${API_BASE_URL}/test-templates`, { headers }),
+          fetch(`${API_BASE_URL}/branches`, { headers }),
+          fetch(`${API_BASE_URL}/antibiotics`, { headers }),
+          fetch(`${API_BASE_URL}/units/active`, { headers }),
+          fetch(`${API_BASE_URL}/visits`, { headers }),
+          fetch(`${API_BASE_URL}/visit-tests`, { headers })
+        ]);
+
         const clients = clientsResponse.ok ? await clientsResponse.json() : [];
-
-        // Load referral doctors
-        const doctorsResponse = await fetch(`${API_BASE_URL}/referral-doctors`, { headers });
         const referralDoctors = doctorsResponse.ok ? await doctorsResponse.json() : [];
-
-        // Load test templates
-        const templatesResponse = await fetch(`${API_BASE_URL}/test-templates`, { headers });
         const testTemplates = templatesResponse.ok ? await templatesResponse.json() : [];
-
-        // Load branches
-        const branchesResponse = await fetch(`${API_BASE_URL}/branches`, { headers });
         const branches = branchesResponse.ok ? await branchesResponse.json() : [];
-
-        // Load antibiotics
-        const antibioticsResponse = await fetch(`${API_BASE_URL}/antibiotics`, { headers });
         const antibiotics = antibioticsResponse.ok ? await antibioticsResponse.json() : [];
-
-        // Load units
-        const unitsResponse = await fetch(`${API_BASE_URL}/units/active`, { headers });
         const units = unitsResponse.ok ? await unitsResponse.json() : [];
-
-        // Load visits
-        const visitsResponse = await fetch(`${API_BASE_URL}/visits`, { headers });
         const visits = visitsResponse.ok ? await visitsResponse.json() : [];
-
-        // Load visit tests
-        const visitTestsResponse = await fetch(`${API_BASE_URL}/visit-tests`, { headers });
         const visitTests = visitTestsResponse.ok ? await visitTestsResponse.json() : [];
 
         // Load client prices for all clients
@@ -177,8 +197,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const clientPricesArrays = await Promise.all(clientPricesPromises);
         const clientPrices = clientPricesArrays.flat();
 
-        setState(prevState => ({
-          ...prevState,
+        const newState = {
           clients: clients,
           referralDoctors: referralDoctors,
           testTemplates: testTemplates,
@@ -195,6 +214,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           visits: visits,
           visitTests: visitTests,
           clientPrices: clientPrices,
+        };
+
+        // Cache the data
+        localStorage.setItem(cacheKey, JSON.stringify(newState));
+        localStorage.setItem(cacheTimestampKey, now.toString());
+        console.log('✅ Data cached successfully');
+
+        setState(prevState => ({
+          ...prevState,
+          ...newState
         }));
       } catch (error) {
         console.error('Error loading data:', error);
@@ -208,6 +237,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Helper function to invalidate cache when data changes
+  const invalidateCache = () => {
+    localStorage.removeItem('lms_app_data_cache');
+    localStorage.removeItem('lms_app_data_cache_timestamp');
+    console.log('🗑️ Cache invalidated');
+  };
 
   const addAuditLog = (username: string, action: string, details: string) => {
       setState(prevState => {
@@ -310,6 +346,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       addAuditLog(actor.username, 'CREATE_VISIT', `Created visit for patient ${visitData.patient.name} with ${visitData.testIds.length} tests.`);
+
+      // Invalidate cache since data changed
+      invalidateCache();
 
       // Only reload visits and visitTests (not ALL data) to save API calls
       const reloadHeaders = { 'Authorization': `Bearer ${authToken}` };

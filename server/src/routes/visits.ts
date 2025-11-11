@@ -3,13 +3,15 @@ import pool from '../db/connection.js';
 import { auditVisit } from '../middleware/auditLogger.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { generateQRCode, generateVerificationUrl } from '../utils/qrcode.js';
+import { shortCache } from '../middleware/cache.js';
 
 const router = express.Router();
 
 // Get frontend URL from environment or use default
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-router.get('/', authMiddleware, async (req: Request, res: Response) => {
+// Cache for 1 minute - visits change frequently
+router.get('/', authMiddleware, shortCache, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
 

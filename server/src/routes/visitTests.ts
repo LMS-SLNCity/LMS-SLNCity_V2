@@ -1,10 +1,12 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
 import { auditSample, auditTestResult } from '../middleware/auditLogger.js';
+import { shortCache } from '../middleware/cache.js';
 
 const router = express.Router();
 
-router.get('/', async (req: Request, res: Response) => {
+// Cache for 1 minute - visit tests change frequently
+router.get('/', shortCache, async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT vt.id, vt.visit_id, vt.test_template_id, vt.status, vt.collected_by, vt.collected_at, vt.specimen_type,

@@ -1,10 +1,11 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
+import { longCache } from '../middleware/cache.js';
 
 const router = express.Router();
 
-// Get all units
-router.get('/', async (req: Request, res: Response) => {
+// Get all units (cached for 1 hour - rarely changes)
+router.get('/', longCache, async (req: Request, res: Response) => {
   try {
     const result = await pool.query(`
       SELECT id, name, symbol, category, description, is_active, created_at, updated_at
@@ -18,8 +19,8 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// Get active units only
-router.get('/active', async (req: Request, res: Response) => {
+// Get active units only (cached for 1 hour)
+router.get('/active', longCache, async (req: Request, res: Response) => {
   try {
     const result = await pool.query(`
       SELECT id, name, symbol, category, description
