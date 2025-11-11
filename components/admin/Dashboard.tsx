@@ -164,12 +164,17 @@ export const Dashboard: React.FC = () => {
 
             {/* Top Clients */}
             <div>
-              <h4 className="font-medium text-gray-700 mb-3">Top B2B Clients</h4>
+              <h4 className="font-medium text-gray-700 mb-3">Top B2B Clients (by Balance)</h4>
               <div className="space-y-2">
                 {revenue.byClient.slice(0, 5).map((item, idx) => (
                   <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                     <span className="text-sm text-gray-600">{item.name}</span>
-                    <span className="font-medium">₹{parseFloat(item.total_revenue || 0).toFixed(2)}</span>
+                    <div className="flex flex-col items-end">
+                      <span className={`font-medium ${parseFloat(item.balance || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        ₹{parseFloat(item.balance || 0).toFixed(2)}
+                      </span>
+                      <span className="text-xs text-gray-500">Revenue: ₹{parseFloat(item.total_revenue || 0).toFixed(2)}</span>
+                    </div>
                   </div>
                 ))}
               </div>

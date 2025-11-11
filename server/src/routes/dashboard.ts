@@ -59,14 +59,14 @@ router.get('/revenue', async (req: Request, res: Response) => {
       ORDER BY revenue DESC
     `);
 
-    // Get revenue by B2B client
+    // Get revenue by B2B client (sorted by balance/business in descending order)
     const clientRevenueResult = await pool.query(`
-      SELECT c.id, c.name, COUNT(v.id) as visit_count, SUM(v.total_cost) as total_revenue
+      SELECT c.id, c.name, c.balance, COUNT(v.id) as visit_count, SUM(v.total_cost) as total_revenue
       FROM clients c
       LEFT JOIN visits v ON c.id = v.ref_customer_id
       WHERE c.type = 'REFERRAL_LAB'
-      GROUP BY c.id, c.name
-      ORDER BY total_revenue DESC
+      GROUP BY c.id, c.name, c.balance
+      ORDER BY c.balance DESC
     `);
 
     // Get daily revenue for last 30 days
