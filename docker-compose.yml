@@ -73,13 +73,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        # Pass API URL as build argument
+        # For local development: http://localhost:5002
+        # For production: http://YOUR_SERVER_IP:5002
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:5002}
     container_name: lms-frontend
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      # For Docker internal communication, use backend service name
-      # For external access (browser), use the host URL
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:5002}
     ports:
       - "3000:80"
     depends_on:
