@@ -16,7 +16,7 @@ COPY src ./src
 COPY tsconfig.json ./
 
 # Expose port
-EXPOSE 5001
+EXPOSE 5002
 
 # Start the development server
 CMD ["npm", "run", "dev"]
