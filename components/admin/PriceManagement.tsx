@@ -5,8 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 
 type PriceState = {
     [id: number]: {
-        price: number;
-        b2b_price: number;
+        price: string;
+        b2b_price: string;
     }
 };
 
@@ -21,7 +21,10 @@ export const PriceManagement: React.FC = () => {
     useEffect(() => {
         if (testTemplates.length > 0 && !isInitialized) {
             const initialPrices = testTemplates.reduce((acc, t) => {
-                acc[t.id] = { price: t.price, b2b_price: t.b2b_price };
+                acc[t.id] = {
+                    price: t.price.toString(),
+                    b2b_price: t.b2b_price.toString()
+                };
                 return acc;
             }, {} as PriceState);
             setPrices(initialPrices);
@@ -31,12 +34,12 @@ export const PriceManagement: React.FC = () => {
     }, [testTemplates, isInitialized]);
 
     const handleChange = (id: number, field: 'price' | 'b2b_price', value: string) => {
-        const numericValue = Number(value) || 0;
+        // Store the string value directly to allow proper typing
         setPrices(prev => ({
             ...prev,
             [id]: {
                 ...prev[id],
-                [field]: numericValue
+                [field]: value
             }
         }));
         setHasChanges(true);
@@ -52,11 +55,11 @@ export const PriceManagement: React.FC = () => {
             const updates = Object.entries(prices)
                 .filter(([_, priceData]) => priceData !== undefined)
                 .map(([id, priceData]) => {
-                    const data = priceData as { price: number; b2b_price: number };
+                    const data = priceData as { price: string; b2b_price: string };
                     return {
                         id: Number(id),
-                        price: data.price,
-                        b2b_price: data.b2b_price,
+                        price: parseFloat(data.price) || 0,
+                        b2b_price: parseFloat(data.b2b_price) || 0,
                     };
                 });
 
