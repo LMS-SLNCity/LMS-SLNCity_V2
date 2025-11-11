@@ -51,7 +51,7 @@ fi
 print_success "Docker Compose is available"
 
 # Get VM IP address
-VM_IP=13.201.165.54
+VM_IP=<vm ip here>
 if [ -z "$VM_IP" ]; then
     print_error "Could not detect VM IP address"
     read -p "Please enter your VM IP address: " VM_IP
