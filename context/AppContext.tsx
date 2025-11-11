@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { Visit, VisitTest, Patient, TestTemplate, VisitTestStatus, User, Role, UserWithPassword, Client, ClientPrice, LedgerEntry, RolePermissions, Permission, CultureResult, AuditLog, Antibiotic, Branch, Unit } from '../types';
-import { getCachedData, invalidateCache } from './DataCache';
+import { getCachedData, invalidateCache as invalidateDataCache } from './DataCache';
 
 // API Base URL - uses environment variable or falls back to localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL
@@ -142,11 +142,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     console.log('📊 Data will be loaded on-demand per view');
   }, []);
 
-  // Helper function to invalidate cache when data changes
-  const invalidateCache = () => {
+  // Helper function to invalidate OLD cache when data changes (legacy)
+  const invalidateLegacyCache = () => {
     localStorage.removeItem('lms_app_data_cache');
     localStorage.removeItem('lms_app_data_cache_timestamp');
-    console.log('🗑️ Cache invalidated');
+    console.log('🗑️ Legacy cache invalidated');
   };
 
   const addAuditLog = (username: string, action: string, details: string) => {
@@ -252,7 +252,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       addAuditLog(actor.username, 'CREATE_VISIT', `Created visit for patient ${visitData.patient.name} with ${visitData.testIds.length} tests.`);
 
       // Invalidate cache since data changed
-      invalidateCache();
+      invalidateLegacyCache();
+      invalidateDataCache('visits');
+      invalidateDataCache('visit-tests');
 
       // Only reload visits and visitTests (not ALL data) to save API calls
       const reloadHeaders = { 'Authorization': `Bearer ${authToken}` };
@@ -1232,16 +1234,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // LAZY LOADING FUNCTIONS - Load data only when needed
-  const loadTestTemplates = async () => {
+  async function loadTestTemplates() {
     try {
       const data = await getCachedData<TestTemplate[]>('test-templates');
       setState(prevState => ({ ...prevState, testTemplates: data }));
     } catch (error) {
       console.error('Error loading test templates:', error);
     }
-  };
+  }
 
-  const loadClients = async () => {
+  async function loadClients() {
     try {
       const data = await getCachedData<Client[]>('clients');
       setState(prevState => ({ ...prevState, clients: data }));
@@ -1256,10 +1258,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (error) {
       console.error('Error loading clients:', error);
     }
-  };
+  }
 
   // Load client prices - either for specific client or all clients
-  const loadClientPrices = async (clientId?: number) => {
+  async function loadClientPrices(clientId?: number) {
     try {
       const authToken = getAuthToken();
       if (!authToken) return;
@@ -1297,36 +1299,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (error) {
       console.error('Error loading client prices:', error);
     }
-  };
+  }
 
-  const loadReferralDoctors = async () => {
+  async function loadReferralDoctors() {
     try {
       const data = await getCachedData<ReferralDoctor[]>('referral-doctors');
       setState(prevState => ({ ...prevState, referralDoctors: data }));
     } catch (error) {
       console.error('Error loading referral doctors:', error);
     }
-  };
+  }
 
-  const loadBranches = async () => {
+  async function loadBranches() {
     try {
       const data = await getCachedData<Branch[]>('branches');
       setState(prevState => ({ ...prevState, branches: data }));
     } catch (error) {
       console.error('Error loading branches:', error);
     }
-  };
+  }
 
-  const loadAntibiotics = async () => {
+  async function loadAntibiotics() {
     try {
       const data = await getCachedData<Antibiotic[]>('antibiotics');
       setState(prevState => ({ ...prevState, antibiotics: data }));
     } catch (error) {
       console.error('Error loading antibiotics:', error);
     }
-  };
+  }
 
-  const loadUnits = async () => {
+  async function loadUnits() {
     try {
       const data = await getCachedData<any[]>('units');
       const units = data.map((u: any) => ({
@@ -1341,27 +1343,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (error) {
       console.error('Error loading units:', error);
     }
-  };
+  }
 
-  const loadVisits = async () => {
+  async function loadVisits() {
     try {
       const data = await getCachedData<Visit[]>('visits');
       setState(prevState => ({ ...prevState, visits: data }));
     } catch (error) {
       console.error('Error loading visits:', error);
     }
-  };
+  }
 
-  const loadVisitTests = async () => {
+  async function loadVisitTests() {
     try {
       const data = await getCachedData<VisitTest[]>('visit-tests');
       setState(prevState => ({ ...prevState, visitTests: data }));
     } catch (error) {
       console.error('Error loading visit tests:', error);
     }
-  };
+  }
 
-  const loadUsers = async () => {
+  async function loadUsers() {
     try {
       const data = await getCachedData<any[]>('users');
       const users = data.map((user: any) => ({
@@ -1377,10 +1379,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (error) {
       console.error('Error loading users:', error);
     }
-  };
+  }
 
   // Load data for specific view
-  const loadViewData = async (view: string) => {
+  async function loadViewData(view: string) {
     console.log(`📦 Loading data for view: ${view}`);
 
     const viewDataMap: Record<string, Array<() => Promise<void>>> = {
@@ -1395,7 +1397,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const loaders = viewDataMap[view] || [];
     await Promise.all(loaders.map(loader => loader()));
     console.log(`✅ Data loaded for view: ${view}`);
-  };
+  }
 
   // Legacy reloadData function - now uses lazy loading
   const reloadData = async (forceRefresh: boolean = false) => {
@@ -1404,14 +1406,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Invalidate cache if force refresh
       if (forceRefresh) {
-        invalidateCache('visits');
-        invalidateCache('visit-tests');
-        invalidateCache('users');
-        invalidateCache('test-templates');
-        invalidateCache('clients');
-        invalidateCache('antibiotics');
-        invalidateCache('referral-doctors');
-        invalidateCache('branches');
+        invalidateDataCache('visits');
+        invalidateDataCache('visit-tests');
+        invalidateDataCache('users');
+        invalidateDataCache('test-templates');
+        invalidateDataCache('clients');
+        invalidateDataCache('antibiotics');
+        invalidateDataCache('referral-doctors');
+        invalidateDataCache('branches');
       }
 
       const authToken = getAuthToken();

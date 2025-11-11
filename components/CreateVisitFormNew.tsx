@@ -67,8 +67,12 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [testSearchQuery, setTestSearchQuery] = useState('');
 
+  // Calculate if this is a B2B client - MUST be defined before useEffects that use it
+  const isB2BClient = useMemo(() => formData.ref_customer_id !== undefined && formData.ref_customer_id > 0, [formData.ref_customer_id]);
+
   // LAZY LOADING: Load data only when this component mounts
   useEffect(() => {
+    console.log('🔥 CreateVisitForm: Component MOUNTED');
     console.log('📦 CreateVisitForm: Loading required data...');
     Promise.all([
       loadTestTemplates(),
@@ -78,6 +82,10 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
     ]).then(() => {
       console.log('✅ CreateVisitForm: Data loaded');
     });
+
+    return () => {
+      console.log('💀 CreateVisitForm: Component UNMOUNTED');
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load client prices when B2B client is selected
@@ -101,8 +109,6 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
       setFormData(prev => ({ ...prev, sex: newSex }));
     }
   }, [formData.salutation]);
-
-  const isB2BClient = useMemo(() => formData.ref_customer_id !== undefined && formData.ref_customer_id > 0, [formData.ref_customer_id]);
 
   const totalCost = useMemo(() => {
     const selectedClientId = formData.ref_customer_id;
