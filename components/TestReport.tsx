@@ -828,63 +828,71 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           </div>
 
           {/* Section Blocks - Tests by Department for this page */}
-          {page.groups.map((group, groupIndex) => (
-            <div key={`${pageIndex}-${groupIndex}`} style={{ marginBottom: '8px' }}>
-              {/* Section Title */}
-              <div className="section-title">{group.department}</div>
+          {page.groups.map((group, groupIndex) => {
+            // Check if this group contains only microbiology tests
+            const hasOnlyMicrobiologyTests = group.tests.every(test => test.cultureResult);
 
-              {/* Test Results Table */}
-              <table>
-                <thead>
-                  <tr>
-                    <th style={{ width: '40%' }}>Test Description</th>
-                    <th style={{ width: '15%', textAlign: 'center' }}>Result</th>
-                    <th style={{ width: '15%', textAlign: 'center' }}>Units</th>
-                    <th style={{ width: '30%' }}>Biological Reference Range</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {group.tests.map((test) => (
-                    <React.Fragment key={test.id}>
-                      {/* Check if this is a microbiology test with culture results */}
-                      {test.cultureResult ? (
-                        /* For microbiology tests, skip the test name row and show C&S report directly */
-                        <tr>
-                          <td colSpan={4} style={{ padding: 0 }}>
-                            <MicrobiologyReportDisplay test={test} visit={visit} />
-                          </td>
-                        </tr>
-                      ) : (
-                        <>
-                          {/* Test Group Row - only for non-microbiology tests */}
-                          <tr className="test-group-row">
-                            <td colSpan={4}>{test.template.name}</td>
+            return (
+              <div key={`${pageIndex}-${groupIndex}`} style={{ marginBottom: '8px' }}>
+                {/* Section Title */}
+                <div className="section-title">{group.department}</div>
+
+                {/* Test Results Table */}
+                <table>
+                  {/* Only show headers for non-microbiology tests */}
+                  {!hasOnlyMicrobiologyTests && (
+                    <thead>
+                      <tr>
+                        <th style={{ width: '40%' }}>Test Description</th>
+                        <th style={{ width: '15%', textAlign: 'center' }}>Result</th>
+                        <th style={{ width: '15%', textAlign: 'center' }}>Units</th>
+                        <th style={{ width: '30%' }}>Biological Reference Range</th>
+                      </tr>
+                    </thead>
+                  )}
+                  <tbody>
+                    {group.tests.map((test) => (
+                      <React.Fragment key={test.id}>
+                        {/* Check if this is a microbiology test with culture results */}
+                        {test.cultureResult ? (
+                          /* For microbiology tests, show C&S report directly without table structure */
+                          <tr>
+                            <td colSpan={1} style={{ padding: 0, border: 'none' }}>
+                              <MicrobiologyReportDisplay test={test} visit={visit} />
+                            </td>
                           </tr>
-                          {/* Parameter Rows for regular tests */}
-                          {test.template.parameters?.fields && test.template.parameters.fields.length > 0 ? (
-                            test.template.parameters.fields.map((param: any) => (
-                              <tr key={param.name}>
-                                <td>{param.name}</td>
-                                <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
-                                  {String(test.results?.[param.name] ?? '-')}
-                                </td>
-                                <td style={{ textAlign: 'center' }}>{param.unit ?? ''}</td>
-                                <td>{param.reference_range ?? ''}</td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={4} style={{ textAlign: 'center' }}>No parameters</td>
+                        ) : (
+                          <>
+                            {/* Test Group Row - only for non-microbiology tests */}
+                            <tr className="test-group-row">
+                              <td colSpan={4}>{test.template.name}</td>
                             </tr>
-                          )}
-                        </>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))}
+                            {/* Parameter Rows for regular tests */}
+                            {test.template.parameters?.fields && test.template.parameters.fields.length > 0 ? (
+                              test.template.parameters.fields.map((param: any) => (
+                                <tr key={param.name}>
+                                  <td>{param.name}</td>
+                                  <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                                    {String(test.results?.[param.name] ?? '-')}
+                                  </td>
+                                  <td style={{ textAlign: 'center' }}>{param.unit ?? ''}</td>
+                                  <td>{param.reference_range ?? ''}</td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={4} style={{ textAlign: 'center' }}>No parameters</td>
+                              </tr>
+                            )}
+                          </>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
 
           {/* End of Report - Only on last page */}
           {pageIndex === reportPages.length - 1 && (
