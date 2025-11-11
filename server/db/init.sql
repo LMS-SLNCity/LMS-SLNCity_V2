@@ -90,9 +90,50 @@ CREATE TABLE patients (
     address TEXT,
     email VARCHAR(255),
     clinical_history TEXT,
+    patient_code VARCHAR(50) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Sequence for patient code generation
+CREATE SEQUENCE patient_code_seq START 1 INCREMENT 1;
+
+-- Function to generate patient code
+CREATE OR REPLACE FUNCTION generate_patient_code()
+RETURNS VARCHAR AS $$
+DECLARE
+    v_code VARCHAR;
+    v_date_part VARCHAR;
+    v_seq_num INTEGER;
+BEGIN
+    -- Get current date in YYYYMMDD format
+    v_date_part := TO_CHAR(CURRENT_DATE, 'YYYYMMDD');
+
+    -- Get next sequence number
+    v_seq_num := NEXTVAL('patient_code_seq');
+
+    -- Generate code: P{YYYYMMDD}{SEQUENCE}
+    v_code := 'P' || v_date_part || LPAD(v_seq_num::TEXT, 4, '0');
+
+    RETURN v_code;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to auto-generate patient code
+CREATE OR REPLACE FUNCTION set_patient_code()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.patient_code IS NULL OR NEW.patient_code = '' THEN
+        NEW.patient_code := generate_patient_code();
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER patient_code_trigger
+BEFORE INSERT ON patients
+FOR EACH ROW
+EXECUTE FUNCTION set_patient_code();
 
 -- Referral Doctors table
 CREATE TABLE referral_doctors (
@@ -186,6 +227,8 @@ CREATE TABLE visit_tests (
     culture_result JSONB,
     approved_by VARCHAR(255),
     approved_at TIMESTAMP,
+    rejection_count INTEGER DEFAULT 0,
+    last_rejection_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -242,7 +285,11 @@ CREATE TABLE audit_logs (
     resource VARCHAR(255),
     user_id INTEGER REFERENCES users(id),
     ip_address VARCHAR(45),
-    user_agent TEXT
+    user_agent TEXT,
+    resource_id INTEGER,
+    old_value TEXT,
+    new_value TEXT,
+    severity VARCHAR(20) DEFAULT 'INFO' CHECK (severity IN ('INFO', 'WARNING', 'ERROR', 'CRITICAL'))
 );
 
 -- User Permissions table
@@ -347,16 +394,15 @@ CREATE INDEX IF NOT EXISTS idx_approvers_is_active ON approvers(is_active);
 CREATE TABLE IF NOT EXISTS patient_edit_requests (
     id SERIAL PRIMARY KEY,
     visit_id INTEGER NOT NULL REFERENCES visits(id) ON DELETE CASCADE,
-    requested_by VARCHAR(255) NOT NULL,
-    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    approved_by VARCHAR(255),
-    approved_at TIMESTAMP,
-    rejected_by VARCHAR(255),
-    rejected_at TIMESTAMP,
-    rejection_reason TEXT,
+    requested_by_user_id INTEGER NOT NULL REFERENCES users(id),
+    requested_by_username VARCHAR(255) NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
-    old_data JSONB NOT NULL,
-    new_data JSONB NOT NULL,
+    approved_by_user_id INTEGER REFERENCES users(id),
+    approved_by_username VARCHAR(255),
+    approved_at TIMESTAMP,
+    rejection_reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     reason TEXT NOT NULL
 );
 
@@ -367,14 +413,20 @@ CREATE INDEX IF NOT EXISTS idx_patient_edit_requests_status ON patient_edit_requ
 CREATE TABLE IF NOT EXISTS result_rejections (
     id SERIAL PRIMARY KEY,
     visit_test_id INTEGER NOT NULL REFERENCES visit_tests(id) ON DELETE CASCADE,
-    rejected_by VARCHAR(255) NOT NULL,
-    rejected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    rejected_by_user_id INTEGER NOT NULL REFERENCES users(id),
+    rejected_by_username VARCHAR(255) NOT NULL,
     rejection_reason TEXT NOT NULL,
     old_results JSONB,
-    old_culture_result JSONB
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING_CORRECTION' CHECK (status IN ('PENDING_CORRECTION', 'CORRECTED', 'RESOLVED')),
+    resolved_by_user_id INTEGER REFERENCES users(id),
+    resolved_by_username VARCHAR(255),
+    resolved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_result_rejections_visit_test_id ON result_rejections(visit_test_id);
+CREATE INDEX IF NOT EXISTS idx_result_rejections_status ON result_rejections(status);
 
 -- Waivers table
 CREATE TABLE IF NOT EXISTS waivers (
@@ -393,13 +445,34 @@ CREATE INDEX idx_visits_patient_id ON visits(patient_id);
 CREATE INDEX idx_visits_visit_code ON visits(visit_code);
 CREATE INDEX idx_visits_branch_id ON visits(branch_id);
 CREATE INDEX idx_visits_qr_code_token ON visits(qr_code_token);
+CREATE INDEX IF NOT EXISTS idx_visits_registration_datetime ON visits(registration_datetime);
 CREATE INDEX idx_visit_tests_visit_id ON visit_tests(visit_id);
 CREATE INDEX idx_visit_tests_status ON visit_tests(status);
+CREATE INDEX IF NOT EXISTS idx_visit_tests_test_template_id ON visit_tests(test_template_id);
+CREATE INDEX IF NOT EXISTS idx_visit_tests_collected_at ON visit_tests(collected_at);
+CREATE INDEX IF NOT EXISTS idx_visit_tests_approved_at ON visit_tests(approved_at);
 CREATE INDEX idx_client_prices_client_id ON client_prices(client_id);
 CREATE INDEX idx_ledger_entries_client_id ON ledger_entries(client_id);
 CREATE INDEX idx_b2b_client_logins_client_id ON b2b_client_logins(client_id);
 CREATE INDEX idx_patient_report_access_logs_visit_id ON patient_report_access_logs(visit_id);
 CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_resource_id ON audit_logs(resource_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_severity ON audit_logs(severity);
+CREATE INDEX IF NOT EXISTS idx_patients_patient_code ON patients(patient_code);
+CREATE INDEX IF NOT EXISTS idx_patients_phone ON patients(phone);
+CREATE INDEX IF NOT EXISTS idx_patients_name ON patients(name);
+CREATE INDEX IF NOT EXISTS idx_referral_doctors_name ON referral_doctors(name);
+CREATE INDEX IF NOT EXISTS idx_clients_name ON clients(name);
+CREATE INDEX IF NOT EXISTS idx_clients_type ON clients(type);
+CREATE INDEX IF NOT EXISTS idx_test_templates_code ON test_templates(code);
+CREATE INDEX IF NOT EXISTS idx_test_templates_category ON test_templates(category);
+CREATE INDEX IF NOT EXISTS idx_test_templates_is_active ON test_templates(is_active);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 
 -- ============================================================================
 -- AUDIT LOG RETENTION POLICIES AND CLEANUP
