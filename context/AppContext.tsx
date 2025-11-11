@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { Visit, VisitTest, Patient, TestTemplate, VisitTestStatus, User, Role, UserWithPassword, Client, ClientPrice, LedgerEntry, RolePermissions, Permission, CultureResult, AuditLog, Antibiotic, Branch, Unit } from '../types';
+import { getCachedData, invalidateCache } from './DataCache';
 
 // API Base URL - uses environment variable or falls back to localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL
@@ -91,7 +92,17 @@ interface AppContextType extends AppState {
   addAntibiotic: (antibiotic: Omit<Antibiotic, 'id' | 'isActive'>, actor: User) => void;
   updateAntibiotic: (antibiotic: Antibiotic, actor: User) => void;
   deleteAntibiotic: (antibioticId: number, actor: User) => void;
-  // Data loading
+  // Data loading - LAZY LOADING
+  loadTestTemplates: () => Promise<void>;
+  loadClients: () => Promise<void>;
+  loadReferralDoctors: () => Promise<void>;
+  loadBranches: () => Promise<void>;
+  loadAntibiotics: () => Promise<void>;
+  loadUnits: () => Promise<void>;
+  loadVisits: () => Promise<void>;
+  loadVisitTests: () => Promise<void>;
+  loadUsers: () => Promise<void>;
+  loadViewData: (view: string) => Promise<void>;
   reloadData: () => Promise<void>;
   // Signatories
   signatories: any[];
@@ -123,119 +134,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
   };
 
-  // Load clients, referral doctors, test templates, branches, antibiotics, and visit tests from API on mount and when auth token changes
+  // DO NOT load all data on mount - use lazy loading instead
+  // Data will be loaded on-demand when views are accessed
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const authToken = getAuthToken();
-
-        if (!authToken) {
-          return;
-        }
-
-        const headers = {
-          'Authorization': `Bearer ${authToken}`,
-          'Cache-Control': 'max-age=300', // Cache for 5 minutes
-        };
-
-        // Check if we have cached data (less than 5 minutes old)
-        const cacheKey = 'lms_app_data_cache';
-        const cacheTimestampKey = 'lms_app_data_cache_timestamp';
-        const cachedData = localStorage.getItem(cacheKey);
-        const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
-        const now = Date.now();
-        const cacheAge = cacheTimestamp ? now - parseInt(cacheTimestamp) : Infinity;
-
-        // Use cache if less than 5 minutes old
-        if (cachedData && cacheAge < 5 * 60 * 1000) {
-          console.log('✅ Using cached data (age:', Math.floor(cacheAge / 1000), 'seconds)');
-          const parsed = JSON.parse(cachedData);
-          setState(prevState => ({
-            ...prevState,
-            ...parsed
-          }));
-          return;
-        }
-
-        console.log('🔄 Loading fresh data from API...');
-
-        // Load all data in parallel for better performance
-        const [
-          clientsResponse,
-          doctorsResponse,
-          templatesResponse,
-          branchesResponse,
-          antibioticsResponse,
-          unitsResponse,
-          visitsResponse,
-          visitTestsResponse
-        ] = await Promise.all([
-          fetch(`${API_BASE_URL}/clients`, { headers }),
-          fetch(`${API_BASE_URL}/referral-doctors`, { headers }),
-          fetch(`${API_BASE_URL}/test-templates`, { headers }),
-          fetch(`${API_BASE_URL}/branches`, { headers }),
-          fetch(`${API_BASE_URL}/antibiotics`, { headers }),
-          fetch(`${API_BASE_URL}/units/active`, { headers }),
-          fetch(`${API_BASE_URL}/visits`, { headers }),
-          fetch(`${API_BASE_URL}/visit-tests`, { headers })
-        ]);
-
-        const clients = clientsResponse.ok ? await clientsResponse.json() : [];
-        const referralDoctors = doctorsResponse.ok ? await doctorsResponse.json() : [];
-        const testTemplates = templatesResponse.ok ? await templatesResponse.json() : [];
-        const branches = branchesResponse.ok ? await branchesResponse.json() : [];
-        const antibiotics = antibioticsResponse.ok ? await antibioticsResponse.json() : [];
-        const units = unitsResponse.ok ? await unitsResponse.json() : [];
-        const visits = visitsResponse.ok ? await visitsResponse.json() : [];
-        const visitTests = visitTestsResponse.ok ? await visitTestsResponse.json() : [];
-
-        // Load client prices for all clients
-        const clientPricesPromises = clients.map(async (client: Client) => {
-          const pricesResponse = await fetch(`${API_BASE_URL}/clients/${client.id}/prices`, { headers });
-          return pricesResponse.ok ? await pricesResponse.json() : [];
-        });
-        const clientPricesArrays = await Promise.all(clientPricesPromises);
-        const clientPrices = clientPricesArrays.flat();
-
-        const newState = {
-          clients: clients,
-          referralDoctors: referralDoctors,
-          testTemplates: testTemplates,
-          branches: branches,
-          antibiotics: antibiotics,
-          units: units.map((u: any) => ({
-            id: u.id,
-            name: u.name,
-            symbol: u.symbol,
-            category: u.category,
-            description: u.description,
-            isActive: u.is_active ?? true
-          })),
-          visits: visits,
-          visitTests: visitTests,
-          clientPrices: clientPrices,
-        };
-
-        // Cache the data
-        localStorage.setItem(cacheKey, JSON.stringify(newState));
-        localStorage.setItem(cacheTimestampKey, now.toString());
-        console.log('✅ Data cached successfully');
-
-        setState(prevState => ({
-          ...prevState,
-          ...newState
-        }));
-      } catch (error) {
-        console.error('Error loading data:', error);
-      }
-    };
-
-    // Use a small delay to ensure localStorage is updated
-    const timer = setTimeout(() => {
-      loadData();
-    }, 100);
-
-    return () => clearTimeout(timer);
+    console.log('🚀 AppContext initialized - using lazy loading strategy');
+    console.log('📊 Data will be loaded on-demand per view');
   }, []);
 
   // Helper function to invalidate cache when data changes
@@ -1327,35 +1230,157 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  // LAZY LOADING FUNCTIONS - Load data only when needed
+  const loadTestTemplates = async () => {
+    try {
+      const data = await getCachedData<TestTemplate[]>('test-templates');
+      setState(prevState => ({ ...prevState, testTemplates: data }));
+    } catch (error) {
+      console.error('Error loading test templates:', error);
+    }
+  };
+
+  const loadClients = async () => {
+    try {
+      const data = await getCachedData<Client[]>('clients');
+      setState(prevState => ({ ...prevState, clients: data }));
+
+      // Load client prices for all clients
+      const authToken = getAuthToken();
+      if (authToken) {
+        const headers = { 'Authorization': `Bearer ${authToken}` };
+        const clientPricesPromises = data.map(async (client: Client) => {
+          const pricesResponse = await fetch(`${API_BASE_URL}/clients/${client.id}/prices`, { headers });
+          return pricesResponse.ok ? await pricesResponse.json() : [];
+        });
+        const clientPricesArrays = await Promise.all(clientPricesPromises);
+        const clientPrices = clientPricesArrays.flat();
+        setState(prevState => ({ ...prevState, clientPrices }));
+      }
+    } catch (error) {
+      console.error('Error loading clients:', error);
+    }
+  };
+
+  const loadReferralDoctors = async () => {
+    try {
+      const data = await getCachedData<ReferralDoctor[]>('referral-doctors');
+      setState(prevState => ({ ...prevState, referralDoctors: data }));
+    } catch (error) {
+      console.error('Error loading referral doctors:', error);
+    }
+  };
+
+  const loadBranches = async () => {
+    try {
+      const data = await getCachedData<Branch[]>('branches');
+      setState(prevState => ({ ...prevState, branches: data }));
+    } catch (error) {
+      console.error('Error loading branches:', error);
+    }
+  };
+
+  const loadAntibiotics = async () => {
+    try {
+      const data = await getCachedData<Antibiotic[]>('antibiotics');
+      setState(prevState => ({ ...prevState, antibiotics: data }));
+    } catch (error) {
+      console.error('Error loading antibiotics:', error);
+    }
+  };
+
+  const loadUnits = async () => {
+    try {
+      const data = await getCachedData<any[]>('units');
+      const units = data.map((u: any) => ({
+        id: u.id,
+        name: u.name,
+        symbol: u.symbol,
+        category: u.category,
+        description: u.description,
+        isActive: u.is_active ?? true
+      }));
+      setState(prevState => ({ ...prevState, units }));
+    } catch (error) {
+      console.error('Error loading units:', error);
+    }
+  };
+
+  const loadVisits = async () => {
+    try {
+      const data = await getCachedData<Visit[]>('visits');
+      setState(prevState => ({ ...prevState, visits: data }));
+    } catch (error) {
+      console.error('Error loading visits:', error);
+    }
+  };
+
+  const loadVisitTests = async () => {
+    try {
+      const data = await getCachedData<VisitTest[]>('visit-tests');
+      setState(prevState => ({ ...prevState, visitTests: data }));
+    } catch (error) {
+      console.error('Error loading visit tests:', error);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const data = await getCachedData<any[]>('users');
+      const users = data.map((user: any) => ({
+        id: user.id,
+        username: user.username,
+        password_hash: user.password_hash,
+        role: user.role,
+        isActive: user.is_active,
+        permissions: user.permissions || [],
+        signatureImageUrl: user.signature_image_url
+      }));
+      setState(prevState => ({ ...prevState, users }));
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  };
+
+  // Load data for specific view
+  const loadViewData = async (view: string) => {
+    console.log(`📦 Loading data for view: ${view}`);
+
+    const viewDataMap: Record<string, Array<() => Promise<void>>> = {
+      'reception': [loadTestTemplates, loadClients, loadReferralDoctors, loadBranches],
+      'phlebotomy': [loadVisits, loadVisitTests],
+      'lab': [loadVisits, loadVisitTests, loadAntibiotics, loadUnits],
+      'approver': [loadVisits, loadVisitTests, loadUsers],
+      'admin': [loadUsers, loadTestTemplates, loadClients, loadBranches, loadAntibiotics, loadUnits],
+      'b2b-dashboard': [loadClients, loadVisits],
+    };
+
+    const loaders = viewDataMap[view] || [];
+    await Promise.all(loaders.map(loader => loader()));
+    console.log(`✅ Data loaded for view: ${view}`);
+  };
+
+  // Legacy reloadData function - now uses lazy loading
   const reloadData = async (forceRefresh: boolean = false) => {
     try {
+      console.log('🔄 reloadData called - loading all data...');
+
+      // Invalidate cache if force refresh
+      if (forceRefresh) {
+        invalidateCache('visits');
+        invalidateCache('visit-tests');
+        invalidateCache('users');
+        invalidateCache('test-templates');
+        invalidateCache('clients');
+        invalidateCache('antibiotics');
+        invalidateCache('referral-doctors');
+        invalidateCache('branches');
+      }
+
       const authToken = getAuthToken();
       if (!authToken) {
         return;
       }
-
-      // Check cache first (unless force refresh)
-      if (!forceRefresh) {
-        const cacheKey = 'lms_app_data_cache';
-        const cacheTimestampKey = 'lms_app_data_cache_timestamp';
-        const cachedData = localStorage.getItem(cacheKey);
-        const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
-        const now = Date.now();
-        const cacheAge = cacheTimestamp ? now - parseInt(cacheTimestamp) : Infinity;
-
-        // Use cache if less than 5 minutes old
-        if (cachedData && cacheAge < 5 * 60 * 1000) {
-          console.log('✅ reloadData: Using cached data (age:', Math.floor(cacheAge / 1000), 'seconds)');
-          const parsed = JSON.parse(cachedData);
-          setState(prevState => ({
-            ...prevState,
-            ...parsed
-          }));
-          return;
-        }
-      }
-
-      console.log('🔄 reloadData: Loading fresh data from API...');
 
       const headers = {
         'Authorization': `Bearer ${authToken}`,
@@ -1468,6 +1493,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addBranch,
     updateBranch,
     deleteBranch,
+    // Lazy loading functions
+    loadTestTemplates,
+    loadClients,
+    loadReferralDoctors,
+    loadBranches,
+    loadAntibiotics,
+    loadUnits,
+    loadVisits,
+    loadVisitTests,
+    loadUsers,
+    loadViewData,
     reloadData
   };
 
