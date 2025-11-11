@@ -312,7 +312,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { VisitTest, Visit, Signatory, Approver } from '../types';
 import { useAppContext } from '../context/AppContext';
-import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE_URL } from '../config/api';
 import { MicrobiologyReportDisplay } from './MicrobiologyReportDisplay';
 
@@ -622,10 +621,6 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
   // Create paginated report
   const reportPages = createReportPages(testsByCategory);
   const totalPages = reportPages.length;
-
-  const qrValue = typeof window !== 'undefined'
-    ? `${window.location.origin}/verify-report/${visit.visit_code}`
-    : visit.visit_code;
 
   return (
     <>
@@ -970,14 +965,20 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                 ))}
 
                 {/* QR Code - ALWAYS SHOW - positioned based on approver count */}
-                <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
-                    <QRCodeSVG value={qrValue} size={40} level="M" includeMargin={false} />
+                {visit.qr_code && (
+                  <div style={{ textAlign: 'center', flex: 1 }}>
+                    <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
+                      <img
+                        src={visit.qr_code}
+                        alt="QR Code"
+                        style={{ width: '100%', height: '100%', display: 'block' }}
+                      />
+                    </div>
+                    <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
+                      Scan to verify
+                    </div>
                   </div>
-                  <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
-                    Scan to verify
-                  </div>
-                </div>
+                )}
               </>
             ) : (
               <>
@@ -998,14 +999,20 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                 </div>
 
                 {/* QR Code - Center */}
-                <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
-                    <QRCodeSVG value={qrValue} size={40} level="M" includeMargin={false} />
+                {visit.qr_code && (
+                  <div style={{ textAlign: 'center', flex: 1 }}>
+                    <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
+                      <img
+                        src={visit.qr_code}
+                        alt="QR Code"
+                        style={{ width: '100%', height: '100%', display: 'block' }}
+                      />
+                    </div>
+                    <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
+                      Scan to verify
+                    </div>
                   </div>
-                  <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
-                    Scan to verify
-                  </div>
-                </div>
+                )}
 
                 {/* Empty space for balance */}
                 <div style={{ flex: 1 }}></div>

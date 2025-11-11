@@ -23,7 +23,8 @@
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "pdfkit": "^0.17.2",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -35,6 +36,7 @@
     "@types/node-cron": "^3.0.11",
     "@types/pdfkit": "^0.17.3",
     "@types/pg": "^8.11.2",
+    "@types/qrcode": "^1.5.5",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }

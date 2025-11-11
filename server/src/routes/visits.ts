@@ -2,8 +2,12 @@ import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
 import { auditVisit } from '../middleware/auditLogger.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { generateQRCode, generateVerificationUrl } from '../utils/qrcode.js';
 
 const router = express.Router();
+
+// Get frontend URL from environment or use default
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
@@ -53,42 +57,49 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
       testsByVisit[row.visit_id].push(row.id);
     });
 
-    const visits = result.rows.map(row => ({
-      id: row.id,
-      patient_id: row.patient_id,
-      referred_doctor_id: row.referred_doctor_id,
-      referred_doctor_name: row.referred_doctor_name,
-      referred_doctor_designation: row.referred_doctor_designation,
-      ref_customer_id: row.ref_customer_id,
-      other_ref_doctor: row.other_ref_doctor,
-      other_ref_customer: row.other_ref_customer,
-      registration_datetime: row.registration_datetime,
-      visit_code: row.visit_code,
-      total_cost: parseFloat(row.total_cost),
-      amount_paid: parseFloat(row.amount_paid),
-      payment_mode: row.payment_mode,
-      due_amount: parseFloat(row.due_amount),
-      created_at: row.created_at,
-      patient: {
-        id: row.patient_id,
-        salutation: row.salutation,
-        name: row.name,
-        age_years: row.age_years,
-        age_months: row.age_months,
-        age_days: row.age_days,
-        sex: row.sex,
-        phone: row.phone,
-        address: row.address,
-        email: row.email,
-        clinical_history: row.clinical_history,
-      },
-      b2bClient: row.client_id ? {
-        id: row.client_id,
-        name: row.client_name,
-        type: row.client_type,
-        balance: parseFloat(row.client_balance),
-      } : null,
-      tests: testsByVisit[row.id] || [],
+    // Generate QR codes for all visits
+    const visits = await Promise.all(result.rows.map(async (row) => {
+      const verificationUrl = generateVerificationUrl(row.visit_code, FRONTEND_URL);
+      const qrCodeDataUrl = await generateQRCode(verificationUrl, 100);
+
+      return {
+        id: row.id,
+        patient_id: row.patient_id,
+        referred_doctor_id: row.referred_doctor_id,
+        referred_doctor_name: row.referred_doctor_name,
+        ref_customer_id: row.ref_customer_id,
+        other_ref_doctor: row.other_ref_doctor,
+        other_ref_customer: row.other_ref_customer,
+        registration_datetime: row.registration_datetime,
+        visit_code: row.visit_code,
+        total_cost: parseFloat(row.total_cost),
+        amount_paid: parseFloat(row.amount_paid),
+        payment_mode: row.payment_mode,
+        due_amount: parseFloat(row.due_amount),
+        created_at: row.created_at,
+        qr_code: qrCodeDataUrl,
+        verification_url: verificationUrl,
+        patient: {
+          id: row.patient_id,
+          salutation: row.salutation,
+          name: row.name,
+          age_years: row.age_years,
+          age_months: row.age_months,
+          age_days: row.age_days,
+          sex: row.sex,
+          phone: row.phone,
+          address: row.address,
+          email: row.email,
+          clinical_history: row.clinical_history,
+        },
+        b2bClient: row.client_id ? {
+          id: row.client_id,
+          name: row.client_name,
+          type: row.client_type,
+          balance: parseFloat(row.client_balance),
+        } : null,
+        tests: testsByVisit[row.id] || [],
+      };
     }));
 
     res.json(visits);
@@ -129,12 +140,16 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
         return res.status(403).json({ error: 'Access denied: You can only view your own visits' });
       }
     }
+
+    // Generate QR code for visit verification
+    const verificationUrl = generateVerificationUrl(row.visit_code, FRONTEND_URL);
+    const qrCodeDataUrl = await generateQRCode(verificationUrl, 100);
+
     res.json({
       id: row.id,
       patient_id: row.patient_id,
       referred_doctor_id: row.referred_doctor_id,
       referred_doctor_name: row.referred_doctor_name,
-      referred_doctor_designation: row.referred_doctor_designation,
       ref_customer_id: row.ref_customer_id,
       other_ref_doctor: row.other_ref_doctor,
       other_ref_customer: row.other_ref_customer,
@@ -145,6 +160,8 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
       payment_mode: row.payment_mode,
       due_amount: parseFloat(row.due_amount),
       created_at: row.created_at,
+      qr_code: qrCodeDataUrl,
+      verification_url: verificationUrl,
       patient: {
         id: row.patient_id,
         salutation: row.salutation,
