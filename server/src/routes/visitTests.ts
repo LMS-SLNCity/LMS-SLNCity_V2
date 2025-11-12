@@ -10,7 +10,7 @@ router.get('/', shortCache, async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT vt.id, vt.visit_id, vt.test_template_id, vt.status, vt.collected_by, vt.collected_at, vt.specimen_type,
-              vt.results, vt.culture_result, vt.approved_by, vt.approved_at,
+              vt.results, vt.culture_result, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at,
               tt.id as template_id, tt.code, tt.name, tt.category, tt.price, tt.b2b_price, tt.is_active, tt.report_type, tt.parameters, tt.default_antibiotic_ids,
               v.visit_code, p.name as patient_name
        FROM visit_tests vt
@@ -44,6 +44,8 @@ router.get('/', shortCache, async (req: Request, res: Response) => {
       cultureResult: row.culture_result,
       approvedBy: row.approved_by,
       approvedAt: row.approved_at,
+      rejection_count: row.rejection_count || 0,
+      last_rejection_at: row.last_rejection_at,
     })));
   } catch (error) {
     console.error('Error fetching visit tests:', error);
@@ -55,7 +57,7 @@ router.get('/:id', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT vt.id, vt.visit_id, vt.test_template_id, vt.status, vt.collected_by, vt.collected_at, vt.specimen_type,
-              vt.results, vt.culture_result, vt.approved_by, vt.approved_at,
+              vt.results, vt.culture_result, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at,
               tt.id as template_id, tt.code, tt.name, tt.category, tt.price, tt.b2b_price, tt.is_active, tt.report_type, tt.parameters, tt.default_antibiotic_ids,
               v.visit_code, p.name as patient_name
        FROM visit_tests vt
@@ -66,7 +68,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       [req.params.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Visit test not found' });
-    
+
     const row = result.rows[0];
     res.json({
       id: row.id,
@@ -93,6 +95,8 @@ router.get('/:id', async (req: Request, res: Response) => {
       cultureResult: row.culture_result,
       approvedBy: row.approved_by,
       approvedAt: row.approved_at,
+      rejection_count: row.rejection_count || 0,
+      last_rejection_at: row.last_rejection_at,
     });
   } catch (error) {
     console.error('Error fetching visit test:', error);
