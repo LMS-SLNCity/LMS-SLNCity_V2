@@ -3,28 +3,11 @@ import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { Visit, VisitTest } from '../types';
 import { ResultEntryForm } from './ResultEntryForm';
+import { StatusBadgeFromTest } from './StatusBadge';
 
 interface LabQueueProps {
   onInitiateReport: (visit: Visit) => void;
 }
-
-const StatusBadge: React.FC<{ status: VisitTest['status'] }> = ({ status }) => {
-  const baseClasses = "px-2.5 py-0.5 text-xs font-medium rounded-full";
-  const statusMap = {
-    PENDING: "bg-yellow-100 text-yellow-800",
-    SAMPLE_COLLECTED: "bg-blue-100 text-blue-800",
-    AWAITING_APPROVAL: "bg-purple-100 text-purple-800",
-    APPROVED: "bg-green-100 text-green-800",
-    IN_PROGRESS: "bg-indigo-100 text-indigo-800",
-  };
-  const colorClasses = statusMap[status as keyof typeof statusMap] || "bg-gray-100 text-gray-800";
-  
-  return (
-    <span className={`${baseClasses} ${colorClasses}`}>
-      {status.replace('_', ' ')}
-    </span>
-  );
-};
 
 const EmptyState: React.FC<{ title: string; message: string }> = ({ title, message }) => (
     <div className="text-center py-12">
@@ -201,7 +184,7 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{test.visitCode}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{test.template.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <StatusBadge status={test.status} />
+                        <StatusBadgeFromTest test={test} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {test.status === 'APPROVED' && visit && (

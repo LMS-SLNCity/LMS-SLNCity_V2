@@ -2,25 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Visit, VisitTest } from '../types';
 import { ApprovalModal } from './ApprovalModal';
+import { StatusBadgeFromTest } from './StatusBadge';
 
 interface ApproverQueueProps {
   onInitiateReport: (visit: Visit) => void;
 }
-
-const StatusBadge: React.FC<{ status: VisitTest['status'] }> = ({ status }) => {
-  const baseClasses = "px-2.5 py-0.5 text-xs font-medium rounded-full";
-  const statusMap = {
-    AWAITING_APPROVAL: "bg-purple-100 text-purple-800",
-    APPROVED: "bg-green-100 text-green-800",
-  };
-  const colorClasses = statusMap[status as keyof typeof statusMap] || "bg-gray-100 text-gray-800";
-  
-  return (
-    <span className={`${baseClasses} ${colorClasses}`}>
-      {status.replace('_', ' ')}
-    </span>
-  );
-};
 
 const EmptyState: React.FC<{ title: string; message: string }> = ({ title, message }) => (
     <div className="text-center py-12">
@@ -89,7 +75,7 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{test.patientName}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{test.template.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <StatusBadge status={test.status} />
+                        <StatusBadgeFromTest test={test} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <button

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { PatientSearchModal } from './PatientSearchModal';
 import { SearchableSelect } from './form/SearchableSelect';
 import { API_BASE_URL } from '../config/api';
+import { StatusBadgeFromTest } from './StatusBadge';
 
 type AgeUnit = 'Years' | 'Months' | 'Days';
 type PaymentMode = 'CASH' | 'CARD' | 'UPI' | 'CREDIT' | '';
@@ -622,7 +623,7 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                     <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">{new Date(visit.created_at).toLocaleDateString()}</td>
                     <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
                       <div className="flex flex-wrap gap-1">
-                        {visitTestsForVisit.map(vt => <StatusBadge key={vt.id} status={vt.status} />)}
+                        {visitTestsForVisit.map(vt => <StatusBadgeFromTest key={vt.id} test={vt} />)}
                       </div>
                     </td>
                     <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
@@ -649,19 +650,5 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
       </div>
     </>
   );
-};
-
-// StatusBadge component for displaying test status
-const StatusBadge: React.FC<{ status: VisitTest['status'] }> = ({ status }) => {
-  const baseClasses = "px-2 py-0.5 text-xs font-medium rounded-full inline-block";
-  const statusMap: Record<VisitTest['status'], string> = {
-    'PENDING': `${baseClasses} bg-gray-200 text-gray-700`,
-    'SAMPLE_COLLECTED': `${baseClasses} bg-blue-200 text-blue-700`,
-    'IN_PROGRESS': `${baseClasses} bg-yellow-200 text-yellow-700`,
-    'AWAITING_APPROVAL': `${baseClasses} bg-orange-200 text-orange-700`,
-    'APPROVED': `${baseClasses} bg-green-200 text-green-700`,
-    'COMPLETED': `${baseClasses} bg-purple-200 text-purple-700`,
-  };
-  return <span className={statusMap[status]}>{status.replace(/_/g, ' ')}</span>;
 };
 
