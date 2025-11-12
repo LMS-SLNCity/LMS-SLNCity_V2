@@ -128,12 +128,20 @@ class DataCache {
   }
 
   /**
-   * Invalidate all cache
+   * Invalidate multiple related caches at once
+   */
+  invalidateMultiple(endpoints: string[]): void {
+    endpoints.forEach(endpoint => this.invalidate(endpoint));
+    console.log(`🗑️ Invalidated ${endpoints.length} caches`);
+  }
+
+  /**
+   * Invalidate all caches
    */
   invalidateAll(): void {
     this.cache.clear();
     this.pendingRequests.clear();
-    console.log('🗑️ All cache invalidated');
+    console.log(`🗑️ All caches cleared`);
   }
 
   /**
@@ -180,6 +188,20 @@ export async function getCachedData<T>(
  */
 export function invalidateCache(endpoint: string): void {
   dataCache.invalidate(endpoint);
+}
+
+/**
+ * Invalidate multiple caches at once
+ */
+export function invalidateMultipleCaches(endpoints: string[]): void {
+  dataCache.invalidateMultiple(endpoints);
+}
+
+/**
+ * Invalidate all caches
+ */
+export function invalidateAllCaches(): void {
+  dataCache.invalidateAll();
 }
 
 /**

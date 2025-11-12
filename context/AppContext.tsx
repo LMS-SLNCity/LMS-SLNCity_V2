@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { Visit, VisitTest, Patient, TestTemplate, VisitTestStatus, User, Role, UserWithPassword, Client, ClientPrice, LedgerEntry, RolePermissions, Permission, CultureResult, AuditLog, Antibiotic, Branch, Unit } from '../types';
-import { getCachedData, invalidateCache as invalidateDataCache } from './DataCache';
+import { getCachedData, invalidateCache as invalidateDataCache, invalidateMultipleCaches } from './DataCache';
 
 // API Base URL - uses environment variable or falls back to localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL
@@ -257,15 +257,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       invalidateDataCache('visit-tests');
 
       // Only reload visits and visitTests (not ALL data) to save API calls
-      const reloadHeaders = { 'Authorization': `Bearer ${authToken}` };
+      // Invalidate cache and refetch from server
+      invalidateDataCache('visits');
+      invalidateDataCache('visit-tests');
 
-      const [visitsResponse, visitTestsResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/visits`, { headers: reloadHeaders }),
-        fetch(`${API_BASE_URL}/visit-tests`, { headers: reloadHeaders })
+      const [updatedVisits, updatedVisitTests] = await Promise.all([
+        getCachedData<Visit[]>('visits', true),
+        getCachedData<VisitTest[]>('visit-tests', true)
       ]);
-
-      const updatedVisits = visitsResponse.ok ? await visitsResponse.json() : [];
-      const updatedVisitTests = visitTestsResponse.ok ? await visitTestsResponse.json() : [];
 
       setState(prevState => ({
         ...prevState,
@@ -301,19 +300,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (test) {
           addAuditLog(actor.username, 'UPDATE_TEST_STATUS', `Updated status for test ${test.template.code} (Visit: ${test.visitCode}) to ${status}.`);
         }
+
+        // Invalidate cache and refetch from server to get accurate data
+        invalidateDataCache('visit-tests');
+        const updatedTests = await getCachedData<VisitTest[]>('visit-tests', true);
+
         setState(prevState => ({
           ...prevState,
-          visitTests: prevState.visitTests.map(t =>
-            t.id === visitTestId
-              ? {
-                  ...t,
-                  status,
-                  collectedBy: details?.collectedBy || t.collectedBy,
-                  collectedAt: status === 'SAMPLE_COLLECTED' ? new Date().toISOString() : t.collectedAt,
-                  specimen_type: details?.specimen_type || t.specimen_type,
-                }
-              : t
-          ),
+          visitTests: updatedTests,
         }));
       } else {
         console.error('Error updating visit test status:', response.statusText);
@@ -347,18 +341,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if(test) {
           addAuditLog(actor.username, 'ENTER_RESULTS', `Entered results for test ${test.template.code} (Visit: ${test.visitCode}).`);
         }
+
+        // Invalidate cache and refetch from server
+        invalidateDataCache('visit-tests');
+        const updatedTests = await getCachedData<VisitTest[]>('visit-tests', true);
+
         setState(prevState => ({
           ...prevState,
-          visitTests: prevState.visitTests.map(t =>
-            t.id === visitTestId
-              ? {
-                  ...t,
-                  status: 'AWAITING_APPROVAL',
-                  results: data.results || t.results,
-                  cultureResult: data.cultureResult || t.cultureResult
-                }
-              : t
-          ),
+          visitTests: updatedTests,
         }));
       } else {
         console.error('Error adding test result:', response.statusText);
@@ -434,18 +424,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if(test) {
           addAuditLog(actor.username, 'APPROVE_RESULTS', `Approved results for test ${test.template.code} (Visit: ${test.visitCode}).`);
         }
+
+        // Invalidate cache and refetch from server
+        invalidateDataCache('visit-tests');
+        const updatedTests = await getCachedData<VisitTest[]>('visit-tests', true);
+
         setState(prevState => ({
             ...prevState,
-            visitTests: prevState.visitTests.map(t =>
-                t.id === visitTestId
-                ? {
-                    ...t,
-                    status: 'APPROVED',
-                    approvedBy: actor.username,
-                    approvedAt: new Date().toISOString(),
-                  }
-                : t
-            )
+            visitTests: updatedTests,
         }));
       } else {
         console.error('Error approving test result:', response.statusText);

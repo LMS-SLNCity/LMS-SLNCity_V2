@@ -79,6 +79,9 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
       alert('Sample rejected successfully. Phlebotomy will be notified to recollect the sample.');
       setRejectingSampleId(null);
       setRejectionReason('');
+
+      // Reload data to show updated status
+      await loadVisitTests();
     } catch (error) {
       console.error('Error rejecting sample:', error);
       alert('Failed to reject sample. Please try again.');
