@@ -54,7 +54,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   const colorClasses = statusMap[status] || 'bg-gray-200 text-gray-700';
   
   // Check if sample has been rejected
-  const hasRejection = showRejectionIndicator && rejectionCount && rejectionCount > 0;
+  const hasRejection = showRejectionIndicator && !!rejectionCount && rejectionCount > 0;
   
   // Add red border for rejected samples
   const rejectionClasses = hasRejection ? 'ring-2 ring-red-500 ring-offset-1' : '';
