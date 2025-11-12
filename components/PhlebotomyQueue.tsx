@@ -52,8 +52,9 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
         alert("Test not found");
         return;
     }
-    if (test.status !== 'PENDING') {
-        alert(`Cannot collect sample. Test status is ${test.status}. Only PENDING tests can have samples collected.`);
+    // Allow collection for PENDING (new samples) and REJECTED (recollection)
+    if (test.status !== 'PENDING' && test.status !== 'REJECTED') {
+        alert(`Cannot collect sample. Test status is ${test.status}. Only PENDING or REJECTED tests can have samples collected.`);
         return;
     }
     setCollectingTest(test);
