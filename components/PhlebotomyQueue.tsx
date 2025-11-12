@@ -4,6 +4,7 @@ import { VisitTest, Visit } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { SampleCollectionModal } from './SampleCollectionModal';
 import { StatusBadgeFromTest } from './StatusBadge';
+import { API_BASE_URL } from '../config/api';
 
 interface PhlebotomyQueueProps {
   onInitiateReport: (visit: Visit) => void;
@@ -86,7 +87,7 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
     try {
       // Use the same rejection endpoint as lab for consistency
       // This will set status to REJECTED, increment rejection_count, and update last_rejection_at
-      const response = await fetch(`http://localhost:5002/api/visit-tests/${testId}/reject-sample`, {
+      const response = await fetch(`${API_BASE_URL}/visit-tests/${testId}/reject-sample`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

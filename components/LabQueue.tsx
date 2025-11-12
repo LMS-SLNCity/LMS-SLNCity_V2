@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Visit, VisitTest } from '../types';
 import { ResultEntryForm } from './ResultEntryForm';
 import { StatusBadgeFromTest } from './StatusBadge';
+import { API_BASE_URL } from '../config/api';
 
 interface LabQueueProps {
   onInitiateReport: (visit: Visit) => void;
@@ -61,7 +62,7 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
     try {
       // Send sample to REJECTED status for phlebotomy to recollect
       // Backend will increment rejection_count and set last_rejection_at
-      const response = await fetch(`http://localhost:5002/api/visit-tests/${testId}/reject-sample`, {
+      const response = await fetch(`${API_BASE_URL}/visit-tests/${testId}/reject-sample`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
