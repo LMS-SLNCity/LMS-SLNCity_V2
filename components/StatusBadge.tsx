@@ -22,6 +22,7 @@ interface StatusBadgeProps {
  * Status Colors:
  * - PENDING: Gray
  * - SAMPLE_COLLECTED: Blue
+ * - REJECTED: Red
  * - IN_PROGRESS: Yellow
  * - AWAITING_APPROVAL: Orange
  * - APPROVED: Green
@@ -43,6 +44,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   const statusMap: Record<VisitTestStatus, string> = {
     'PENDING': 'bg-gray-200 text-gray-700',
     'SAMPLE_COLLECTED': 'bg-blue-200 text-blue-700',
+    'REJECTED': 'bg-red-200 text-red-700',
     'IN_PROGRESS': 'bg-yellow-200 text-yellow-700',
     'AWAITING_APPROVAL': 'bg-orange-200 text-orange-700',
     'APPROVED': 'bg-green-200 text-green-700',

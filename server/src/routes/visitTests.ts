@@ -186,5 +186,37 @@ router.patch('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// Sample rejection endpoint (lab rejects physical sample quality)
+router.post('/:id/reject-sample', async (req: Request, res: Response) => {
+  try {
+    const { rejectionReason, rejectedBy } = req.body;
+    const testId = parseInt(req.params.id);
+
+    // Update visit_test status to REJECTED and increment rejection_count
+    const result = await pool.query(
+      `UPDATE visit_tests
+       SET status = 'REJECTED',
+           rejection_count = rejection_count + 1,
+           last_rejection_at = CURRENT_TIMESTAMP,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING id, visit_id, test_template_id, status, rejection_count, last_rejection_at`,
+      [testId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Visit test not found' });
+    }
+
+    // TODO: Log rejection reason in audit trail or separate table if needed
+    console.log(`Sample rejected for test ${testId} by ${rejectedBy}: ${rejectionReason}`);
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error rejecting sample:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
 

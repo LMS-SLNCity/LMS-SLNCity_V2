@@ -39,6 +39,7 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pendingSamples = visitTests.filter(test => test.status === 'PENDING');
+  const rejectedSamples = visitTests.filter(test => test.status === 'REJECTED').sort((a, b) => new Date(b.last_rejection_at!).getTime() - new Date(a.last_rejection_at!).getTime());
   const collectedSamples = visitTests.filter(test => ['SAMPLE_COLLECTED', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS'].includes(test.status)).sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
 
   const handleInitiateCollection = (testId: number) => {
@@ -159,6 +160,54 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
           <EmptyState title="No pending samples" message="When a new visit is created, tests awaiting sample collection will appear here." />
         )}
       </div>
+
+      {/* Rejected Samples Section */}
+      {rejectedSamples.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-red-700 mb-4">⚠️ Rejected Samples - Recollection Required</h3>
+          <div className="overflow-x-auto border-2 border-red-300 rounded-lg bg-red-50">
+            <table className="min-w-full bg-white">
+              <thead className="bg-red-100">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visit Code</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rejected At</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rejection Count</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {rejectedSamples.map(test => (
+                  <tr key={test.id} className="hover:bg-red-100">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{test.visitCode}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{test.patientName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{test.template.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <StatusBadgeFromTest test={test} />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {test.last_rejection_at ? new Date(test.last_rejection_at).toLocaleString() : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-bold">
+                      {test.rejection_count || 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={() => handleInitiateCollection(test.id)}
+                        className="px-4 py-2 bg-orange-600 text-white font-semibold rounded-lg shadow-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors text-xs"
+                      >
+                        Recollect Sample
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Recently Collected Section */}
       <div>

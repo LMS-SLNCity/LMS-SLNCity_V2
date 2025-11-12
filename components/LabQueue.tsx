@@ -59,11 +59,24 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
     }
 
     try {
-      // Send sample back to PENDING status for phlebotomy to re-draw
-      await updateVisitTestStatus(testId, 'PENDING', user, {
-        rejectionReason: rejectionReason.trim()
+      // Send sample to REJECTED status for phlebotomy to recollect
+      // Backend will increment rejection_count and set last_rejection_at
+      const response = await fetch(`http://localhost:5002/api/visit-tests/${testId}/reject-sample`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rejectionReason: rejectionReason.trim(),
+          rejectedBy: user.username,
+        }),
       });
-      alert('Sample rejected successfully. Phlebotomy will be notified to re-draw the sample.');
+
+      if (!response.ok) {
+        throw new Error('Failed to reject sample');
+      }
+
+      alert('Sample rejected successfully. Phlebotomy will be notified to recollect the sample.');
       setRejectingSampleId(null);
       setRejectionReason('');
     } catch (error) {
