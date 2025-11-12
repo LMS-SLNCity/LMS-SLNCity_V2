@@ -84,11 +84,22 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
     const visit = test ? visits.find(v => v.id === test.visitId) : null;
 
     try {
-      // For B2B samples collected at client site, mark as rejected
-      // This removes the sample from the system as it needs to be re-drawn at client site
-      await updateVisitTestStatus(testId, 'PENDING', user, {
-        rejectionReason: `B2B Sample Rejected: ${rejectionReason.trim()}`
+      // Use the same rejection endpoint as lab for consistency
+      // This will set status to REJECTED, increment rejection_count, and update last_rejection_at
+      const response = await fetch(`http://localhost:5002/api/visit-tests/${testId}/reject-sample`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rejectionReason: `B2B Sample Rejected at Phlebotomy: ${rejectionReason.trim()}`,
+          rejectedBy: user.username,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to reject sample');
+      }
 
       if (visit && visit.ref_customer_id) {
         alert(`B2B sample rejected. Client will be notified to re-draw the sample.\nVisit: ${visit.visit_code}\nReason: ${rejectionReason}`);
@@ -98,6 +109,9 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
 
       setRejectingSampleId(null);
       setRejectionReason('');
+
+      // Reload data to show updated status
+      await loadVisitTests();
     } catch (error) {
       console.error('Error rejecting sample:', error);
       alert('Failed to reject sample. Please try again.');
