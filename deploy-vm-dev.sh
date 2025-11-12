@@ -51,23 +51,8 @@ fi
 print_success "Docker Compose is available"
 
 # Get VM IP address
-# Try to auto-detect the primary IP address
-VM_IP=$(hostname -I | awk '{print $1}')
-if [ -z "$VM_IP" ]; then
-    # Fallback: try to get from ip command
-    VM_IP=$(ip route get 1 | awk '{print $7;exit}' 2>/dev/null)
-fi
-if [ -z "$VM_IP" ]; then
-    print_error "Could not detect VM IP address"
-    read -p "Please enter your VM IP address: " VM_IP
-fi
-print_info "Detected VM IP Address: $VM_IP"
-
-# Ask user to confirm IP
-read -p "Is this IP address correct? (y/n): " confirm
-if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-    read -p "Please enter the correct VM IP address: " VM_IP
-fi
+VM_IP=13.201.165.54
+print_info "Using VM IP Address: $VM_IP"
 
 echo ""
 print_info "Configuring environment for IP: $VM_IP"
