@@ -16,8 +16,8 @@ services:
       # ENV=development (default) - loads test data
       # ENV=production - loads only essential data
       ENV: ${ENV:-development}
-    ports:
-      - "5433:5432"
+    # PostgreSQL is only accessible within Docker network (not exposed externally)
+    # Backend connects via internal network using hostname 'postgres'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./server/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
