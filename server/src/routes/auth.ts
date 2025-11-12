@@ -95,9 +95,22 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     console.log('Comparing passwords...');
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    console.log('Password length:', password.length);
+    console.log('Hash length:', user.password_hash.length);
+    console.log('Hash preview:', user.password_hash.substring(0, 20));
+
+    let passwordMatch = false;
+    try {
+      passwordMatch = await bcrypt.compare(password, user.password_hash);
+      console.log('Password match result:', passwordMatch);
+    } catch (error) {
+      console.error('Error comparing passwords:', error);
+      await logAuthAttempt(username, 'LOGIN_FAILED', `Password comparison error: ${error}`, req, user.id);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
 
     if (!passwordMatch) {
+      console.log('Password does not match');
       await logAuthAttempt(username, 'LOGIN_FAILED', 'Invalid password', req, user.id);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
