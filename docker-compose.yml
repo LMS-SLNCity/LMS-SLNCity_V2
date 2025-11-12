@@ -31,6 +31,8 @@ services:
       # Mount setup scripts
       - ./server/db/setup-development.sh:/docker-entrypoint-initdb.d/04-setup-development.sh
       - ./server/db/setup-production.sh:/docker-entrypoint-initdb.d/04-setup-production.sh
+      # Mount schema update script for existing databases
+      - ./server/db/update-schema-to-latest.sql:/docker-entrypoint-initdb.d/update-schema-to-latest.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U lms_user -d lms_slncity"]
       interval: 10s

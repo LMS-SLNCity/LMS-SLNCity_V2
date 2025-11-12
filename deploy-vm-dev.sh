@@ -133,6 +133,30 @@ echo ""
 print_info "Waiting for services to be healthy..."
 sleep 10
 
+# Run database migrations if update-schema-to-latest.sql exists
+if [ -f "server/db/update-schema-to-latest.sql" ]; then
+    echo ""
+    print_info "Applying database migrations..."
+
+    # Wait for PostgreSQL to be ready
+    print_info "Waiting for PostgreSQL to be ready..."
+    sleep 5
+
+    # Create backup before migration
+    print_info "Creating database backup..."
+    docker compose exec -T postgres pg_dump -U lms_user lms_slncity > "backup_before_migration_$(date +%Y%m%d_%H%M%S).sql" 2>/dev/null || print_warning "Could not create backup (database may be new)"
+
+    # Apply migrations
+    print_info "Running schema updates..."
+    if docker compose exec -T postgres psql -U lms_user -d lms_slncity -f /docker-entrypoint-initdb.d/update-schema-to-latest.sql > /dev/null 2>&1; then
+        print_success "Database migrations applied successfully!"
+    else
+        print_warning "Migration script executed (some changes may have been skipped if already applied)"
+    fi
+else
+    print_info "No migration file found, skipping database updates"
+fi
+
 # Check service status
 echo ""
 print_info "Service Status:"
