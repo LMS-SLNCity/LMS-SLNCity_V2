@@ -10,14 +10,26 @@ echo "Export Local Database"
 echo "=========================================="
 echo ""
 
-# Check if docker is running
-if ! docker compose ps postgres | grep -q "running"; then
-    echo "❌ Error: PostgreSQL container is not running"
+# Detect if using podman or docker
+if command -v podman &> /dev/null; then
+    CONTAINER_CMD="podman"
+    echo "ℹ️  Using Podman"
+elif command -v docker &> /dev/null; then
+    CONTAINER_CMD="docker"
+    echo "ℹ️  Using Docker"
+else
+    echo "❌ Error: Neither podman nor docker found"
+    exit 1
+fi
+
+# Check if postgres container is running
+if ! $CONTAINER_CMD ps | grep -q "lms-postgres"; then
+    echo "❌ Error: PostgreSQL container (lms-postgres) is not running"
     echo "Start it with: docker compose up -d postgres"
     exit 1
 fi
 
-echo "✓ PostgreSQL container is running"
+echo "✓ PostgreSQL container (lms-postgres) is running"
 echo ""
 
 # Create backup directory
@@ -31,8 +43,8 @@ echo "📦 Exporting database..."
 echo "   Output: $BACKUP_FILE"
 echo ""
 
-# Export database
-docker compose exec -T postgres pg_dump -U lms_user -d lms_slncity --clean --if-exists > "$BACKUP_FILE"
+# Export database using container name
+$CONTAINER_CMD exec -i lms-postgres pg_dump -U lms_user -d lms_slncity --clean --if-exists > "$BACKUP_FILE"
 
 if [ $? -eq 0 ]; then
     echo "✓ Database exported successfully!"
