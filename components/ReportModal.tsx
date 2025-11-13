@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAppContext } from '../context/AppContext';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL } from '../config/api';
 
 
 interface ReportModalProps {
