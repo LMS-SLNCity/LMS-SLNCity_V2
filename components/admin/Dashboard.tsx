@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../api/client';
+import { useAppContext } from '../../context/AppContext';
+import { VisitTest } from '../../types';
 
 interface DashboardMetrics {
   totalVisits: number;
@@ -33,7 +35,77 @@ interface TrendData {
   averageRevenue: any;
 }
 
+interface QueuePopupProps {
+  title: string;
+  tests: VisitTest[];
+  onClose: () => void;
+}
+
+// Queue Popup Component
+const QueuePopup: React.FC<QueuePopupProps> = ({ title, tests, onClose }) => {
+  const { visits } = useAppContext();
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
+          <h3 className="text-xl font-bold">{title}</h3>
+          <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl font-bold">
+            ×
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
+          {tests.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">No tests in this queue</p>
+          ) : (
+            <table className="min-w-full bg-white border border-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Visit Code</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Patient Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Test Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Ref. Doctor</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Time</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {tests.map((test) => {
+                  const visit = visits.find(v => v.id === test.visitId);
+                  const refDoctor = visit?.referred_doctor_name || visit?.other_ref_doctor || 'N/A';
+                  const timeAgo = test.collectedAt
+                    ? new Date(test.collectedAt).toLocaleString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    : 'N/A';
+
+                  return (
+                    <tr key={test.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm font-medium text-blue-600">{test.visitCode}</td>
+                      <td className="px-4 py-3 text-sm text-gray-800">{test.patientName}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{test.template.name}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{refDoctor}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{timeAgo}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const Dashboard: React.FC = () => {
+  const { visitTests } = useAppContext();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [revenue, setRevenue] = useState<RevenueData | null>(null);
   const [tests, setTests] = useState<TestData | null>(null);
@@ -42,6 +114,7 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [queuePopup, setQueuePopup] = useState<{ title: string; tests: VisitTest[] } | null>(null);
 
   const fetchDashboardData = async () => {
     try {
@@ -105,31 +178,41 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header with Refresh Button */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-        >
-          <svg
-            className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+    <>
+      {/* Queue Popup */}
+      {queuePopup && (
+        <QueuePopup
+          title={queuePopup.title}
+          tests={queuePopup.tests}
+          onClose={() => setQueuePopup(null)}
+        />
+      )}
+
+      <div className="space-y-8">
+        {/* Header with Refresh Button */}
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          {refreshing ? 'Refreshing...' : 'Refresh'}
-        </button>
-      </div>
+            <svg
+              className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
 
       {/* Overview Metrics */}
       {metrics && (
@@ -143,50 +226,56 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Queue Status Containers */}
+      {/* Queue Status Containers - Click to view details */}
       {tests && tests.byStatus && (
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">📊 Queue Status Overview</h3>
-          <p className="text-sm text-gray-600 mb-4">Click on any queue to navigate to that section</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Phlebotomy Queue */}
+          <QueueCard
+            title="📋 Phlebotomy Queue"
+            description="Samples awaiting collection"
+            count={tests.byStatus.find((s: any) => s.status === 'PENDING')?.count || 0}
+            color="yellow"
+            onClick={() => {
+              const pendingTests = visitTests.filter(t => t.status === 'PENDING');
+              setQueuePopup({
+                title: '📋 Phlebotomy Queue - Samples Awaiting Collection',
+                tests: pendingTests
+              });
+            }}
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Phlebotomy Queue */}
-            <QueueCard
-              title="📋 Phlebotomy Queue"
-              description="Samples awaiting collection"
-              count={tests.byStatus.find((s: any) => s.status === 'PENDING')?.count || 0}
-              color="yellow"
-              onClick={() => {
-                // Navigate to phlebotomy view
-                window.dispatchEvent(new CustomEvent('navigate-to-view', { detail: 'phlebotomy' }));
-              }}
-            />
+          {/* Lab Queue */}
+          <QueueCard
+            title="🧪 Lab Queue"
+            description="Samples collected, awaiting results"
+            count={
+              (tests.byStatus.find((s: any) => s.status === 'SAMPLE_COLLECTED')?.count || 0) +
+              (tests.byStatus.find((s: any) => s.status === 'IN_PROGRESS')?.count || 0)
+            }
+            color="blue"
+            onClick={() => {
+              const labTests = visitTests.filter(t => t.status === 'SAMPLE_COLLECTED' || t.status === 'IN_PROGRESS');
+              setQueuePopup({
+                title: '🧪 Lab Queue - Samples Collected, Awaiting Results',
+                tests: labTests
+              });
+            }}
+          />
 
-            {/* Lab Queue */}
-            <QueueCard
-              title="🧪 Lab Queue"
-              description="Samples collected, awaiting results"
-              count={
-                (tests.byStatus.find((s: any) => s.status === 'SAMPLE_COLLECTED')?.count || 0) +
-                (tests.byStatus.find((s: any) => s.status === 'IN_PROGRESS')?.count || 0)
-              }
-              color="blue"
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('navigate-to-view', { detail: 'lab' }));
-              }}
-            />
-
-            {/* Approver Queue */}
-            <QueueCard
-              title="✅ Approver Queue"
-              description="Results awaiting approval"
-              count={tests.byStatus.find((s: any) => s.status === 'AWAITING_APPROVAL')?.count || 0}
-              color="green"
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('navigate-to-view', { detail: 'approver' }));
-              }}
-            />
-          </div>
+          {/* Approver Queue */}
+          <QueueCard
+            title="✅ Approver Queue"
+            description="Results awaiting approval"
+            count={tests.byStatus.find((s: any) => s.status === 'AWAITING_APPROVAL')?.count || 0}
+            color="green"
+            onClick={() => {
+              const approvalTests = visitTests.filter(t => t.status === 'AWAITING_APPROVAL');
+              setQueuePopup({
+                title: '✅ Approver Queue - Results Awaiting Approval',
+                tests: approvalTests
+              });
+            }}
+          />
         </div>
       )}
 
@@ -352,7 +441,8 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
