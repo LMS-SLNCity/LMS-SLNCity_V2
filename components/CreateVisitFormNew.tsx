@@ -67,6 +67,7 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [testSearchQuery, setTestSearchQuery] = useState('');
+  const [recentRegistrationsFilter, setRecentRegistrationsFilter] = useState('');
 
   // Calculate if this is a B2B client - MUST be defined before useEffects that use it
   const isB2BClient = useMemo(() => formData.ref_customer_id !== undefined && formData.ref_customer_id > 0, [formData.ref_customer_id]);
@@ -108,7 +109,8 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
     } else if (['Ms', 'Mrs', 'Baby'].includes(salutation)) {
       newSex = 'Female';
     }
-    if (newSex !== formData.sex) {
+    // For 'Baby of', keep the current sex selection (don't auto-change)
+    if (newSex !== formData.sex && salutation !== 'Baby of') {
       setFormData(prev => ({ ...prev, sex: newSex }));
     }
   }, [formData.salutation]);
@@ -132,12 +134,24 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
 
   const amountDue = useMemo(() => totalCost - formData.amount_paid, [totalCost, formData.amount_paid]);
 
-  // Sort visits by created_at DESC (most recent first) and limit to 20
+  // Sort visits by created_at DESC (most recent first), filter, and limit to 20
   const sortedVisits = useMemo(() => {
-    return [...visits]
+    let filtered = [...visits];
+
+    // Apply filter if search query exists
+    if (recentRegistrationsFilter) {
+      const query = recentRegistrationsFilter.toLowerCase();
+      filtered = filtered.filter(visit =>
+        visit.visit_code.toLowerCase().includes(query) ||
+        visit.patient.name.toLowerCase().includes(query) ||
+        new Date(visit.created_at).toLocaleDateString().includes(query)
+      );
+    }
+
+    return filtered
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 20);
-  }, [visits]);
+  }, [visits, recentRegistrationsFilter]);
 
   const filteredTests = useMemo(() => {
     const activeTests = testTemplates.filter(t => t.isActive);
@@ -250,7 +264,7 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
     }
   };
 
-  const isGuardianVisible = ['Baby', 'Master'].includes(formData.salutation);
+  const isGuardianVisible = ['Baby', 'Master', 'Baby of'].includes(formData.salutation);
 
   return (
     <>
@@ -298,6 +312,7 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                           <option value="Mrs">Mrs</option>
                           <option value="Master">Master</option>
                           <option value="Baby">Baby</option>
+                          <option value="Baby of">Baby of</option>
                         </select>
                       </div>
                       <div>
@@ -559,7 +574,16 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
 
       {/* Recent Registrations Table */}
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg mt-4">
-        <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Recent Registrations</h3>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-800">Recent Registrations</h3>
+          <input
+            type="text"
+            placeholder="Search by visit code, patient name, or date..."
+            value={recentRegistrationsFilter}
+            onChange={(e) => setRecentRegistrationsFilter(e.target.value)}
+            className="w-full sm:w-64 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
         <div className="overflow-x-auto border rounded-lg">
           <table className="min-w-full bg-white">
             <thead className="bg-gray-50">

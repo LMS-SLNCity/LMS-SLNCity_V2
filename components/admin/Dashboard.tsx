@@ -143,6 +143,53 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Queue Status Containers */}
+      {tests && tests.byStatus && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">📊 Queue Status Overview</h3>
+          <p className="text-sm text-gray-600 mb-4">Click on any queue to navigate to that section</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Phlebotomy Queue */}
+            <QueueCard
+              title="📋 Phlebotomy Queue"
+              description="Samples awaiting collection"
+              count={tests.byStatus.find((s: any) => s.status === 'PENDING')?.count || 0}
+              color="yellow"
+              onClick={() => {
+                // Navigate to phlebotomy view
+                window.dispatchEvent(new CustomEvent('navigate-to-view', { detail: 'phlebotomy' }));
+              }}
+            />
+
+            {/* Lab Queue */}
+            <QueueCard
+              title="🧪 Lab Queue"
+              description="Samples collected, awaiting results"
+              count={
+                (tests.byStatus.find((s: any) => s.status === 'SAMPLE_COLLECTED')?.count || 0) +
+                (tests.byStatus.find((s: any) => s.status === 'IN_PROGRESS')?.count || 0)
+              }
+              color="blue"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('navigate-to-view', { detail: 'lab' }));
+              }}
+            />
+
+            {/* Approver Queue */}
+            <QueueCard
+              title="✅ Approver Queue"
+              description="Results awaiting approval"
+              count={tests.byStatus.find((s: any) => s.status === 'AWAITING_APPROVAL')?.count || 0}
+              color="green"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('navigate-to-view', { detail: 'approver' }));
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Revenue Section */}
       {revenue && (
         <div className="bg-white p-6 rounded-lg shadow">
@@ -343,6 +390,54 @@ const MetricCard: React.FC<{ title: string; value: string | number; color?: stri
       <p className={`text-sm font-medium ${colors.title} mb-2`}>{title}</p>
       <p className={`text-3xl font-bold ${colors.value}`}>{value}</p>
     </div>
+  );
+};
+
+// Queue Card Component
+const QueueCard: React.FC<{
+  title: string;
+  description: string;
+  count: number;
+  color: 'yellow' | 'blue' | 'green';
+  onClick: () => void;
+}> = ({ title, description, count, color, onClick }) => {
+  const colorClasses = {
+    yellow: {
+      bg: 'bg-yellow-50',
+      border: 'border-yellow-200',
+      hover: 'hover:bg-yellow-100',
+      badge: 'bg-yellow-500 text-white',
+    },
+    blue: {
+      bg: 'bg-blue-50',
+      border: 'border-blue-200',
+      hover: 'hover:bg-blue-100',
+      badge: 'bg-blue-500 text-white',
+    },
+    green: {
+      bg: 'bg-green-50',
+      border: 'border-green-200',
+      hover: 'hover:bg-green-100',
+      badge: 'bg-green-500 text-white',
+    },
+  };
+
+  const colors = colorClasses[color];
+
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full p-6 rounded-lg border-2 transition-all cursor-pointer text-left ${colors.bg} ${colors.border} ${colors.hover}`}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <h4 className="text-lg font-semibold text-gray-800">{title}</h4>
+        <span className={`px-3 py-1 rounded-full text-2xl font-bold ${colors.badge}`}>
+          {count}
+        </span>
+      </div>
+      <p className="text-sm text-gray-600">{description}</p>
+      <p className="text-xs text-gray-500 mt-2">Click to view queue →</p>
+    </button>
   );
 };
 

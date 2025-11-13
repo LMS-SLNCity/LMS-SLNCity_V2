@@ -58,6 +58,24 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
     }
   }, [currentView]);
 
+  // Listen for navigation events from Dashboard queue cards
+  useEffect(() => {
+    const handleNavigate = (event: CustomEvent<View>) => {
+      const targetView = event.detail;
+      if (allowedViews.includes(targetView)) {
+        console.log(`🔄 Navigating to ${targetView} from Dashboard`);
+        setCurrentView(targetView);
+      } else {
+        console.warn(`⚠️ User does not have permission to view ${targetView}`);
+      }
+    };
+
+    window.addEventListener('navigate-to-view' as any, handleNavigate as any);
+    return () => {
+      window.removeEventListener('navigate-to-view' as any, handleNavigate as any);
+    };
+  }, [allowedViews]);
+
   useEffect(() => {
     const defaultView = allowedViews.length > 0 ? allowedViews[0] : undefined;
 

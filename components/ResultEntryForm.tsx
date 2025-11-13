@@ -86,7 +86,8 @@ const StandardResultForm: React.FC<{ test: VisitTest, onClose: () => void, isEdi
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">Patient: {test.patientName} ({test.visitCode})</p>
                 {isEditMode && <p className="text-sm text-yellow-700 bg-yellow-100 p-2 rounded-md mt-2">Reason for edit: {editReason}</p>}
-                <div className="mt-6 space-y-4">
+                {/* Add scrollbar for tests with many fields */}
+                <div className="mt-6 space-y-4 max-h-[60vh] overflow-y-auto pr-2">
                     {test.template.parameters?.fields && test.template.parameters.fields.length > 0 ? (
                         test.template.parameters.fields.map(renderField)
                     ) : (
@@ -205,11 +206,12 @@ const CultureResultForm: React.FC<{ test: VisitTest, onClose: () => void, isEdit
     
     return (
         <form onSubmit={handleSubmit} className="flex flex-col flex-grow">
-            <div className="p-6 overflow-y-auto">
+            <div className="p-6">
                 <h3 className="text-xl font-bold text-gray-900">{isEditMode ? 'Edit' : 'Enter'} Results for {test.template.name}</h3>
                 <p className="text-sm text-gray-500 mt-1">Patient: {test.patientName} ({test.visitCode})</p>
                  {isEditMode && <p className="text-sm text-yellow-700 bg-yellow-100 p-2 rounded-md mt-2">Reason for edit: {editReason}</p>}
-                <div className="mt-6 space-y-4 border-t pt-4">
+                {/* Add scrollbar for culture tests with many antibiotics */}
+                <div className="mt-6 space-y-4 border-t pt-4 max-h-[60vh] overflow-y-auto pr-2">
                     <div className="flex items-center space-x-4">
                         <span className="text-sm font-medium text-gray-700">Culture Result:</span>
                          <label className="flex items-center space-x-2 cursor-pointer">

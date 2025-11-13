@@ -14,9 +14,10 @@ import { ApproverManagement } from './admin/ApproverManagement';
 import { BranchManagement } from './admin/BranchManagement';
 import { VisitsManagement } from './admin/VisitsManagement';
 import { UnitManagement } from './admin/UnitManagement';
+import { GlobalSearch } from './admin/GlobalSearch';
 import { useAppContext } from '../context/AppContext';
 
-type AdminTab = 'dashboard' | 'users' | 'roles' | 'tests' | 'pricing' | 'b2b' | 'referral_doctors' | 'approvers' | 'branches' | 'audit' | 'antibiotics' | 'visits' | 'units';
+type AdminTab = 'dashboard' | 'global_search' | 'users' | 'roles' | 'tests' | 'pricing' | 'b2b' | 'referral_doctors' | 'approvers' | 'branches' | 'audit' | 'antibiotics' | 'visits' | 'units';
 
 interface AdminPanelProps {
     user: User;
@@ -52,6 +53,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ user }) => {
     const allTabs = useMemo(() => {
         const tabs: TabOption[] = [];
         tabs.push({name: 'dashboard', label: 'Dashboard', permission: 'MANAGE_USERS'});
+        tabs.push({name: 'global_search', label: '🔍 Sample Tracking', permission: 'VIEW_ADMIN_PANEL'});
         tabs.push({name: 'visits', label: 'Visits', permission: 'VIEW_RECEPTION'});
         if(hasPermission('MANAGE_USERS')) tabs.push({name: 'users', label: 'User Management', permission: 'MANAGE_USERS'});
         if(hasPermission('MANAGE_USERS')) tabs.push({name: 'approvers', label: 'Approvers & Signatures', permission: 'MANAGE_USERS'});
@@ -69,12 +71,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ user }) => {
 
     // Most used tabs - shown as direct buttons
     const frequentTabs = useMemo(() => {
-        return allTabs.filter(tab => ['dashboard', 'visits', 'users', 'tests', 'pricing'].includes(tab.name));
+        return allTabs.filter(tab => ['dashboard', 'global_search', 'visits', 'users', 'tests', 'pricing'].includes(tab.name));
     }, [allTabs]);
 
     // Less used tabs - shown in dropdown
     const dropdownTabs = useMemo(() => {
-        return allTabs.filter(tab => !['dashboard', 'visits', 'users', 'tests', 'pricing'].includes(tab.name));
+        return allTabs.filter(tab => !['dashboard', 'global_search', 'visits', 'users', 'tests', 'pricing'].includes(tab.name));
     }, [allTabs]);
 
     const [activeTab, setActiveTab] = useState<AdminTab>(allTabs[0]?.name || 'dashboard');
@@ -148,6 +150,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ user }) => {
 
       <div className="mt-4 sm:mt-6">
         {activeTab === 'dashboard' && <Dashboard />}
+        {activeTab === 'global_search' && <GlobalSearch />}
         {activeTab === 'visits' && hasPermission('VIEW_RECEPTION') && <VisitsManagement />}
         {activeTab === 'users' && hasPermission('MANAGE_USERS') && <UserManagement />}
         {activeTab === 'approvers' && hasPermission('MANAGE_USERS') && <ApproverManagement />}
