@@ -27,6 +27,8 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
   const [collectingTest, setCollectingTest] = useState<VisitTest | null>(null);
   const [rejectingSampleId, setRejectingSampleId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingTestId, setSubmittingTestId] = useState<number | null>(null);
 
   // LAZY LOADING: Load data only when this component mounts
   useEffect(() => {
@@ -62,13 +64,24 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
   };
 
   const handleConfirmCollection = async (sampleType: string) => {
-    if (!user || !collectingTest) return;
+    if (!user || !collectingTest || isSubmitting) return;
 
-    await updateVisitTestStatus(collectingTest.id, 'SAMPLE_COLLECTED', user, {
-      collectedBy: user.username,
-      specimen_type: sampleType
-    });
-    setCollectingTest(null);
+    setIsSubmitting(true);
+    setSubmittingTestId(collectingTest.id);
+
+    try {
+      await updateVisitTestStatus(collectingTest.id, 'SAMPLE_COLLECTED', user, {
+        collectedBy: user.username,
+        specimen_type: sampleType
+      });
+      setCollectingTest(null);
+    } catch (error) {
+      console.error('Error collecting sample:', error);
+      alert('Failed to collect sample. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+      setSubmittingTestId(null);
+    }
   };
 
   const handleRejectSample = async (testId: number) => {
@@ -80,9 +93,13 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
       alert("Please provide a reason for rejecting the sample.");
       return;
     }
+    if (isSubmitting) return;
 
     const test = visitTests.find(t => t.id === testId);
     const visit = test ? visits.find(v => v.id === test.visitId) : null;
+
+    setIsSubmitting(true);
+    setSubmittingTestId(testId);
 
     try {
       // Use the same rejection endpoint as lab for consistency
@@ -111,11 +128,13 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
       setRejectingSampleId(null);
       setRejectionReason('');
 
-      // Reload data to show updated status
-      await loadVisitTests();
+      // No need to reload - optimistic update already handled it
     } catch (error) {
       console.error('Error rejecting sample:', error);
       alert('Failed to reject sample. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+      setSubmittingTestId(null);
     }
   };
 
@@ -130,6 +149,7 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
           test={collectingTest}
           onClose={() => setCollectingTest(null)}
           onConfirm={handleConfirmCollection}
+          isSubmitting={isSubmitting}
         />
       )}
       <div className="bg-white p-8 rounded-xl shadow-lg space-y-8 max-w-6xl mx-auto">
@@ -273,16 +293,18 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
                             <div className="flex space-x-2">
                               <button
                                 onClick={() => handleRejectSample(test.id)}
-                                className="px-3 py-1 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors text-xs"
+                                disabled={isSubmitting && submittingTestId === test.id}
+                                className="px-3 py-1 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                Confirm Reject
+                                {isSubmitting && submittingTestId === test.id ? '⏳ Rejecting...' : 'Confirm Reject'}
                               </button>
                               <button
                                 onClick={() => {
                                   setRejectingSampleId(null);
                                   setRejectionReason('');
                                 }}
-                                className="px-3 py-1 bg-gray-300 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors text-xs"
+                                disabled={isSubmitting}
+                                className="px-3 py-1 bg-gray-300 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 Cancel
                               </button>

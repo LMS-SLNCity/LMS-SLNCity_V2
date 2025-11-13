@@ -282,6 +282,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const authToken = getAuthToken();
       const test = state.visitTests.find(t => t.id === visitTestId);
 
+      // OPTIMISTIC UPDATE: Update UI immediately
+      setState(prevState => ({
+        ...prevState,
+        visitTests: prevState.visitTests.map(t =>
+          t.id === visitTestId
+            ? {
+                ...t,
+                status,
+                collectedBy: details?.collectedBy || t.collectedBy,
+                specimen_type: details?.specimen_type || t.specimen_type,
+                collectedAt: status === 'SAMPLE_COLLECTED' ? new Date().toISOString() : t.collectedAt,
+              }
+            : t
+        ),
+      }));
+
       const updateData: any = { status };
       if (details?.collectedBy) updateData.collected_by = details.collectedBy;
       if (details?.specimen_type) updateData.specimen_type = details.specimen_type;
@@ -301,19 +317,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           addAuditLog(actor.username, 'UPDATE_TEST_STATUS', `Updated status for test ${test.template.code} (Visit: ${test.visitCode}) to ${status}.`);
         }
 
-        // Invalidate cache and refetch from server to get accurate data
-        invalidateDataCache('visit-tests');
-        const updatedTests = await getCachedData<VisitTest[]>('visit-tests', true);
+        // Fetch ONLY the updated test from server to sync accurate data
+        const updatedTest = await response.json();
 
         setState(prevState => ({
           ...prevState,
-          visitTests: updatedTests,
+          visitTests: prevState.visitTests.map(t =>
+            t.id === visitTestId ? { ...t, ...updatedTest } : t
+          ),
         }));
+
+        // Invalidate cache for next load (but don't refetch now)
+        invalidateDataCache('visit-tests');
       } else {
+        // ROLLBACK on error: refetch the single test
         console.error('Error updating visit test status:', response.statusText);
+        const rollbackResponse = await fetch(`${API_BASE_URL}/visit-tests/${visitTestId}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` },
+        });
+        if (rollbackResponse.ok) {
+          const originalTest = await rollbackResponse.json();
+          setState(prevState => ({
+            ...prevState,
+            visitTests: prevState.visitTests.map(t =>
+              t.id === visitTestId ? originalTest : t
+            ),
+          }));
+        }
       }
     } catch (error) {
       console.error('Error updating visit test status:', error);
+      throw error;
     }
   };
   
@@ -321,6 +355,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const authToken = getAuthToken();
       const test = state.visitTests.find(t => t.id === visitTestId);
+
+      // OPTIMISTIC UPDATE: Update UI immediately
+      setState(prevState => ({
+        ...prevState,
+        visitTests: prevState.visitTests.map(t =>
+          t.id === visitTestId
+            ? {
+                ...t,
+                status: 'AWAITING_APPROVAL' as VisitTestStatus,
+                results: data.results || t.results,
+                cultureResult: data.cultureResult || t.cultureResult,
+                enteredBy: actor.username,
+                enteredAt: new Date().toISOString(),
+              }
+            : t
+        ),
+      }));
 
       const updateData: any = {
         status: 'AWAITING_APPROVAL',
@@ -342,19 +393,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           addAuditLog(actor.username, 'ENTER_RESULTS', `Entered results for test ${test.template.code} (Visit: ${test.visitCode}).`);
         }
 
-        // Invalidate cache and refetch from server
-        invalidateDataCache('visit-tests');
-        const updatedTests = await getCachedData<VisitTest[]>('visit-tests', true);
+        // Fetch ONLY the updated test from server
+        const updatedTest = await response.json();
 
         setState(prevState => ({
           ...prevState,
-          visitTests: updatedTests,
+          visitTests: prevState.visitTests.map(t =>
+            t.id === visitTestId ? { ...t, ...updatedTest } : t
+          ),
         }));
+
+        // Invalidate cache for next load
+        invalidateDataCache('visit-tests');
       } else {
         console.error('Error adding test result:', response.statusText);
+        // ROLLBACK on error
+        const rollbackResponse = await fetch(`${API_BASE_URL}/visit-tests/${visitTestId}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` },
+        });
+        if (rollbackResponse.ok) {
+          const originalTest = await rollbackResponse.json();
+          setState(prevState => ({
+            ...prevState,
+            visitTests: prevState.visitTests.map(t =>
+              t.id === visitTestId ? originalTest : t
+            ),
+          }));
+        }
       }
     } catch (error) {
       console.error('Error adding test result:', error);
+      throw error;
     }
   };
 
@@ -405,6 +474,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const authToken = getAuthToken();
       const test = state.visitTests.find(t => t.id === visitTestId);
 
+      // OPTIMISTIC UPDATE: Update UI immediately
+      setState(prevState => ({
+        ...prevState,
+        visitTests: prevState.visitTests.map(t =>
+          t.id === visitTestId
+            ? {
+                ...t,
+                status: 'APPROVED' as VisitTestStatus,
+                approvedBy: actor.username,
+                approvedAt: new Date().toISOString(),
+              }
+            : t
+        ),
+      }));
+
       const updateData = {
         status: 'APPROVED',
         approved_by: actor.username,
@@ -425,19 +509,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           addAuditLog(actor.username, 'APPROVE_RESULTS', `Approved results for test ${test.template.code} (Visit: ${test.visitCode}).`);
         }
 
-        // Invalidate cache and refetch from server
-        invalidateDataCache('visit-tests');
-        const updatedTests = await getCachedData<VisitTest[]>('visit-tests', true);
+        // Fetch ONLY the updated test from server
+        const updatedTest = await response.json();
 
         setState(prevState => ({
-            ...prevState,
-            visitTests: updatedTests,
+          ...prevState,
+          visitTests: prevState.visitTests.map(t =>
+            t.id === visitTestId ? { ...t, ...updatedTest } : t
+          ),
         }));
+
+        // Invalidate cache for next load
+        invalidateDataCache('visit-tests');
       } else {
         console.error('Error approving test result:', response.statusText);
+        // ROLLBACK on error
+        const rollbackResponse = await fetch(`${API_BASE_URL}/visit-tests/${visitTestId}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` },
+        });
+        if (rollbackResponse.ok) {
+          const originalTest = await rollbackResponse.json();
+          setState(prevState => ({
+            ...prevState,
+            visitTests: prevState.visitTests.map(t =>
+              t.id === visitTestId ? originalTest : t
+            ),
+          }));
+        }
       }
     } catch (error) {
       console.error('Error approving test result:', error);
+      throw error;
     }
   };
 
@@ -449,6 +551,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (!test) {
         throw new Error('Test not found');
       }
+
+      // OPTIMISTIC UPDATE: Update UI immediately
+      setState(prevState => ({
+        ...prevState,
+        visitTests: prevState.visitTests.map(t =>
+          t.id === visitTestId
+            ? {
+                ...t,
+                status: 'IN_PROGRESS' as VisitTestStatus,
+                results: null,
+                cultureResult: null,
+              }
+            : t
+        ),
+      }));
 
       // Create rejection record
       const rejectionData = {
@@ -476,20 +593,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const responseData = await response.json();
         console.log('Rejection successful:', responseData);
 
-        // Only reload visitTests (not ALL data) to save API calls
-        const reloadHeaders = { 'Authorization': `Bearer ${authToken}` };
-        const visitTestsResponse = await fetch(`${API_BASE_URL}/visit-tests`, { headers: reloadHeaders });
-        const updatedVisitTests = visitTestsResponse.ok ? await visitTestsResponse.json() : [];
+        // Fetch ONLY the updated test from server
+        const testResponse = await fetch(`${API_BASE_URL}/visit-tests/${visitTestId}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` },
+        });
 
-        setState(prevState => ({
-          ...prevState,
-          visitTests: updatedVisitTests
-        }));
+        if (testResponse.ok) {
+          const updatedTest = await testResponse.json();
+          setState(prevState => ({
+            ...prevState,
+            visitTests: prevState.visitTests.map(t =>
+              t.id === visitTestId ? { ...t, ...updatedTest } : t
+            ),
+          }));
+        }
+
+        // Invalidate cache for next load
+        invalidateDataCache('visit-tests');
 
         alert('Test result rejected successfully. Lab technician will be notified.');
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('Rejection failed:', errorData);
+        // ROLLBACK on error
+        const rollbackResponse = await fetch(`${API_BASE_URL}/visit-tests/${visitTestId}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` },
+        });
+        if (rollbackResponse.ok) {
+          const originalTest = await rollbackResponse.json();
+          setState(prevState => ({
+            ...prevState,
+            visitTests: prevState.visitTests.map(t =>
+              t.id === visitTestId ? originalTest : t
+            ),
+          }));
+        }
         throw new Error(errorData.error || 'Failed to reject test result');
       }
     } catch (error) {

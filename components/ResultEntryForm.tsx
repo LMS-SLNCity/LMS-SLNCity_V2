@@ -16,6 +16,7 @@ const StandardResultForm: React.FC<{ test: VisitTest, onClose: () => void, isEdi
     const { addTestResult, editTestResult } = useAppContext();
     const { user } = useAuth();
     const [results, setResults] = useState<Record<string, string | number>>(test.results || {});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type } = e.target;
@@ -35,16 +36,26 @@ const StandardResultForm: React.FC<{ test: VisitTest, onClose: () => void, isEdi
             alert(`Cannot enter results. Test status is ${test.status}. Only SAMPLE_COLLECTED tests can have results entered.`);
             return;
         }
-        if (isEditMode) {
-            if (!editReason) {
-                alert("Cannot save edit without a reason.");
-                return;
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
+        try {
+            if (isEditMode) {
+                if (!editReason) {
+                    alert("Cannot save edit without a reason.");
+                    return;
+                }
+                await editTestResult(test.id, { results }, editReason, user);
+            } else {
+                await addTestResult(test.id, { results }, user);
             }
-            await editTestResult(test.id, { results }, editReason, user);
-        } else {
-            await addTestResult(test.id, { results }, user);
+            onClose();
+        } catch (error) {
+            console.error('Error submitting results:', error);
+            alert('Failed to submit results. Please try again.');
+        } finally {
+            setIsSubmitting(false);
         }
-        onClose();
     };
     
     const renderField = (field: TestTemplateParameter) => {
@@ -85,11 +96,11 @@ const StandardResultForm: React.FC<{ test: VisitTest, onClose: () => void, isEdi
                 </div>
             </div>
             <div className="bg-gray-50 px-6 py-4 flex justify-end items-center space-x-3 rounded-b-xl">
-                <button type="button" onClick={onClose} className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <button type="button" onClick={onClose} disabled={isSubmitting} className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                     {isEditMode ? 'Save Changes' : 'Submit for Approval'}
+                <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                     {isSubmitting ? '⏳ Submitting...' : (isEditMode ? 'Save Changes' : 'Submit for Approval')}
                 </button>
             </div>
         </form>
@@ -99,7 +110,8 @@ const StandardResultForm: React.FC<{ test: VisitTest, onClose: () => void, isEdi
 const CultureResultForm: React.FC<{ test: VisitTest, onClose: () => void, isEditMode?: boolean, editReason?: string }> = ({ test, onClose, isEditMode = false, editReason }) => {
     const { addTestResult, editTestResult, antibiotics } = useAppContext();
     const { user } = useAuth();
-    
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const [formData, setFormData] = useState<CultureResult>(() => {
         if (test.cultureResult) {
             return test.cultureResult;
@@ -159,16 +171,26 @@ const CultureResultForm: React.FC<{ test: VisitTest, onClose: () => void, isEdit
             alert(`Cannot enter results. Test status is ${test.status}. Only SAMPLE_COLLECTED tests can have results entered.`);
             return;
         }
-        if (isEditMode) {
-            if (!editReason) {
-                alert("Cannot save edit without a reason.");
-                return;
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
+        try {
+            if (isEditMode) {
+                if (!editReason) {
+                    alert("Cannot save edit without a reason.");
+                    return;
+                }
+                await editTestResult(test.id, { cultureResult: formData }, editReason, user);
+            } else {
+                await addTestResult(test.id, { cultureResult: formData }, user);
             }
-            await editTestResult(test.id, { cultureResult: formData }, editReason, user);
-        } else {
-            await addTestResult(test.id, { cultureResult: formData }, user);
+            onClose();
+        } catch (error) {
+            console.error('Error submitting culture results:', error);
+            alert('Failed to submit results. Please try again.');
+        } finally {
+            setIsSubmitting(false);
         }
-        onClose();
     };
 
     const usedAntibioticIds = new Set((formData.sensitivity || []).map(s => s.antibioticId));
@@ -249,11 +271,11 @@ const CultureResultForm: React.FC<{ test: VisitTest, onClose: () => void, isEdit
                 </div>
             </div>
             <div className="bg-gray-50 px-6 py-4 flex justify-end items-center space-x-3 rounded-b-xl mt-auto border-t">
-                 <button type="button" onClick={onClose} className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                 <button type="button" onClick={onClose} disabled={isSubmitting} className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
                     Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                     {isEditMode ? 'Save Changes' : 'Submit for Approval'}
+                <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                     {isSubmitting ? '⏳ Submitting...' : (isEditMode ? 'Save Changes' : 'Submit for Approval')}
                 </button>
             </div>
         </form>

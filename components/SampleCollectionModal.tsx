@@ -6,9 +6,10 @@ interface SampleCollectionModalProps {
   test: VisitTest;
   onClose: () => void;
   onConfirm: (sampleType: string) => void;
+  isSubmitting?: boolean;
 }
 
-export const SampleCollectionModal: React.FC<SampleCollectionModalProps> = ({ test, onClose, onConfirm }) => {
+export const SampleCollectionModal: React.FC<SampleCollectionModalProps> = ({ test, onClose, onConfirm, isSubmitting = false }) => {
   // Pre-fill with template's default sample type if available
   const defaultSampleType = test.template.sampleType || '';
   const [sampleType, setSampleType] = useState(defaultSampleType);
@@ -133,14 +134,16 @@ export const SampleCollectionModal: React.FC<SampleCollectionModalProps> = ({ te
           <div className="flex space-x-3 pt-2">
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Confirm Collection
+              {isSubmitting ? '⏳ Collecting...' : 'Confirm Collection'}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
