@@ -7,6 +7,7 @@ import { useAppContext } from '../context/AppContext';
 import { CollectDueModal } from './CollectDueModal';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config/api';
+import { StatusCircleFromTest } from './StatusCircle';
 
 type AgeUnit = 'Years' | 'Months' | 'Days';
 type PaymentMode = 'Cash' | 'Card' | 'UPI' | '';
@@ -95,24 +96,7 @@ const SuccessDisplay: React.FC<{ visit: Visit, isB2B: boolean, onNew: () => void
     );
 };
 
-const StatusBadge: React.FC<{ status: VisitTest['status'] }> = ({ status }) => {
-  const baseClasses = "px-2 py-0.5 text-xs font-medium rounded-full inline-block";
-  const statusMap: Record<VisitTest['status'], string> = {
-    PENDING: "bg-yellow-100 text-yellow-800",
-    SAMPLE_COLLECTED: "bg-blue-100 text-blue-800",
-    AWAITING_APPROVAL: "bg-purple-100 text-purple-800",
-    APPROVED: "bg-green-100 text-green-800",
-    IN_PROGRESS: "bg-indigo-100 text-indigo-800",
-    COMPLETED: "bg-gray-100 text-gray-800",
-  };
-  const colorClasses = statusMap[status] || "bg-gray-100 text-gray-800";
-  
-  return (
-    <span className={`${baseClasses} ${colorClasses}`}>
-      {status.replace('_', ' ')}
-    </span>
-  );
-};
+// Removed local StatusBadge - now using StatusCircleFromTest component
 
 
 interface CreateVisitFormProps {
@@ -627,6 +611,7 @@ export const CreateVisitForm: React.FC<CreateVisitFormProps> = ({ onInitiateRepo
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Statuses</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TAT</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                         </tr>
@@ -675,31 +660,56 @@ export const CreateVisitForm: React.FC<CreateVisitFormProps> = ({ onInitiateRepo
                            }
 
                            return (
-                            <tr key={visit.id} className="hover:bg-gray-50">
-                                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{visit.visit_code}</td>
-                                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{visit.patient.name}</td>
-                                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{new Date(visit.created_at).toLocaleDateString()}</td>
-                                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                                    <div className="flex flex-wrap gap-1">
-                                        {visitTestsForVisit.map(vt => <StatusBadge key={vt.id} status={vt.status} />)}
-                                    </div>
-                                </td>
-                                <td className="px-4 py-4 whitespace-nowrap text-sm">
-                                    {visit.due_amount > 0 ? (
-                                        <span className="text-red-600 font-semibold">Due: ₹{visit.due_amount.toFixed(2)}</span>
-                                    ) : (
-                                        <span className="text-green-600 font-semibold">Paid</span>
-                                    )}
-                                </td>
-                                <td className="px-4 py-4 whitespace-nowrap text-sm">
-                                    {button}
-                                </td>
-                            </tr>
+                            {(() => {
+                              // Calculate max TAT for this visit
+                              const maxTAT = visitTestsForVisit.reduce((max, vt) => {
+                                const startTime = vt.collectedAt ? new Date(vt.collectedAt) : new Date(visit.created_at);
+                                const endTime = vt.approvedAt ? new Date(vt.approvedAt) : new Date();
+                                const diffMs = endTime.getTime() - startTime.getTime();
+                                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                                return Math.max(max, diffHours);
+                              }, 0);
+
+                              const formatTAT = (hours: number): string => {
+                                if (hours > 24) {
+                                  const days = Math.floor(hours / 24);
+                                  const remainingHours = hours % 24;
+                                  return `${days}d ${remainingHours}h`;
+                                }
+                                return `${hours}h`;
+                              };
+
+                              return (
+                                <tr key={visit.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{visit.visit_code}</td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{visit.patient.name}</td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{new Date(visit.created_at).toLocaleDateString()}</td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                                        <div className="flex flex-wrap gap-2">
+                                            {visitTestsForVisit.map(vt => <StatusCircleFromTest key={vt.id} test={vt} />)}
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
+                                        {formatTAT(maxTAT)}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm">
+                                        {visit.due_amount > 0 ? (
+                                            <span className="text-red-600 font-semibold">Due: ₹{visit.due_amount.toFixed(2)}</span>
+                                        ) : (
+                                            <span className="text-green-600 font-semibold">Paid</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm">
+                                        {button}
+                                    </td>
+                                </tr>
+                              );
+                            })()}
                            );
                         })}
                          {sortedVisits.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="text-center py-8 text-sm text-gray-500">No visits have been created yet.</td>
+                                <td colSpan={7} className="text-center py-8 text-sm text-gray-500">No visits have been created yet.</td>
                             </tr>
                         )}
                     </tbody>

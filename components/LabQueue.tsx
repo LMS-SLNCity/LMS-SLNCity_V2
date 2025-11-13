@@ -27,6 +27,7 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
   const [selectedTest, setSelectedTest] = useState<VisitTest | null>(null);
   const [rejectingSampleId, setRejectingSampleId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // LAZY LOADING: Load data only when this component mounts
   useEffect(() => {
@@ -41,9 +42,23 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Filter function for search
+  const filterTests = (tests: VisitTest[]) => {
+    if (!searchQuery.trim()) return tests;
+    const query = searchQuery.toLowerCase();
+    return tests.filter(test =>
+      test.visitCode.toLowerCase().includes(query) ||
+      test.patientName.toLowerCase().includes(query) ||
+      test.template.name.toLowerCase().includes(query)
+    );
+  };
+
   // Only show SAMPLE_COLLECTED tests for result entry (not IN_PROGRESS)
-  const pendingResults = visitTests.filter(test => test.status === 'SAMPLE_COLLECTED');
-  const processedTests = visitTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED'].includes(test.status)).sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
+  const allPendingResults = visitTests.filter(test => test.status === 'SAMPLE_COLLECTED');
+  const allProcessedTests = visitTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED'].includes(test.status)).sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
+
+  const pendingResults = filterTests(allPendingResults);
+  const processedTests = filterTests(allProcessedTests);
 
   const findVisitForTest = (test: VisitTest): Visit | undefined => {
     return visits.find(v => v.id === test.visitId);
@@ -98,8 +113,17 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
         />
       )}
       <div className="bg-white p-8 rounded-xl shadow-lg space-y-8 max-w-6xl mx-auto">
-        <h2 className="text-2xl font-bold text-gray-800 border-b pb-4">Lab Queue</h2>
-        
+        <div className="flex justify-between items-center border-b pb-4">
+          <h2 className="text-2xl font-bold text-gray-800">Lab Queue</h2>
+          <input
+            type="text"
+            placeholder="🔍 Search by visit code, patient, or test..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-96"
+          />
+        </div>
+
         {/* Pending Results Section */}
         <div>
           <h3 className="text-lg font-semibold text-gray-700 mb-4">Pending Results Entry</h3>
