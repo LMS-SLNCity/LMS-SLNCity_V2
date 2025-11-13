@@ -59,7 +59,7 @@ export interface TestTemplate {
   sampleType?: string;
 }
 
-export type VisitTestStatus = 'PENDING' | 'SAMPLE_COLLECTED' | 'REJECTED' | 'IN_PROGRESS' | 'AWAITING_APPROVAL' | 'APPROVED' | 'COMPLETED';
+export type VisitTestStatus = 'PENDING' | 'SAMPLE_COLLECTED' | 'REJECTED' | 'IN_PROGRESS' | 'AWAITING_APPROVAL' | 'APPROVED' | 'PRINTED' | 'COMPLETED';
 
 // --- NEW TYPES FOR CULTURE REPORT ---
 export interface Antibiotic {

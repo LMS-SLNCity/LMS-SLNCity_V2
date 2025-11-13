@@ -50,6 +50,7 @@ export const StatusCircle: React.FC<StatusCircleProps> = ({
     'IN_PROGRESS': 'bg-yellow-500',
     'AWAITING_APPROVAL': 'bg-orange-500',
     'APPROVED': 'bg-green-500',
+    'PRINTED': 'bg-teal-500',
     'COMPLETED': 'bg-purple-500',
   };
 

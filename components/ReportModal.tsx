@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Visit, Signatory, VisitTest } from '../types';
 import { TestReport } from './TestReport';
 import { useAuth } from '../context/AuthContext';
+import { useAppContext } from '../context/AppContext';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { API_BASE_URL } from '../config';
 
 
 interface ReportModalProps {
@@ -15,6 +17,7 @@ interface ReportModalProps {
 
 export const ReportModal: React.FC<ReportModalProps> = ({ visit, signatory, onClose, onEdit }) => {
   const { hasPermission } = useAuth();
+  const { invalidateCache } = useAppContext();
   const [isExporting, setIsExporting] = useState(false);
 
   const handlePrint = async () => {
@@ -94,6 +97,32 @@ export const ReportModal: React.FC<ReportModalProps> = ({ visit, signatory, onCl
         setTimeout(() => {
           printWindow.print();
         }, 500);
+      }
+
+      // Call API to mark tests as PRINTED
+      try {
+        const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+        const response = await fetch(`${API_BASE_URL}/reports/print`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ visit_id: visit.id }),
+        });
+
+        if (response.ok) {
+          console.log('✅ Tests marked as PRINTED');
+          // Invalidate cache to refresh data
+          invalidateCache();
+          // Dispatch event to refresh visit tests
+          window.dispatchEvent(new CustomEvent('visit-test-updated'));
+        } else {
+          console.error('❌ Failed to mark tests as PRINTED:', response.status);
+        }
+      } catch (apiError) {
+        console.error('❌ Error calling print API:', apiError);
+        // Don't show error to user - printing already succeeded
       }
 
       console.log('✅ PDF opened for printing');
@@ -176,6 +205,32 @@ export const ReportModal: React.FC<ReportModalProps> = ({ visit, signatory, onCl
       const filename = `report_${visit.visit_code}_${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(filename);
       console.log('✅ PDF exported:', filename);
+
+      // Call API to mark tests as PRINTED
+      try {
+        const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+        const response = await fetch(`${API_BASE_URL}/reports/print`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ visit_id: visit.id }),
+        });
+
+        if (response.ok) {
+          console.log('✅ Tests marked as PRINTED');
+          // Invalidate cache to refresh data
+          invalidateCache();
+          // Dispatch event to refresh visit tests
+          window.dispatchEvent(new CustomEvent('visit-test-updated'));
+        } else {
+          console.error('❌ Failed to mark tests as PRINTED:', response.status);
+        }
+      } catch (apiError) {
+        console.error('❌ Error calling print API:', apiError);
+        // Don't show error to user - download already succeeded
+      }
     } catch (error) {
       console.error('Error exporting PDF:', error);
       alert('Failed to export PDF. Please try again.');

@@ -53,9 +53,9 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
     );
   };
 
-  // Only show SAMPLE_COLLECTED tests for result entry (not IN_PROGRESS)
+  // Only show SAMPLE_COLLECTED tests for result entry (not IN_PROGRESS or PRINTED)
   const allPendingResults = visitTests.filter(test => test.status === 'SAMPLE_COLLECTED');
-  const allProcessedTests = visitTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED'].includes(test.status)).sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
+  const allProcessedTests = visitTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED'].includes(test.status) && test.status !== 'PRINTED').sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
 
   const pendingResults = filterTests(allPendingResults);
   const processedTests = filterTests(allProcessedTests);

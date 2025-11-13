@@ -51,7 +51,7 @@ router.post('/generate', async (req: Request, res: Response) => {
 
 /**
  * POST /api/reports/print
- * Log report printing
+ * Log report printing and mark tests as PRINTED
  */
 router.post('/print', async (req: Request, res: Response) => {
   try {
@@ -72,6 +72,14 @@ router.post('/print', async (req: Request, res: Response) => {
     }
 
     const visit = visitResult.rows[0];
+
+    // Update all APPROVED tests for this visit to PRINTED status
+    await pool.query(
+      `UPDATE visit_tests
+       SET status = 'PRINTED', updated_at = CURRENT_TIMESTAMP
+       WHERE visit_id = $1 AND status = 'APPROVED'`,
+      [visit_id]
+    );
 
     // Audit log: Report printing
     await auditReport.print(req, visit.id, visit.visit_code);

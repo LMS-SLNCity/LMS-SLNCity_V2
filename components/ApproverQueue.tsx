@@ -48,7 +48,7 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
   };
 
   const allAwaitingApproval = visitTests.filter(test => test.status === 'AWAITING_APPROVAL');
-  const allRecentlyApproved = visitTests.filter(test => test.status === 'APPROVED').sort((a, b) => new Date(b.approvedAt!).getTime() - new Date(a.approvedAt!).getTime());
+  const allRecentlyApproved = visitTests.filter(test => test.status === 'APPROVED' || test.status === 'PRINTED').sort((a, b) => new Date(b.approvedAt!).getTime() - new Date(a.approvedAt!).getTime());
 
   const awaitingApproval = filterTests(allAwaitingApproval);
   const recentlyApproved = filterTests(allRecentlyApproved);
