@@ -26,6 +26,7 @@ CREATE TABLE test_templates (
     parameters JSONB DEFAULT '{"fields": []}',
     default_antibiotic_ids INTEGER[] DEFAULT ARRAY[]::INTEGER[],
     sample_type VARCHAR(100),
+    tat_hours INTEGER DEFAULT 24,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

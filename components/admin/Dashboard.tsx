@@ -249,8 +249,8 @@ export const Dashboard: React.FC = () => {
             title="🧪 Lab Queue"
             description="Samples collected, awaiting results"
             count={
-              (tests.byStatus.find((s: any) => s.status === 'SAMPLE_COLLECTED')?.count || 0) +
-              (tests.byStatus.find((s: any) => s.status === 'IN_PROGRESS')?.count || 0)
+              Number(tests.byStatus.find((s: any) => s.status === 'SAMPLE_COLLECTED')?.count || 0) +
+              Number(tests.byStatus.find((s: any) => s.status === 'IN_PROGRESS')?.count || 0)
             }
             color="blue"
             onClick={() => {

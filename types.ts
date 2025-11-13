@@ -57,6 +57,7 @@ export interface TestTemplate {
   reportType: 'standard' | 'culture';
   defaultAntibioticIds?: number[];
   sampleType?: string;
+  tatHours?: number; // Turnaround time in hours
 }
 
 export type VisitTestStatus = 'PENDING' | 'SAMPLE_COLLECTED' | 'REJECTED' | 'IN_PROGRESS' | 'AWAITING_APPROVAL' | 'APPROVED' | 'PRINTED' | 'COMPLETED';
