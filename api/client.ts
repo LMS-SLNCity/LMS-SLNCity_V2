@@ -372,24 +372,36 @@ export const apiClient = {
   },
 
   // Dashboard
-  async getDashboardOverview() {
-    const response = await fetch(`${API_BASE_URL}/dashboard/overview`, {
+  async getDashboardOverview(startDate?: string, endDate?: string) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const url = `${API_BASE_URL}/dashboard/overview${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url, {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch dashboard overview');
     return response.json();
   },
 
-  async getDashboardRevenue() {
-    const response = await fetch(`${API_BASE_URL}/dashboard/revenue`, {
+  async getDashboardRevenue(startDate?: string, endDate?: string) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const url = `${API_BASE_URL}/dashboard/revenue${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url, {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch revenue metrics');
     return response.json();
   },
 
-  async getDashboardTests() {
-    const response = await fetch(`${API_BASE_URL}/dashboard/tests`, {
+  async getDashboardTests(startDate?: string, endDate?: string) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const url = `${API_BASE_URL}/dashboard/tests${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url, {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch test metrics');
@@ -404,8 +416,12 @@ export const apiClient = {
     return response.json();
   },
 
-  async getDashboardTrends() {
-    const response = await fetch(`${API_BASE_URL}/dashboard/trends`, {
+  async getDashboardTrends(startDate?: string, endDate?: string) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    const url = `${API_BASE_URL}/dashboard/trends${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url, {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch trends');

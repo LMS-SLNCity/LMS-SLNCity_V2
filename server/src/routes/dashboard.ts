@@ -10,29 +10,67 @@ router.use(authMiddleware);
 // GET /api/dashboard/overview - Get dashboard overview metrics
 router.get('/overview', async (req: Request, res: Response) => {
   try {
+    const { startDate, endDate } = req.query;
+
+    // Build date filter
+    let dateFilter = '';
+    const params: any[] = [];
+    if (startDate && endDate) {
+      dateFilter = 'WHERE created_at >= $1 AND created_at <= $2';
+      params.push(startDate, endDate);
+    }
+
     // Get total visits count
-    const visitsResult = await pool.query('SELECT COUNT(*) as total_visits FROM visits');
+    const visitsResult = await pool.query(`SELECT COUNT(*) as total_visits FROM visits ${dateFilter}`, params);
     const totalVisits = parseInt(visitsResult.rows[0].total_visits);
 
     // Get total revenue
-    const revenueResult = await pool.query('SELECT SUM(total_cost) as total_revenue FROM visits');
+    const revenueResult = await pool.query(`SELECT SUM(total_cost) as total_revenue FROM visits ${dateFilter}`, params);
     const totalRevenue = parseFloat(revenueResult.rows[0].total_revenue) || 0;
 
     // Get total tests performed
-    const testsResult = await pool.query('SELECT COUNT(*) as total_tests FROM visit_tests');
+    const testsResult = await pool.query(`SELECT COUNT(*) as total_tests FROM visit_tests ${dateFilter}`, params);
     const totalTests = parseInt(testsResult.rows[0].total_tests);
 
     // Get total B2B clients
     const clientsResult = await pool.query("SELECT COUNT(*) as total_clients FROM clients WHERE type = 'REFERRAL_LAB'");
     const totalClients = parseInt(clientsResult.rows[0].total_clients);
 
-    // Get pending tests
-    const pendingResult = await pool.query("SELECT COUNT(*) as pending_tests FROM visit_tests WHERE status IN ('PENDING', 'SAMPLE_COLLECTED', 'IN_PROGRESS')");
+    // Get pending tests (with date filter)
+    const pendingFilter = dateFilter ? dateFilter.replace('created_at', 'vt.created_at') : '';
+    const pendingResult = await pool.query(`
+      SELECT COUNT(*) as pending_tests
+      FROM visit_tests vt
+      WHERE status IN ('PENDING', 'SAMPLE_COLLECTED', 'IN_PROGRESS') ${pendingFilter ? 'AND ' + pendingFilter : ''}
+    `, params);
     const pendingTests = parseInt(pendingResult.rows[0].pending_tests);
 
-    // Get approved tests
-    const approvedResult = await pool.query("SELECT COUNT(*) as approved_tests FROM visit_tests WHERE status = 'APPROVED'");
+    // Get approved tests (with date filter)
+    const approvedResult = await pool.query(`
+      SELECT COUNT(*) as approved_tests
+      FROM visit_tests vt
+      WHERE status = 'APPROVED' ${pendingFilter ? 'AND ' + pendingFilter : ''}
+    `, params);
     const approvedTests = parseInt(approvedResult.rows[0].approved_tests);
+
+    // Get rejected tests (with date filter)
+    const rejectedResult = await pool.query(`
+      SELECT COUNT(*) as rejected_tests
+      FROM visit_tests vt
+      WHERE status = 'REJECTED' ${pendingFilter ? 'AND ' + pendingFilter : ''}
+    `, params);
+    const rejectedTests = parseInt(rejectedResult.rows[0].rejected_tests);
+
+    // Get average TAT (Turnaround Time) in hours
+    const tatResult = await pool.query(`
+      SELECT AVG(EXTRACT(EPOCH FROM (approved_at - collected_at))/3600) as avg_tat_hours
+      FROM visit_tests
+      WHERE approved_at IS NOT NULL AND collected_at IS NOT NULL ${pendingFilter ? 'AND ' + pendingFilter : ''}
+    `, params);
+    const avgTatHours = parseFloat(tatResult.rows[0].avg_tat_hours) || 0;
+
+    // Get collection rate (percentage of tests collected vs pending)
+    const collectionRate = totalTests > 0 ? ((totalTests - pendingTests) / totalTests * 100) : 0;
 
     res.json({
       totalVisits,
@@ -41,6 +79,9 @@ router.get('/overview', async (req: Request, res: Response) => {
       totalClients,
       pendingTests,
       approvedTests,
+      rejectedTests,
+      avgTatHours: Math.round(avgTatHours * 10) / 10,
+      collectionRate: Math.round(collectionRate * 10) / 10,
     });
   } catch (error) {
     console.error('Error fetching dashboard overview:', error);
@@ -51,32 +92,43 @@ router.get('/overview', async (req: Request, res: Response) => {
 // GET /api/dashboard/revenue - Get revenue metrics
 router.get('/revenue', async (req: Request, res: Response) => {
   try {
+    const { startDate, endDate } = req.query;
+
+    // Build date filter
+    let dateFilter = '';
+    const params: any[] = [];
+    if (startDate && endDate) {
+      dateFilter = 'WHERE created_at >= $1 AND created_at <= $2';
+      params.push(startDate, endDate);
+    }
+
     // Get revenue by payment mode
     const paymentModeResult = await pool.query(`
       SELECT payment_mode, COUNT(*) as count, SUM(total_cost) as revenue
       FROM visits
+      ${dateFilter}
       GROUP BY payment_mode
       ORDER BY revenue DESC
-    `);
+    `, params);
 
-    // Get revenue by B2B client (sorted by balance/business in descending order)
+    // Get revenue by B2B client (sorted by revenue in descending order)
     const clientRevenueResult = await pool.query(`
       SELECT c.id, c.name, c.balance, COUNT(v.id) as visit_count, SUM(v.total_cost) as total_revenue
       FROM clients c
-      LEFT JOIN visits v ON c.id = v.ref_customer_id
+      LEFT JOIN visits v ON c.id = v.ref_customer_id ${dateFilter ? 'AND v.' + dateFilter.substring(6) : ''}
       WHERE c.type = 'REFERRAL_LAB'
       GROUP BY c.id, c.name, c.balance
-      ORDER BY c.balance DESC
-    `);
+      ORDER BY total_revenue DESC NULLS LAST
+    `, params);
 
-    // Get daily revenue for last 30 days
+    // Get daily revenue for the selected period
     const dailyRevenueResult = await pool.query(`
       SELECT DATE(created_at) as date, COUNT(*) as visit_count, SUM(total_cost) as revenue
       FROM visits
-      WHERE created_at >= NOW() - INTERVAL '30 days'
+      ${dateFilter}
       GROUP BY DATE(created_at)
       ORDER BY date DESC
-    `);
+    `, params);
 
     res.json({
       byPaymentMode: paymentModeResult.rows,
@@ -92,31 +144,42 @@ router.get('/revenue', async (req: Request, res: Response) => {
 // GET /api/dashboard/tests - Get test distribution metrics
 router.get('/tests', async (req: Request, res: Response) => {
   try {
+    const { startDate, endDate } = req.query;
+
+    // Build date filter
+    let dateFilter = '';
+    const params: any[] = [];
+    if (startDate && endDate) {
+      dateFilter = 'WHERE vt.created_at >= $1 AND vt.created_at <= $2';
+      params.push(startDate, endDate);
+    }
+
     // Get tests by template
     const byTemplateResult = await pool.query(`
       SELECT tt.id, tt.name, tt.code, tt.category, tt.parameters, COUNT(vt.id) as count
       FROM test_templates tt
-      LEFT JOIN visit_tests vt ON tt.id = vt.test_template_id
+      LEFT JOIN visit_tests vt ON tt.id = vt.test_template_id ${dateFilter ? 'AND ' + dateFilter.substring(6) : ''}
       GROUP BY tt.id, tt.name, tt.code, tt.category, tt.parameters
       ORDER BY count DESC
-    `);
+    `, params);
 
     // Get tests by status
     const byStatusResult = await pool.query(`
       SELECT status, COUNT(*) as count
-      FROM visit_tests
+      FROM visit_tests vt
+      ${dateFilter}
       GROUP BY status
       ORDER BY count DESC
-    `);
+    `, params);
 
     // Get tests by category
     const byCategoryResult = await pool.query(`
       SELECT tt.category, COUNT(vt.id) as count
       FROM test_templates tt
-      LEFT JOIN visit_tests vt ON tt.id = vt.test_template_id
+      LEFT JOIN visit_tests vt ON tt.id = vt.test_template_id ${dateFilter ? 'AND ' + dateFilter.substring(6) : ''}
       GROUP BY tt.category
       ORDER BY count DESC
-    `);
+    `, params);
 
     res.json({
       byTemplate: byTemplateResult.rows,
@@ -174,30 +237,40 @@ router.get('/clients', async (req: Request, res: Response) => {
 // GET /api/dashboard/trends - Get business trends
 router.get('/trends', async (req: Request, res: Response) => {
   try {
-    // Get visits trend for last 30 days
+    const { startDate, endDate } = req.query;
+
+    // Build date filter
+    let dateFilter = '';
+    const params: any[] = [];
+    if (startDate && endDate) {
+      dateFilter = 'WHERE created_at >= $1 AND created_at <= $2';
+      params.push(startDate, endDate);
+    }
+
+    // Get visits trend
     const visitsTrendResult = await pool.query(`
       SELECT DATE(created_at) as date, COUNT(*) as count
       FROM visits
-      WHERE created_at >= NOW() - INTERVAL '30 days'
+      ${dateFilter}
       GROUP BY DATE(created_at)
       ORDER BY date ASC
-    `);
+    `, params);
 
-    // Get tests trend for last 30 days
+    // Get tests trend
     const testsTrendResult = await pool.query(`
       SELECT DATE(created_at) as date, COUNT(*) as count
       FROM visit_tests
-      WHERE created_at >= NOW() - INTERVAL '30 days'
+      ${dateFilter}
       GROUP BY DATE(created_at)
       ORDER BY date ASC
-    `);
+    `, params);
 
     // Get average revenue per visit
     const avgRevenueResult = await pool.query(`
       SELECT AVG(total_cost) as avg_revenue, MIN(total_cost) as min_revenue, MAX(total_cost) as max_revenue
       FROM visits
-      WHERE created_at >= NOW() - INTERVAL '30 days'
-    `);
+      ${dateFilter}
+    `, params);
 
     res.json({
       visitsTrend: visitsTrendResult.rows,
