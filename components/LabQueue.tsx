@@ -5,18 +5,30 @@ import { Visit, VisitTest } from '../types';
 import { ResultEntryForm } from './ResultEntryForm';
 import { StatusBadgeFromTest } from './StatusBadge';
 import { API_BASE_URL } from '../config/api';
+import {
+  FlaskConical,
+  Search,
+  FileText,
+  XCircle,
+  Edit3,
+  Clock,
+  User,
+  Beaker,
+  CheckCircle2,
+  AlertCircle
+} from 'lucide-react';
 
 interface LabQueueProps {
   onInitiateReport: (visit: Visit) => void;
 }
 
-const EmptyState: React.FC<{ title: string; message: string }> = ({ title, message }) => (
-    <div className="text-center py-12">
-        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <h3 className="mt-2 text-sm font-medium text-gray-900">{title}</h3>
-        <p className="mt-1 text-sm text-gray-500">{message}</p>
+const EmptyState: React.FC<{ title: string; message: string; icon: React.ReactNode }> = ({ title, message, icon }) => (
+    <div className="text-center py-16">
+        <div className="mx-auto h-16 w-16 text-gray-300 mb-4 flex items-center justify-center">
+            {icon}
+        </div>
+        <h3 className="text-base font-semibold text-gray-900 mb-1">{title}</h3>
+        <p className="text-sm text-gray-500">{message}</p>
     </div>
 );
 
@@ -112,78 +124,98 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
           onClose={() => setSelectedTest(null)}
         />
       )}
-      <div className="bg-white rounded-xl shadow-lg max-w-7xl mx-auto">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-6 rounded-t-xl">
+        <div className="border-b border-gray-200 bg-gradient-to-r from-slate-50 to-gray-50 px-6 py-5">
           <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-3xl font-bold">🧪 Lab Queue</h2>
-              <p className="text-blue-100 mt-1">Enter test results and manage samples</p>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-blue-600 rounded-lg">
+                <FlaskConical className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Laboratory Queue</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Enter test results and manage samples</p>
+              </div>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-lg">
-              <div className="text-sm text-blue-100">Pending Results</div>
-              <div className="text-3xl font-bold">{pendingResults.length}</div>
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pending Results</div>
+                <div className="text-2xl font-bold text-blue-600 mt-0.5">{pendingResults.length}</div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="px-8 py-4 bg-gray-50 border-b">
-          <input
-            type="text"
-            placeholder="🔍 Search by visit code, patient name, or test name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+        <div className="px-6 py-4 bg-white border-b border-gray-100">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by visit code, patient name, or test name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+          </div>
         </div>
 
-        <div className="p-8 space-y-8">
+        <div className="p-6 space-y-6">
           {/* Pending Results Section */}
           <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-gray-800">📝 Pending Results Entry</h3>
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+            <div className="flex items-center gap-2">
+              <Edit3 className="h-5 w-5 text-gray-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Pending Results Entry</h3>
+            </div>
+            <span className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md text-xs font-medium border border-blue-200">
               {pendingResults.length} {pendingResults.length === 1 ? 'test' : 'tests'}
             </span>
           </div>
           {pendingResults.length > 0 ? (
-            <div className="overflow-x-auto border rounded-lg shadow-sm">
-              <table className="min-w-full bg-white">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Visit Code</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Patient Name</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Test Name</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Sample Type</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Collected At</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Action</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Visit Code</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Patient Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Test Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sample Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Collected At</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 bg-white">
                   {pendingResults.map(test => (
-                    <tr key={test.id} className="hover:bg-blue-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-bold text-blue-600">{test.visitCode}</span>
+                    <tr key={test.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-blue-600">{test.visitCode}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-gray-900">{test.patientName}</span>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm font-medium text-gray-900">{test.patientName}</span>
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-sm text-gray-700">{test.template.name}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+                          <Beaker className="h-3 w-3" />
                           {test.specimen_type || 'N/A'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {new Date(test.collectedAt!).toLocaleString('en-IN', {
-                          dateStyle: 'short',
-                          timeStyle: 'short'
-                        })}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                          <Clock className="h-4 w-4 text-gray-400" />
+                          {new Date(test.collectedAt!).toLocaleString('en-IN', {
+                            dateStyle: 'short',
+                            timeStyle: 'short'
+                          })}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm">
                         {rejectingSampleId === test.id ? (
                           <div className="flex flex-col space-y-2">
                             <textarea
@@ -215,15 +247,17 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
                           <div className="flex gap-2">
                             <button
                               onClick={() => setSelectedTest(test)}
-                              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all text-sm"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
                             >
-                              ✏️ Enter Results
+                              <Edit3 className="h-4 w-4" />
+                              Enter Results
                             </button>
                             <button
                               onClick={() => setRejectingSampleId(test.id)}
-                              className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all text-sm"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
                             >
-                              ❌ Reject
+                              <XCircle className="h-4 w-4" />
+                              Reject
                             </button>
                           </div>
                         )}
@@ -234,54 +268,65 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
               </table>
             </div>
           ) : (
-            <EmptyState title="No samples pending results" message="When samples are collected by phlebotomy, they will appear here." />
+            <EmptyState
+              title="No samples pending results"
+              message="When samples are collected by phlebotomy, they will appear here."
+              icon={<AlertCircle className="h-16 w-16" />}
+            />
           )}
           </div>
 
           {/* Processed Tests Section */}
           <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-gray-800">✅ Processed Tests</h3>
-            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-gray-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Processed Tests</h3>
+            </div>
+            <span className="px-3 py-1.5 bg-green-50 text-green-700 rounded-md text-xs font-medium border border-green-200">
               {processedTests.length} {processedTests.length === 1 ? 'test' : 'tests'}
             </span>
           </div>
            {processedTests.length > 0 ? (
-            <div className="overflow-x-auto border rounded-lg shadow-sm">
-              <table className="min-w-full bg-white">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Visit Code</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Patient Name</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Test Name</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Action</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Visit Code</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Patient Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Test Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 bg-white">
                   {processedTests.map(test => {
                     const visit = findVisitForTest(test);
                     return (
-                    <tr key={test.id} className="hover:bg-green-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-bold text-blue-600">{test.visitCode}</span>
+                    <tr key={test.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-blue-600">{test.visitCode}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-gray-900">{test.patientName}</span>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm font-medium text-gray-900">{test.patientName}</span>
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-sm text-gray-700">{test.template.name}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <StatusBadgeFromTest test={test} />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         {test.status === 'APPROVED' && visit && (
                           <button
                             onClick={() => onInitiateReport(visit)}
-                            className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all text-sm"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
                           >
-                            📄 View Report
+                            <FileText className="h-4 w-4" />
+                            View Report
                           </button>
                         )}
                       </td>
@@ -292,7 +337,11 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
               </table>
             </div>
           ) : (
-              <EmptyState title="No results awaiting approval" message="Once results are entered, they will appear here for approval." />
+              <EmptyState
+                title="No processed tests"
+                message="Once results are entered, they will appear here for approval."
+                icon={<CheckCircle2 className="h-16 w-16" />}
+              />
           )}
           </div>
         </div>

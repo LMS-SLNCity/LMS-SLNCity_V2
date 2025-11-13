@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config/api';
+import { Building2, User, Lock, LogIn } from 'lucide-react';
 
 type LoginTab = 'staff' | 'client';
 
@@ -72,36 +73,54 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 flex flex-col justify-center items-center p-4">
       <div className="max-w-md w-full mx-auto">
+        {/* Header */}
         <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-brand-secondary leading-tight">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
+            <Building2 className="h-8 w-8 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 leading-tight">
             Sri Lakshmi Narasimha City<br/>Diagnostic Center
-            </h1>
-            <p className="text-sm text-gray-500 mt-2">(SLNCity)</p>
+          </h1>
+          <p className="text-sm text-gray-500 mt-2 font-medium">(SLNCity)</p>
         </div>
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+
+        {/* Login Card */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           {/* Tab Navigation */}
           <div className="flex border-b border-gray-200">
             <button
               onClick={() => setLoginTab('staff')}
-              className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+              className={`flex-1 py-3.5 px-4 text-sm font-semibold transition-all relative ${
                 loginTab === 'staff'
-                  ? 'bg-brand-primary text-white'
-                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
-              Staff Login
+              <div className="flex items-center justify-center gap-2">
+                <User className="h-4 w-4" />
+                Staff Login
+              </div>
+              {loginTab === 'staff' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+              )}
             </button>
             <button
               onClick={() => setLoginTab('client')}
-              className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+              className={`flex-1 py-3.5 px-4 text-sm font-semibold transition-all relative ${
                 loginTab === 'client'
-                  ? 'bg-brand-primary text-white'
-                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
-              Client Login
+              <div className="flex items-center justify-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Client Login
+              </div>
+              {loginTab === 'client' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+              )}
             </button>
           </div>
 
@@ -109,18 +128,19 @@ export const LoginScreen: React.FC = () => {
             {/* Staff Login Tab */}
             {loginTab === 'staff' && (
               <>
-                <h2 className="text-xl font-semibold text-gray-800 text-center mb-6">
-                  Lab Management System Login
+                <h2 className="text-lg font-semibold text-gray-900 text-center mb-6">
+                  Lab Management System
                 </h2>
-                <form onSubmit={handleStaffSubmit} className="space-y-6">
+                <form onSubmit={handleStaffSubmit} className="space-y-5">
                   <div>
                     <label
                       htmlFor="username"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-700 mb-1.5"
                     >
                       Username
                     </label>
-                    <div className="mt-1">
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         id="username"
                         name="username"
@@ -129,7 +149,8 @@ export const LoginScreen: React.FC = () => {
                         required
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 bg-white text-gray-900 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 bg-white text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+                        placeholder="Enter your username"
                       />
                     </div>
                   </div>
@@ -137,11 +158,12 @@ export const LoginScreen: React.FC = () => {
                   <div>
                     <label
                       htmlFor="password"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-700 mb-1.5"
                     >
                       Password
                     </label>
-                    <div className="mt-1">
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         id="password"
                         name="password"
@@ -150,14 +172,15 @@ export const LoginScreen: React.FC = () => {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 bg-white text-gray-900 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 bg-white text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+                        placeholder="Enter your password"
                       />
                     </div>
                   </div>
 
                   {error && loginTab === 'staff' && (
-                    <div className="text-sm text-red-700 bg-red-100 p-3 rounded-lg">
-                      {error}
+                    <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded-lg">
+                      <span className="font-medium">{error}</span>
                     </div>
                   )}
 
@@ -165,12 +188,19 @@ export const LoginScreen: React.FC = () => {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-primary hover:bg-brand-primary_hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary disabled:bg-gray-400"
+                      className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
                     >
-                      {isLoading ? 'Signing in...' : 'Sign in'}
+                      {isLoading ? (
+                        'Signing in...'
+                      ) : (
+                        <>
+                          <LogIn className="h-4 w-4" />
+                          Sign in
+                        </>
+                      )}
                     </button>
                   </div>
-                  <div className="text-center text-xs text-gray-500">
+                  <div className="text-center text-xs text-gray-500 bg-gray-50 p-2 rounded">
                       <p>Use: sudo/sudo, admin/admin, reception/reception</p>
                   </div>
                 </form>
@@ -180,18 +210,19 @@ export const LoginScreen: React.FC = () => {
             {/* Client Login Tab */}
             {loginTab === 'client' && (
               <>
-                <h2 className="text-xl font-semibold text-gray-800 text-center mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 text-center mb-6">
                   B2B Client Portal
                 </h2>
-                <form onSubmit={handleClientSubmit} className="space-y-6">
+                <form onSubmit={handleClientSubmit} className="space-y-5">
                   <div>
                     <label
                       htmlFor="clientId"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-700 mb-1.5"
                     >
                       Client ID
                     </label>
-                    <div className="mt-1">
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         id="clientId"
                         name="clientId"
@@ -199,7 +230,7 @@ export const LoginScreen: React.FC = () => {
                         required
                         value={clientId}
                         onChange={(e) => setClientId(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 bg-white text-gray-900 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 bg-white text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
                         placeholder="Enter your client ID"
                       />
                     </div>
@@ -208,11 +239,12 @@ export const LoginScreen: React.FC = () => {
                   <div>
                     <label
                       htmlFor="clientPassword"
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-700 mb-1.5"
                     >
                       Password
                     </label>
-                    <div className="mt-1">
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         id="clientPassword"
                         name="clientPassword"
@@ -221,15 +253,15 @@ export const LoginScreen: React.FC = () => {
                         required
                         value={clientPassword}
                         onChange={(e) => setClientPassword(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 bg-white text-gray-900 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 bg-white text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
                         placeholder="Enter your password"
                       />
                     </div>
                   </div>
 
                   {error && loginTab === 'client' && (
-                    <div className="text-sm text-red-700 bg-red-100 p-3 rounded-lg">
-                      {error}
+                    <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded-lg">
+                      <span className="font-medium">{error}</span>
                     </div>
                   )}
 
@@ -237,12 +269,19 @@ export const LoginScreen: React.FC = () => {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-primary hover:bg-brand-primary_hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary disabled:bg-gray-400"
+                      className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
                     >
-                      {isLoading ? 'Signing in...' : 'Sign in'}
+                      {isLoading ? (
+                        'Signing in...'
+                      ) : (
+                        <>
+                          <LogIn className="h-4 w-4" />
+                          Sign in
+                        </>
+                      )}
                     </button>
                   </div>
-                  <div className="text-center text-xs text-gray-500">
+                  <div className="text-center text-xs text-gray-500 bg-gray-50 p-2 rounded">
                       <p>Contact admin for client credentials</p>
                   </div>
                 </form>
@@ -252,7 +291,7 @@ export const LoginScreen: React.FC = () => {
         </div>
       </div>
        <footer className="text-center py-4 text-sm text-gray-500 mt-8">
-          <p>&copy; 2024 Sri Lakshmi Narasimha City Diagnostic Center. All rights reserved.</p>
+          <p>&copy; 2025 Sri Lakshmi Narasimha City Diagnostic Center. All rights reserved.</p>
         </footer>
     </div>
   );

@@ -2,6 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../api/client';
 import { useAppContext } from '../../context/AppContext';
 import { VisitTest } from '../../types';
+import {
+  Activity,
+  DollarSign,
+  TestTube,
+  Users,
+  Clock,
+  CheckCircle,
+  FlaskConical,
+  ClipboardList,
+  X,
+  TrendingUp,
+  TrendingDown,
+  BarChart3
+} from 'lucide-react';
 
 interface DashboardMetrics {
   totalVisits: number;
@@ -49,10 +63,10 @@ const QueuePopup: React.FC<QueuePopupProps> = ({ title, tests, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={onClose}>
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
-          <h3 className="text-xl font-bold">{title}</h3>
-          <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl font-bold">
-            ×
+        <div className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-6 py-4 flex justify-between items-center">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <button onClick={onClose} className="text-white hover:text-gray-300 transition-colors">
+            <X className="h-5 w-5" />
           </button>
         </div>
 
@@ -188,17 +202,25 @@ export const Dashboard: React.FC = () => {
         />
       )}
 
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Header with Refresh Button */}
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-600 rounded-lg">
+              <BarChart3 className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+              <p className="text-sm text-gray-500">Overview of laboratory operations</p>
+            </div>
+          </div>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
           >
             <svg
-              className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`}
+              className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -216,13 +238,43 @@ export const Dashboard: React.FC = () => {
 
       {/* Overview Metrics */}
       {metrics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <MetricCard title="Total Visits" value={metrics.totalVisits} color="blue" />
-          <MetricCard title="Total Revenue" value={`₹${metrics.totalRevenue.toFixed(2)}`} color="blue" />
-          <MetricCard title="Total Tests" value={metrics.totalTests} color="blue" />
-          <MetricCard title="B2B Clients" value={metrics.totalClients} color="blue" />
-          <MetricCard title="Pending Tests" value={metrics.pendingTests} color="orange" />
-          <MetricCard title="Approved Tests" value={metrics.approvedTests} color="green" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <MetricCard
+            title="Total Visits"
+            value={metrics.totalVisits}
+            color="blue"
+            icon={<Activity className="h-5 w-5" />}
+          />
+          <MetricCard
+            title="Total Revenue"
+            value={`₹${metrics.totalRevenue.toFixed(2)}`}
+            color="green"
+            icon={<DollarSign className="h-5 w-5" />}
+          />
+          <MetricCard
+            title="Total Tests"
+            value={metrics.totalTests}
+            color="blue"
+            icon={<TestTube className="h-5 w-5" />}
+          />
+          <MetricCard
+            title="B2B Clients"
+            value={metrics.totalClients}
+            color="blue"
+            icon={<Users className="h-5 w-5" />}
+          />
+          <MetricCard
+            title="Pending Tests"
+            value={metrics.pendingTests}
+            color="orange"
+            icon={<Clock className="h-5 w-5" />}
+          />
+          <MetricCard
+            title="Approved Tests"
+            value={metrics.approvedTests}
+            color="green"
+            icon={<CheckCircle className="h-5 w-5" />}
+          />
         </div>
       )}
 
@@ -231,14 +283,15 @@ export const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Phlebotomy Queue */}
           <QueueCard
-            title="📋 Phlebotomy Queue"
+            title="Phlebotomy Queue"
             description="Samples awaiting collection"
             count={tests.byStatus.find((s: any) => s.status === 'PENDING')?.count || 0}
             color="yellow"
+            icon={<ClipboardList className="h-6 w-6" />}
             onClick={() => {
               const pendingTests = visitTests.filter(t => t.status === 'PENDING');
               setQueuePopup({
-                title: '📋 Phlebotomy Queue - Samples Awaiting Collection',
+                title: 'Phlebotomy Queue - Samples Awaiting Collection',
                 tests: pendingTests
               });
             }}
@@ -246,17 +299,18 @@ export const Dashboard: React.FC = () => {
 
           {/* Lab Queue */}
           <QueueCard
-            title="🧪 Lab Queue"
+            title="Laboratory Queue"
             description="Samples collected, awaiting results"
             count={
               Number(tests.byStatus.find((s: any) => s.status === 'SAMPLE_COLLECTED')?.count || 0) +
               Number(tests.byStatus.find((s: any) => s.status === 'IN_PROGRESS')?.count || 0)
             }
             color="blue"
+            icon={<FlaskConical className="h-6 w-6" />}
             onClick={() => {
               const labTests = visitTests.filter(t => t.status === 'SAMPLE_COLLECTED' || t.status === 'IN_PROGRESS');
               setQueuePopup({
-                title: '🧪 Lab Queue - Samples Collected, Awaiting Results',
+                title: 'Laboratory Queue - Samples Collected, Awaiting Results',
                 tests: labTests
               });
             }}
@@ -264,14 +318,15 @@ export const Dashboard: React.FC = () => {
 
           {/* Approver Queue */}
           <QueueCard
-            title="✅ Approver Queue"
+            title="Approver Queue"
             description="Results awaiting approval"
             count={tests.byStatus.find((s: any) => s.status === 'AWAITING_APPROVAL')?.count || 0}
             color="green"
+            icon={<CheckCircle className="h-6 w-6" />}
             onClick={() => {
               const approvalTests = visitTests.filter(t => t.status === 'AWAITING_APPROVAL');
               setQueuePopup({
-                title: '✅ Approver Queue - Results Awaiting Approval',
+                title: 'Approver Queue - Results Awaiting Approval',
                 tests: approvalTests
               });
             }}
@@ -447,38 +502,65 @@ export const Dashboard: React.FC = () => {
 };
 
 // Metric Card Component
-const MetricCard: React.FC<{ title: string; value: string | number; color?: string }> = ({
+const MetricCard: React.FC<{
+  title: string;
+  value: string | number;
+  color?: string;
+  icon: React.ReactNode;
+  trend?: { value: number; isPositive: boolean };
+}> = ({
   title,
   value,
   color = 'blue',
+  icon,
+  trend,
 }) => {
   const colorClasses = {
     blue: {
-      bg: 'bg-gradient-to-br from-blue-50 to-blue-100',
-      border: 'border-blue-200',
-      title: 'text-blue-700',
-      value: 'text-blue-900',
+      bg: 'bg-white',
+      border: 'border-gray-200',
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+      title: 'text-gray-600',
+      value: 'text-gray-900',
     },
     orange: {
-      bg: 'bg-gradient-to-br from-orange-50 to-orange-100',
-      border: 'border-orange-200',
-      title: 'text-orange-700',
-      value: 'text-orange-900',
+      bg: 'bg-white',
+      border: 'border-gray-200',
+      iconBg: 'bg-orange-100',
+      iconColor: 'text-orange-600',
+      title: 'text-gray-600',
+      value: 'text-gray-900',
     },
     green: {
-      bg: 'bg-gradient-to-br from-green-50 to-green-100',
-      border: 'border-green-200',
-      title: 'text-green-700',
-      value: 'text-green-900',
+      bg: 'bg-white',
+      border: 'border-gray-200',
+      iconBg: 'bg-green-100',
+      iconColor: 'text-green-600',
+      title: 'text-gray-600',
+      value: 'text-gray-900',
     },
   };
 
   const colors = colorClasses[color as keyof typeof colorClasses];
 
   return (
-    <div className={`${colors.bg} border ${colors.border} rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow`}>
-      <p className={`text-sm font-medium ${colors.title} mb-2`}>{title}</p>
-      <p className={`text-3xl font-bold ${colors.value}`}>{value}</p>
+    <div className={`${colors.bg} border ${colors.border} rounded-lg p-5 shadow-sm hover:shadow-md transition-all`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className={`p-2.5 rounded-lg ${colors.iconBg}`}>
+          <div className={colors.iconColor}>
+            {icon}
+          </div>
+        </div>
+        {trend && (
+          <div className={`flex items-center gap-1 text-sm font-medium ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+            {trend.isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+            {Math.abs(trend.value)}%
+          </div>
+        )}
+      </div>
+      <p className={`text-sm font-medium ${colors.title} mb-1`}>{title}</p>
+      <p className={`text-2xl font-bold ${colors.value}`}>{value}</p>
     </div>
   );
 };
@@ -489,26 +571,33 @@ const QueueCard: React.FC<{
   description: string;
   count: number;
   color: 'yellow' | 'blue' | 'green';
+  icon: React.ReactNode;
   onClick: () => void;
-}> = ({ title, description, count, color, onClick }) => {
+}> = ({ title, description, count, color, icon, onClick }) => {
   const colorClasses = {
     yellow: {
-      bg: 'bg-yellow-50',
-      border: 'border-yellow-200',
-      hover: 'hover:bg-yellow-100',
-      badge: 'bg-yellow-500 text-white',
+      bg: 'bg-amber-50',
+      border: 'border-amber-200',
+      hover: 'hover:border-amber-300 hover:shadow-md',
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-600',
+      countColor: 'text-amber-600',
     },
     blue: {
       bg: 'bg-blue-50',
       border: 'border-blue-200',
-      hover: 'hover:bg-blue-100',
-      badge: 'bg-blue-500 text-white',
+      hover: 'hover:border-blue-300 hover:shadow-md',
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+      countColor: 'text-blue-600',
     },
     green: {
-      bg: 'bg-green-50',
-      border: 'border-green-200',
-      hover: 'hover:bg-green-100',
-      badge: 'bg-green-500 text-white',
+      bg: 'bg-emerald-50',
+      border: 'border-emerald-200',
+      hover: 'hover:border-emerald-300 hover:shadow-md',
+      iconBg: 'bg-emerald-100',
+      iconColor: 'text-emerald-600',
+      countColor: 'text-emerald-600',
     },
   };
 
@@ -517,16 +606,24 @@ const QueueCard: React.FC<{
   return (
     <button
       onClick={onClick}
-      className={`w-full p-6 rounded-lg border-2 transition-all cursor-pointer text-left ${colors.bg} ${colors.border} ${colors.hover}`}
+      className={`w-full p-5 rounded-lg border transition-all cursor-pointer text-left ${colors.bg} ${colors.border} ${colors.hover}`}
     >
-      <div className="flex items-start justify-between mb-3">
-        <h4 className="text-lg font-semibold text-gray-800">{title}</h4>
-        <span className={`px-3 py-1 rounded-full text-2xl font-bold ${colors.badge}`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className={`p-2.5 rounded-lg ${colors.iconBg}`}>
+          <div className={colors.iconColor}>
+            {icon}
+          </div>
+        </div>
+        <span className={`text-3xl font-bold ${colors.countColor}`}>
           {count}
         </span>
       </div>
+      <h4 className="text-base font-semibold text-gray-900 mb-1">{title}</h4>
       <p className="text-sm text-gray-600">{description}</p>
-      <p className="text-xs text-gray-500 mt-2">Click to view queue →</p>
+      <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+        Click to view details
+        <span className="text-gray-400">→</span>
+      </p>
     </button>
   );
 };
