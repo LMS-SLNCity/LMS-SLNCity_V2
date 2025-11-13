@@ -37,36 +37,35 @@ router.get('/overview', async (req: Request, res: Response) => {
     const totalClients = parseInt(clientsResult.rows[0].total_clients);
 
     // Get pending tests (with date filter)
-    const pendingFilter = dateFilter ? dateFilter.replace('created_at', 'vt.created_at') : '';
-    const pendingResult = await pool.query(`
-      SELECT COUNT(*) as pending_tests
-      FROM visit_tests vt
-      WHERE status IN ('PENDING', 'SAMPLE_COLLECTED', 'IN_PROGRESS') ${pendingFilter ? 'AND ' + pendingFilter : ''}
-    `, params);
+    let pendingQuery = `SELECT COUNT(*) as pending_tests FROM visit_tests WHERE status IN ('PENDING', 'SAMPLE_COLLECTED', 'IN_PROGRESS')`;
+    if (dateFilter) {
+      pendingQuery += ` AND ${dateFilter}`;
+    }
+    const pendingResult = await pool.query(pendingQuery, params);
     const pendingTests = parseInt(pendingResult.rows[0].pending_tests);
 
     // Get approved tests (with date filter)
-    const approvedResult = await pool.query(`
-      SELECT COUNT(*) as approved_tests
-      FROM visit_tests vt
-      WHERE status = 'APPROVED' ${pendingFilter ? 'AND ' + pendingFilter : ''}
-    `, params);
+    let approvedQuery = `SELECT COUNT(*) as approved_tests FROM visit_tests WHERE status = 'APPROVED'`;
+    if (dateFilter) {
+      approvedQuery += ` AND ${dateFilter}`;
+    }
+    const approvedResult = await pool.query(approvedQuery, params);
     const approvedTests = parseInt(approvedResult.rows[0].approved_tests);
 
     // Get rejected tests (with date filter)
-    const rejectedResult = await pool.query(`
-      SELECT COUNT(*) as rejected_tests
-      FROM visit_tests vt
-      WHERE status = 'REJECTED' ${pendingFilter ? 'AND ' + pendingFilter : ''}
-    `, params);
+    let rejectedQuery = `SELECT COUNT(*) as rejected_tests FROM visit_tests WHERE status = 'REJECTED'`;
+    if (dateFilter) {
+      rejectedQuery += ` AND ${dateFilter}`;
+    }
+    const rejectedResult = await pool.query(rejectedQuery, params);
     const rejectedTests = parseInt(rejectedResult.rows[0].rejected_tests);
 
     // Get average TAT (Turnaround Time) in hours
-    const tatResult = await pool.query(`
-      SELECT AVG(EXTRACT(EPOCH FROM (approved_at - collected_at))/3600) as avg_tat_hours
-      FROM visit_tests
-      WHERE approved_at IS NOT NULL AND collected_at IS NOT NULL ${pendingFilter ? 'AND ' + pendingFilter : ''}
-    `, params);
+    let tatQuery = `SELECT AVG(EXTRACT(EPOCH FROM (approved_at - collected_at))/3600) as avg_tat_hours FROM visit_tests WHERE approved_at IS NOT NULL AND collected_at IS NOT NULL`;
+    if (dateFilter) {
+      tatQuery += ` AND ${dateFilter}`;
+    }
+    const tatResult = await pool.query(tatQuery, params);
     const avgTatHours = parseFloat(tatResult.rows[0].avg_tat_hours) || 0;
 
     // Get collection rate (percentage of tests collected vs pending)
@@ -112,14 +111,18 @@ router.get('/revenue', async (req: Request, res: Response) => {
     `, params);
 
     // Get revenue by B2B client (sorted by revenue in descending order)
-    const clientRevenueResult = await pool.query(`
+    let clientRevenueQuery = `
       SELECT c.id, c.name, c.balance, COUNT(v.id) as visit_count, SUM(v.total_cost) as total_revenue
       FROM clients c
-      LEFT JOIN visits v ON c.id = v.ref_customer_id ${dateFilter ? 'AND v.' + dateFilter.substring(6) : ''}
+      LEFT JOIN visits v ON c.id = v.ref_customer_id`;
+    if (dateFilter) {
+      clientRevenueQuery += ` AND v.${dateFilter}`;
+    }
+    clientRevenueQuery += `
       WHERE c.type = 'REFERRAL_LAB'
       GROUP BY c.id, c.name, c.balance
-      ORDER BY total_revenue DESC NULLS LAST
-    `, params);
+      ORDER BY total_revenue DESC NULLS LAST`;
+    const clientRevenueResult = await pool.query(clientRevenueQuery, params);
 
     // Get daily revenue for the selected period
     const dailyRevenueResult = await pool.query(`
@@ -155,13 +158,17 @@ router.get('/tests', async (req: Request, res: Response) => {
     }
 
     // Get tests by template
-    const byTemplateResult = await pool.query(`
+    let byTemplateQuery = `
       SELECT tt.id, tt.name, tt.code, tt.category, tt.parameters, COUNT(vt.id) as count
       FROM test_templates tt
-      LEFT JOIN visit_tests vt ON tt.id = vt.test_template_id ${dateFilter ? 'AND ' + dateFilter.substring(6) : ''}
+      LEFT JOIN visit_tests vt ON tt.id = vt.test_template_id`;
+    if (dateFilter) {
+      byTemplateQuery += ` AND vt.${dateFilter.substring(6)}`;
+    }
+    byTemplateQuery += `
       GROUP BY tt.id, tt.name, tt.code, tt.category, tt.parameters
-      ORDER BY count DESC
-    `, params);
+      ORDER BY count DESC`;
+    const byTemplateResult = await pool.query(byTemplateQuery, params);
 
     // Get tests by status
     const byStatusResult = await pool.query(`
@@ -173,13 +180,17 @@ router.get('/tests', async (req: Request, res: Response) => {
     `, params);
 
     // Get tests by category
-    const byCategoryResult = await pool.query(`
+    let byCategoryQuery = `
       SELECT tt.category, COUNT(vt.id) as count
       FROM test_templates tt
-      LEFT JOIN visit_tests vt ON tt.id = vt.test_template_id ${dateFilter ? 'AND ' + dateFilter.substring(6) : ''}
+      LEFT JOIN visit_tests vt ON tt.id = vt.test_template_id`;
+    if (dateFilter) {
+      byCategoryQuery += ` AND vt.${dateFilter.substring(6)}`;
+    }
+    byCategoryQuery += `
       GROUP BY tt.category
-      ORDER BY count DESC
-    `, params);
+      ORDER BY count DESC`;
+    const byCategoryResult = await pool.query(byCategoryQuery, params);
 
     res.json({
       byTemplate: byTemplateResult.rows,
