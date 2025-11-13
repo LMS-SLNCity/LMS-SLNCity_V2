@@ -807,10 +807,10 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
               </div>
             </div>
 
-            {/* Bottom Row - Dates (Removed Patient ID) */}
+            {/* Bottom Row - Dates and Lab Tech */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
+              gridTemplateColumns: 'repeat(5, 1fr)',
               fontSize: '10px',
               lineHeight: '1.5'
             }}>
@@ -825,6 +825,10 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
               <div style={{ padding: '6px 12px', borderRight: '1px solid #000' }}>
                 <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Registration</div>
                 <div>{formatDate(visit.registration_datetime)}</div>
+              </div>
+              <div style={{ padding: '6px 12px', borderRight: '1px solid #000' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Lab Tech</div>
+                <div>{firstTest.enteredBy || 'N/A'}</div>
               </div>
               <div style={{ padding: '6px 12px' }}>
                 <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Reported</div>

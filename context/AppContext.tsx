@@ -375,6 +375,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       const updateData: any = {
         status: 'AWAITING_APPROVAL',
+        entered_by: actor.username,
+        entered_at: new Date().toISOString(),
       };
       if (data.results) updateData.results = data.results;
       if (data.cultureResult) updateData.culture_result = data.cultureResult;

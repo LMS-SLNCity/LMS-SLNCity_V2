@@ -10,7 +10,7 @@ router.get('/', shortCache, async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT vt.id, vt.visit_id, vt.test_template_id, vt.status, vt.collected_by, vt.collected_at, vt.specimen_type,
-              vt.results, vt.culture_result, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at,
+              vt.results, vt.culture_result, vt.entered_by, vt.entered_at, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at,
               tt.id as template_id, tt.code, tt.name, tt.category, tt.price, tt.b2b_price, tt.is_active, tt.report_type, tt.parameters, tt.default_antibiotic_ids,
               v.visit_code, p.name as patient_name
        FROM visit_tests vt
@@ -42,6 +42,8 @@ router.get('/', shortCache, async (req: Request, res: Response) => {
       specimen_type: row.specimen_type,
       results: row.results,
       cultureResult: row.culture_result,
+      enteredBy: row.entered_by,
+      enteredAt: row.entered_at,
       approvedBy: row.approved_by,
       approvedAt: row.approved_at,
       rejection_count: row.rejection_count || 0,
@@ -57,7 +59,7 @@ router.get('/:id', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT vt.id, vt.visit_id, vt.test_template_id, vt.status, vt.collected_by, vt.collected_at, vt.specimen_type,
-              vt.results, vt.culture_result, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at,
+              vt.results, vt.culture_result, vt.entered_by, vt.entered_at, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at,
               tt.id as template_id, tt.code, tt.name, tt.category, tt.price, tt.b2b_price, tt.is_active, tt.report_type, tt.parameters, tt.default_antibiotic_ids,
               v.visit_code, p.name as patient_name
        FROM visit_tests vt
@@ -93,6 +95,8 @@ router.get('/:id', async (req: Request, res: Response) => {
       specimen_type: row.specimen_type,
       results: row.results,
       cultureResult: row.culture_result,
+      enteredBy: row.entered_by,
+      enteredAt: row.entered_at,
       approvedBy: row.approved_by,
       approvedAt: row.approved_at,
       rejection_count: row.rejection_count || 0,
@@ -122,7 +126,7 @@ router.post('/', async (req: Request, res: Response) => {
 
 router.patch('/:id', async (req: Request, res: Response) => {
   try {
-    const { status, collected_by, collected_at, specimen_type, results, culture_result, approved_by, approved_at } = req.body;
+    const { status, collected_by, collected_at, specimen_type, results, culture_result, entered_by, entered_at, approved_by, approved_at } = req.body;
 
     // Get old values and test details for audit trail
     const oldResult = await pool.query(
@@ -150,12 +154,14 @@ router.patch('/:id', async (req: Request, res: Response) => {
            specimen_type = COALESCE($4, specimen_type),
            results = COALESCE($5, results),
            culture_result = COALESCE($6, culture_result),
-           approved_by = COALESCE($7, approved_by),
-           approved_at = COALESCE($8, approved_at),
+           entered_by = COALESCE($7, entered_by),
+           entered_at = COALESCE($8, entered_at),
+           approved_by = COALESCE($9, approved_by),
+           approved_at = COALESCE($10, approved_at),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $9
-       RETURNING id, visit_id, test_template_id, status, collected_by, collected_at, specimen_type, results, culture_result, approved_by, approved_at`,
-      [status, collected_by, collected_at, specimen_type, results ? JSON.stringify(results) : null, culture_result ? JSON.stringify(culture_result) : null, approved_by, approved_at, req.params.id]
+       WHERE id = $11
+       RETURNING id, visit_id, test_template_id, status, collected_by, collected_at, specimen_type, results, culture_result, entered_by, entered_at, approved_by, approved_at`,
+      [status, collected_by, collected_at, specimen_type, results ? JSON.stringify(results) : null, culture_result ? JSON.stringify(culture_result) : null, entered_by, entered_at, approved_by, approved_at, req.params.id]
     );
 
     const newData = result.rows[0];

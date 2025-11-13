@@ -96,6 +96,8 @@ export interface VisitTest {
   specimen_type?: string;
   results?: Record<string, string | number>;
   cultureResult?: CultureResult; // New field for structured culture results
+  enteredBy?: string; // Lab technician who entered the results
+  enteredAt?: string; // ISO String - when results were entered
   approvedBy?: string;
   approvedAt?: string; // ISO String
   rejection_count?: number;
