@@ -96,12 +96,15 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
     setIsSubmitting(true);
     setSubmittingTestId(collectingTest.id);
 
+    // Close modal immediately for better UX
+    const testToCollect = collectingTest;
+    setCollectingTest(null);
+
     try {
-      await updateVisitTestStatus(collectingTest.id, 'SAMPLE_COLLECTED', user, {
+      await updateVisitTestStatus(testToCollect.id, 'SAMPLE_COLLECTED', user, {
         collectedBy: user.username,
         specimen_type: sampleType
       });
-      setCollectingTest(null);
     } catch (error) {
       console.error('Error collecting sample:', error);
       alert('Failed to collect sample. Please try again.');

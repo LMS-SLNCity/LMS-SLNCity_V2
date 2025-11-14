@@ -124,16 +124,17 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-router.patch('/:id', async (req: Request, res: Response) => {
+router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { status, collected_by, collected_at, specimen_type, results, culture_result, entered_by, entered_at, approved_by, approved_at } = req.body;
+    const { status, collected_by, collected_at, specimen_type, results, culture_result, entered_by, entered_at, approved_by, approved_at, editedBy, editReason } = req.body;
 
     // Get old values and test details for audit trail
     const oldResult = await pool.query(
-      `SELECT vt.*, tt.name as test_name, v.visit_code
+      `SELECT vt.*, tt.name as test_name, v.visit_code, p.name as patient_name
        FROM visit_tests vt
        JOIN test_templates tt ON vt.test_template_id = tt.id
        JOIN visits v ON vt.visit_id = v.id
+       JOIN patients p ON v.patient_id = p.id
        WHERE vt.id = $1`,
       [req.params.id]
     );
@@ -145,6 +146,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
     const oldData = oldResult.rows[0];
     const testName = oldData.test_name;
     const visitCode = oldData.visit_code;
+    const patientName = oldData.patient_name;
 
     const result = await pool.query(
       `UPDATE visit_tests
@@ -175,8 +177,32 @@ router.patch('/:id', async (req: Request, res: Response) => {
     if (results && !oldData.results) {
       // Result entry (first time)
       await auditTestResult.enter(req, parseInt(req.params.id), testName, visitCode, results);
+    } else if (results && oldData.results && editedBy && editReason) {
+      // Result edit before approval
+      await pool.query(
+        `INSERT INTO audit_logs (
+          username,
+          action,
+          details,
+          user_id,
+          resource,
+          resource_id,
+          old_value,
+          new_value
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          editedBy,
+          'EDIT_RESULT_BEFORE_APPROVAL',
+          `Edited results for ${testName} (${visitCode} - ${patientName}). Reason: ${editReason}`,
+          (req as any).user?.id || null,
+          'visit_test',
+          req.params.id,
+          JSON.stringify(oldData.results),
+          JSON.stringify(results)
+        ]
+      );
     } else if (results && oldData.results) {
-      // Result update
+      // Result update (normal)
       await auditTestResult.update(req, parseInt(req.params.id), testName, visitCode, oldData.results, results);
     }
 

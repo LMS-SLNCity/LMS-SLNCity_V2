@@ -985,21 +985,28 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                   </div>
                 ))}
 
-                {/* QR Code with Lab Tech - ALWAYS SHOW - positioned based on approver count */}
+                {/* QR Code and Lab Tech - Side by side */}
                 {visit.qr_code && (
-                  <div style={{ textAlign: 'center', flex: 1 }}>
-                    <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
-                      <img
-                        src={visit.qr_code}
-                        alt="QR Code"
-                        style={{ width: '100%', height: '100%', display: 'block' }}
-                      />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'center' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
+                        <img
+                          src={visit.qr_code}
+                          alt="QR Code"
+                          style={{ width: '100%', height: '100%', display: 'block' }}
+                        />
+                      </div>
+                      <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
+                        Scan to verify
+                      </div>
                     </div>
-                    <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
-                      Scan to verify
-                    </div>
-                    <div style={{ fontSize: '7px', color: '#333', marginTop: '4px', fontWeight: 'bold' }}>
-                      Lab Tech: {firstTest.enteredBy || 'N/A'}
+                    <div style={{ textAlign: 'left', borderLeft: '1px solid #ddd', paddingLeft: '8px' }}>
+                      <div style={{ fontSize: '7px', color: '#666', marginBottom: '2px' }}>
+                        Lab Technician
+                      </div>
+                      <div style={{ fontSize: '8px', color: '#000', fontWeight: 'bold' }}>
+                        {firstTest.enteredBy || 'N/A'}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1022,21 +1029,28 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                   </div>
                 </div>
 
-                {/* QR Code with Lab Tech - Center */}
+                {/* QR Code and Lab Tech - Side by side */}
                 {visit.qr_code && (
-                  <div style={{ textAlign: 'center', flex: 1 }}>
-                    <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
-                      <img
-                        src={visit.qr_code}
-                        alt="QR Code"
-                        style={{ width: '100%', height: '100%', display: 'block' }}
-                      />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'center' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
+                        <img
+                          src={visit.qr_code}
+                          alt="QR Code"
+                          style={{ width: '100%', height: '100%', display: 'block' }}
+                        />
+                      </div>
+                      <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
+                        Scan to verify
+                      </div>
                     </div>
-                    <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
-                      Scan to verify
-                    </div>
-                    <div style={{ fontSize: '7px', color: '#333', marginTop: '4px', fontWeight: 'bold' }}>
-                      Lab Tech: {firstTest.enteredBy || 'N/A'}
+                    <div style={{ textAlign: 'left', borderLeft: '1px solid #ddd', paddingLeft: '8px' }}>
+                      <div style={{ fontSize: '7px', color: '#666', marginBottom: '2px' }}>
+                        Lab Technician
+                      </div>
+                      <div style={{ fontSize: '8px', color: '#000', fontWeight: 'bold' }}>
+                        {firstTest.enteredBy || 'N/A'}
+                      </div>
                     </div>
                   </div>
                 )}

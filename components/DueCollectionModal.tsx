@@ -31,7 +31,7 @@ export const DueCollectionModal: React.FC<DueCollectionModalProps> = ({ visit, o
 
     try {
       const authToken = localStorage.getItem('authToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/visits/${visit.id}/collect-due`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/visits/${visit.id}/collect-due`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -44,7 +44,8 @@ export const DueCollectionModal: React.FC<DueCollectionModalProps> = ({ visit, o
       });
 
       if (!response.ok) {
-        throw new Error('Failed to collect payment');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to collect payment');
       }
 
       alert(`Payment of ₹${amount.toFixed(2)} collected successfully via ${paymentMode}`);

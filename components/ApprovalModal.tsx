@@ -36,7 +36,7 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
     setIsSubmitting(true);
     try {
       const authToken = localStorage.getItem('authToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/visit-tests/${test.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/visit-tests/${test.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -50,32 +50,14 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update test results');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to update test results');
       }
-
-      // Create audit log for the edit
-      await fetch(`${import.meta.env.VITE_API_URL}/audit-logs`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          username: user.username,
-          action: 'EDIT_RESULT_BEFORE_APPROVAL',
-          details: `Edited results for ${test.template.name} (${test.visitCode} - ${test.patientName}). Reason: ${editReason}`,
-          user_id: user.id,
-          resource: 'visit_test',
-          resource_id: test.id,
-          old_value: JSON.stringify(test.results),
-          new_value: JSON.stringify(editedResults)
-        })
-      });
 
       alert('Results updated successfully');
       setIsEditing(false);
       setEditReason('');
-      window.location.reload(); // Reload to show updated results
+      onClose(); // Close modal and trigger parent refresh
     } catch (error) {
       alert(`Failed to update results: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
@@ -93,9 +75,12 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
         return;
     }
     setIsSubmitting(true);
+
+    // Close modal immediately for better UX
+    onClose();
+
     try {
       await approveTestResult(test.id, user);
-      onClose();
     } catch (error) {
       alert('Failed to approve test result');
     } finally {
@@ -124,10 +109,13 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
 
     console.log('✅ Validation passed, calling rejectTestResult...');
     setIsSubmitting(true);
+
+    // Close modal immediately for better UX
+    onClose();
+
     try {
       await rejectTestResult(test.id, rejectionReason, user);
       console.log('✅ Rejection successful');
-      onClose();
     } catch (error) {
       console.error('❌ Rejection failed:', error);
       alert(`Failed to reject test result: ${error instanceof Error ? error.message : 'Unknown error'}`);
