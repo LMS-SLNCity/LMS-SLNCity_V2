@@ -6,6 +6,7 @@ import { PatientSearchModal } from './PatientSearchModal';
 import { SearchableSelect } from './form/SearchableSelect';
 import { API_BASE_URL } from '../config/api';
 import { StatusBadgeFromTest } from './StatusBadge';
+import { DateFilter, DateFilterOption, filterByDate } from './DateFilter';
 
 type AgeUnit = 'Years' | 'Months' | 'Days';
 type PaymentMode = 'CASH' | 'CARD' | 'UPI' | 'CREDIT' | '';
@@ -68,6 +69,9 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [testSearchQuery, setTestSearchQuery] = useState('');
   const [recentRegistrationsFilter, setRecentRegistrationsFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState<DateFilterOption>('today');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   // Calculate if this is a B2B client - MUST be defined before useEffects that use it
   const isB2BClient = useMemo(() => formData.ref_customer_id !== undefined && formData.ref_customer_id > 0, [formData.ref_customer_id]);
@@ -134,11 +138,17 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
 
   const amountDue = useMemo(() => totalCost - formData.amount_paid, [totalCost, formData.amount_paid]);
 
-  // Sort visits by created_at DESC (most recent first), filter, and limit to 20
-  const sortedVisits = useMemo(() => {
-    let filtered = [...visits];
+  // Calculate pending tests count
+  const pendingTestsCount = useMemo(() => {
+    return visitTests.filter(test => test.status === 'PENDING').length;
+  }, [visitTests]);
 
-    // Apply filter if search query exists
+  // Sort visits by created_at DESC (most recent first), filter by date and search, and limit to 20
+  const sortedVisits = useMemo(() => {
+    // First apply date filter
+    let filtered = filterByDate(visits, dateFilter, customStartDate, customEndDate);
+
+    // Then apply search filter if search query exists
     if (recentRegistrationsFilter) {
       const query = recentRegistrationsFilter.toLowerCase();
       filtered = filtered.filter(visit =>
@@ -151,7 +161,7 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
     return filtered
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 20);
-  }, [visits, recentRegistrationsFilter]);
+  }, [visits, recentRegistrationsFilter, dateFilter, customStartDate, customEndDate]);
 
   const filteredTests = useMemo(() => {
     const activeTests = testTemplates.filter(t => t.isActive);
@@ -572,16 +582,44 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
         onSelectPatient={handleSelectPatient}
       />
 
+      {/* Pending Tests Summary */}
+      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 sm:p-6 rounded-xl shadow-lg mt-4 border-l-4 border-yellow-500">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">Pending Tests</h3>
+            <p className="text-sm text-gray-600">Tests awaiting sample collection</p>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl sm:text-4xl font-bold text-yellow-600">{pendingTestsCount}</div>
+            <p className="text-xs text-gray-500 mt-1">Total Pending</p>
+          </div>
+        </div>
+      </div>
+
       {/* Recent Registrations Table */}
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg mt-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-          <h3 className="text-lg sm:text-xl font-bold text-gray-800">Recent Registrations</h3>
-          <input
-            type="text"
-            placeholder="Search by visit code, patient name, or date..."
-            value={recentRegistrationsFilter}
-            onChange={(e) => setRecentRegistrationsFilter(e.target.value)}
-            className="w-full sm:w-64 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <div className="flex flex-col gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800">Recent Registrations</h3>
+            <input
+              type="text"
+              placeholder="Search by visit code, patient name, or date..."
+              value={recentRegistrationsFilter}
+              onChange={(e) => setRecentRegistrationsFilter(e.target.value)}
+              className="w-full sm:w-64 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Date Filter */}
+          <DateFilter
+            selectedFilter={dateFilter}
+            onFilterChange={setDateFilter}
+            customStartDate={customStartDate}
+            customEndDate={customEndDate}
+            onCustomDateChange={(start, end) => {
+              setCustomStartDate(start);
+              setCustomEndDate(end);
+            }}
           />
         </div>
         <div className="overflow-x-auto border rounded-lg">

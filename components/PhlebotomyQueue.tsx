@@ -287,9 +287,15 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
 
       {/* Pending Samples Section */}
       <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Clock className="h-5 w-5 text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Pending for Collection</h3>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-gray-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Pending for Collection</h3>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full">
+            <span className="text-sm font-semibold">{pendingSamples.length}</span>
+            <span className="text-xs">Pending</span>
+          </div>
         </div>
         {pendingSamples.length > 0 ? (
           <div className="overflow-hidden border border-gray-200 rounded-lg">

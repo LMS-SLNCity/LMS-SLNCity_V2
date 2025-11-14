@@ -174,9 +174,15 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
 
         {/* Awaiting Approval Section */}
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="h-5 w-5 text-gray-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Awaiting Final Approval</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-gray-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Awaiting Final Approval</h3>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-800 rounded-full">
+              <span className="text-sm font-semibold">{awaitingApproval.length}</span>
+              <span className="text-xs">Pending</span>
+            </div>
           </div>
           {awaitingApproval.length > 0 ? (
             <div className="overflow-hidden border border-gray-200 rounded-lg">

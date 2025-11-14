@@ -235,9 +235,10 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
               <Edit3 className="h-5 w-5 text-gray-600" />
               <h3 className="text-lg font-semibold text-gray-900">Pending Results Entry</h3>
             </div>
-            <span className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md text-xs font-medium border border-blue-200">
-              {pendingResults.length} {pendingResults.length === 1 ? 'test' : 'tests'}
-            </span>
+            <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
+              <span className="text-sm font-semibold">{pendingResults.length}</span>
+              <span className="text-xs">Pending</span>
+            </div>
           </div>
           {pendingResults.length > 0 ? (
             <div className="overflow-hidden border border-gray-200 rounded-lg">
