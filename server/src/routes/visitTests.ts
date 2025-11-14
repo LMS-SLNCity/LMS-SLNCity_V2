@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
 import { auditSample, auditTestResult } from '../middleware/auditLogger.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -256,8 +256,8 @@ router.post('/:id/reject-sample', async (req: Request, res: Response) => {
   }
 });
 
-// Cancel test endpoint (admin cancels test that won't be performed)
-router.post('/:id/cancel', authMiddleware, async (req: Request, res: Response) => {
+// Cancel test endpoint (admin/sudo only - cancels test that won't be performed)
+router.post('/:id/cancel', authMiddleware, requireRole(['SUDO', 'ADMIN']), async (req: Request, res: Response) => {
   try {
     const { cancelReason, cancelledBy } = req.body;
     const testId = parseInt(req.params.id);

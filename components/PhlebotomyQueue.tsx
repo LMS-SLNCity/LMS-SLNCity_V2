@@ -325,13 +325,15 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
                         >
                           <Barcode className="h-4 w-4" />
                         </button>
-                        <button
-                          onClick={() => setCancellingTest(test)}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
-                          title="Cancel test"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
+                        {user && ['SUDO', 'ADMIN'].includes(user.role) && (
+                          <button
+                            onClick={() => setCancellingTest(test)}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
+                            title="Cancel test (Admin only)"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

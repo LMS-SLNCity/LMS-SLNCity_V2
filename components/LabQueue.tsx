@@ -318,13 +318,15 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
                               <XCircle className="h-4 w-4" />
                               Reject
                             </button>
-                            <button
-                              onClick={() => setCancellingTest(test)}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
-                              title="Cancel test"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
+                            {user && ['SUDO', 'ADMIN'].includes(user.role) && (
+                              <button
+                                onClick={() => setCancellingTest(test)}
+                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
+                                title="Cancel test (Admin only)"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         )}
                       </td>
