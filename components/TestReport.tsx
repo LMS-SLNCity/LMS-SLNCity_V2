@@ -710,6 +710,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           font-size: 10px;
           line-height: 1.4;
           vertical-align: middle;
+          color: #000;
         }
 
         th {
@@ -890,7 +891,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                                         fontSize: '8px',
                                         padding: '3px 6px',
                                         textTransform: 'uppercase',
-                                        color: '#374151',
+                                        color: '#000',
                                         borderTop: '1px solid #d1d5db',
                                         borderBottom: '1px solid #d1d5db'
                                       }}>
@@ -906,7 +907,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                                       <td>
                                         {param.name}
                                         {param.method && (
-                                          <div style={{ fontSize: '8px', color: '#333', fontWeight: '500', marginTop: '2px' }}>
+                                          <div style={{ fontSize: '8px', color: '#000', fontWeight: '500', marginTop: '2px' }}>
                                             ({param.method})
                                           </div>
                                         )}
@@ -994,7 +995,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                     <div style={{ fontWeight: 'bold', fontSize: '8px', marginBottom: '1px' }}>
                       {approver.name}
                     </div>
-                    <div style={{ fontSize: '7px', color: '#555' }}>
+                    <div style={{ fontSize: '7px', color: '#000' }}>
                       {approver.title}
                     </div>
                   </div>
@@ -1011,12 +1012,12 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                           style={{ width: '100%', height: '100%', display: 'block' }}
                         />
                       </div>
-                      <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
+                      <div style={{ fontSize: '6px', color: '#000', marginTop: '2px' }}>
                         Scan to verify
                       </div>
                     </div>
                     <div style={{ textAlign: 'left', borderLeft: '1px solid #ddd', paddingLeft: '8px' }}>
-                      <div style={{ fontSize: '7px', color: '#666', marginBottom: '2px' }}>
+                      <div style={{ fontSize: '7px', color: '#000', marginBottom: '2px' }}>
                         Lab Technician
                       </div>
                       <div style={{ fontSize: '8px', color: '#000', fontWeight: 'bold' }}>
@@ -1039,7 +1040,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                   <div style={{ fontWeight: 'bold', fontSize: '8px', marginBottom: '1px' }}>
                     Lab Director
                   </div>
-                  <div style={{ fontSize: '7px', color: '#555' }}>
+                  <div style={{ fontSize: '7px', color: '#000' }}>
                     Pathologist
                   </div>
                 </div>
@@ -1055,12 +1056,12 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                           style={{ width: '100%', height: '100%', display: 'block' }}
                         />
                       </div>
-                      <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
+                      <div style={{ fontSize: '6px', color: '#000', marginTop: '2px' }}>
                         Scan to verify
                       </div>
                     </div>
                     <div style={{ textAlign: 'left', borderLeft: '1px solid #ddd', paddingLeft: '8px' }}>
-                      <div style={{ fontSize: '7px', color: '#666', marginBottom: '2px' }}>
+                      <div style={{ fontSize: '7px', color: '#000', marginBottom: '2px' }}>
                         Lab Technician
                       </div>
                       <div style={{ fontSize: '8px', color: '#000', fontWeight: 'bold' }}>
@@ -1080,7 +1081,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           <div style={{
             fontSize: '8px',
             lineHeight: '1.4',
-            color: '#333',
+            color: '#000',
             marginTop: '6px',
             paddingTop: '6px',
             borderTop: '1px solid #000'
@@ -1101,7 +1102,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
             textAlign: 'center',
             fontSize: '8px',
             marginTop: '4px',
-            color: '#333'
+            color: '#000'
           }}>
             Page {pageIndex + 1} of {totalPages}
           </div>
