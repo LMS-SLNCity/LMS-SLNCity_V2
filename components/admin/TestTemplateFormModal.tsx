@@ -132,15 +132,6 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                             />
                         </div>
 
-                        <Input
-                            label="Test Method (Optional)"
-                            name="method"
-                            value={formData.method || ''}
-                            onChange={handleChange}
-                            placeholder="e.g., ELISA, PCR, Automated Analyzer, CLIA"
-                        />
-                        
-                        
                         <div>
                             {isCultureTest ? (
                                 <div>
@@ -166,7 +157,7 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                                     <h4 className="text-md font-semibold text-gray-700 mb-2 border-t border-gray-200 pt-4">Result Parameters</h4>
                                     <div className="space-y-3">
                                         {formData.parameters.fields.map((param, index) => (
-                                            <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 rounded-md bg-gray-50 border border-gray-200">
+                                            <div key={index} className="grid grid-cols-12 gap-2 items-start p-2 rounded-md bg-gray-50 border border-gray-200">
                                                 <div className="col-span-12 sm:col-span-4">
                                                     <input type="text" placeholder="Parameter Name" value={param.name} onChange={e => handleParamChange(index, 'name', e.target.value)} className="w-full px-2 py-1 text-sm border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary" required />
                                                 </div>
@@ -196,6 +187,9 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                                                         </div>
                                                         <div className="col-span-11 sm:col-span-3">
                                                             <input type="text" placeholder="Reference Range" value={param.reference_range || ''} onChange={e => handleParamChange(index, 'reference_range', e.target.value)} className="w-full px-2 py-1 text-sm border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary" />
+                                                        </div>
+                                                        <div className="col-span-11 sm:col-span-11 mt-1">
+                                                            <input type="text" placeholder="Method (Optional) - e.g., ELISA, PCR, Automated Analyzer" value={param.method || ''} onChange={e => handleParamChange(index, 'method', e.target.value)} className="w-full px-2 py-1 text-sm border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary" />
                                                         </div>
                                                     </>
                                                 )}

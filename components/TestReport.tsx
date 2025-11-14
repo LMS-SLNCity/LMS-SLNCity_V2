@@ -876,7 +876,6 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                             <tr className="test-group-row">
                               <td colSpan={4}>
                                 {test.template.name}
-                                {test.template.method && <span style={{ fontWeight: 'normal' }}> ({test.template.method})</span>}
                               </td>
                             </tr>
                             {/* Parameter Rows for regular tests */}
@@ -902,14 +901,23 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                                 }
                                 // Regular parameter row
                                 return (
-                                  <tr key={param.name}>
-                                    <td>{param.name}</td>
-                                    <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
-                                      {String(test.results?.[param.name] ?? '-')}
-                                    </td>
-                                    <td style={{ textAlign: 'center' }}>{param.unit ?? ''}</td>
-                                    <td>{param.reference_range ?? ''}</td>
-                                  </tr>
+                                  <React.Fragment key={param.name}>
+                                    <tr>
+                                      <td>
+                                        {param.name}
+                                        {param.method && (
+                                          <div style={{ fontSize: '7px', color: '#666', fontWeight: 'normal', marginTop: '2px' }}>
+                                            ({param.method})
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                                        {String(test.results?.[param.name] ?? '-')}
+                                      </td>
+                                      <td style={{ textAlign: 'center' }}>{param.unit ?? ''}</td>
+                                      <td>{param.reference_range ?? ''}</td>
+                                    </tr>
+                                  </React.Fragment>
                                 );
                               })
                             ) : (
