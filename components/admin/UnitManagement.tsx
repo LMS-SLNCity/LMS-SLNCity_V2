@@ -21,7 +21,7 @@ export const UnitManagement: React.FC = () => {
   const fetchUnits = async () => {
     try {
       const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/api/units`, {
+      const response = await fetch(`${API_BASE_URL}/units`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
       if (response.ok) {
@@ -76,8 +76,8 @@ export const UnitManagement: React.FC = () => {
     try {
       const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
       const url = editingUnit
-        ? `${API_BASE_URL}/api/units/${editingUnit.id}`
-        : `${API_BASE_URL}/api/units`;
+        ? `${API_BASE_URL}/units/${editingUnit.id}`
+        : `${API_BASE_URL}/units`;
 
       const response = await fetch(url, {
         method: editingUnit ? 'PATCH' : 'POST',
@@ -105,7 +105,7 @@ export const UnitManagement: React.FC = () => {
   const handleToggleActive = async (unit: Unit) => {
     try {
       const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/api/units/${unit.id}`, {
+      const response = await fetch(`${API_BASE_URL}/units/${unit.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export const UnitManagement: React.FC = () => {
 
     try {
       const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/api/units/${unit.id}`, {
+      const response = await fetch(`${API_BASE_URL}/units/${unit.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`

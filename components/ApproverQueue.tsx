@@ -3,6 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { Visit, VisitTest } from '../types';
 import { ApprovalModal } from './ApprovalModal';
 import { StatusBadgeFromTest } from './StatusBadge';
+import { DateFilter, DateFilterOption, filterByDate } from './DateFilter';
 import {
   CheckCircle,
   Search,
@@ -32,6 +33,9 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
   const { visits, visitTests, loadVisits, loadVisitTests, loadUsers } = useAppContext();
   const [selectedTest, setSelectedTest] = useState<VisitTest | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState<DateFilterOption>('today');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   // LAZY LOADING: Load data only when this component mounts
   useEffect(() => {
@@ -56,8 +60,11 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
     );
   };
 
-  const allAwaitingApproval = visitTests.filter(test => test.status === 'AWAITING_APPROVAL');
-  const allRecentlyApproved = visitTests.filter(test => test.status === 'APPROVED' || test.status === 'PRINTED').sort((a, b) => new Date(b.approvedAt!).getTime() - new Date(a.approvedAt!).getTime());
+  // Apply date filter first, then status filter
+  const dateFilteredTests = filterByDate(visitTests, dateFilter, customStartDate, customEndDate);
+
+  const allAwaitingApproval = dateFilteredTests.filter(test => test.status === 'AWAITING_APPROVAL');
+  const allRecentlyApproved = dateFilteredTests.filter(test => test.status === 'APPROVED' || test.status === 'PRINTED').sort((a, b) => new Date(b.approvedAt!).getTime() - new Date(a.approvedAt!).getTime());
 
   const awaitingApproval = filterTests(allAwaitingApproval);
   const recentlyApproved = filterTests(allRecentlyApproved);
@@ -101,6 +108,20 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
         </div>
 
         <div className="p-6 space-y-6">
+        {/* Date Filter */}
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <DateFilter
+            selectedFilter={dateFilter}
+            onFilterChange={setDateFilter}
+            customStartDate={customStartDate}
+            customEndDate={customEndDate}
+            onCustomDateChange={(start, end) => {
+              setCustomStartDate(start);
+              setCustomEndDate(end);
+            }}
+          />
+        </div>
+
         {/* Awaiting Approval Section */}
         <div>
           <div className="flex items-center gap-2 mb-4">

@@ -124,6 +124,10 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
     }
   };
 
+  const referringDoctor = test.referredDoctorName
+    ? `${test.referredDoctorName}${test.referredDoctorDesignation ? `, ${test.referredDoctorDesignation}` : ''}`
+    : test.otherRefDoctor || 'Not specified';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl transform transition-all">
@@ -131,6 +135,7 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
             <h3 className="text-xl font-bold text-gray-900" id="modal-title">Review & Approve Results</h3>
             <p className="text-sm text-gray-500 mt-1">Test: {test.template.name}</p>
             <p className="text-sm text-gray-500">Patient: {test.patientName} ({test.visitCode})</p>
+            <p className="text-sm text-gray-500">Referring Doctor: {referringDoctor}</p>
 
             {/* Show rejection history if any */}
             {test.rejection_count && test.rejection_count > 0 && (

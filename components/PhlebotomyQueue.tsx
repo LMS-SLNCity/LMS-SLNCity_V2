@@ -3,7 +3,9 @@ import { useAppContext } from '../context/AppContext';
 import { VisitTest, Visit } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { SampleCollectionModal } from './SampleCollectionModal';
+import { BarcodeModal } from './BarcodeModal';
 import { StatusBadgeFromTest } from './StatusBadge';
+import { DateFilter, DateFilterOption, filterByDate } from './DateFilter';
 import { API_BASE_URL } from '../config/api';
 import {
   Syringe,
@@ -14,7 +16,8 @@ import {
   XCircle,
   FileText,
   AlertCircle,
-  Droplet
+  Droplet,
+  Barcode
 } from 'lucide-react';
 
 interface PhlebotomyQueueProps {
@@ -36,11 +39,15 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
   const { visits, visitTests, updateVisitTestStatus, loadVisits, loadVisitTests } = useAppContext();
   const { user } = useAuth();
   const [collectingTest, setCollectingTest] = useState<VisitTest | null>(null);
+  const [barcodeTest, setBarcodeTest] = useState<VisitTest | null>(null);
   const [rejectingSampleId, setRejectingSampleId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittingTestId, setSubmittingTestId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState<DateFilterOption>('today');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   // LAZY LOADING: Load data only when this component mounts
   useEffect(() => {
@@ -64,9 +71,12 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
     );
   };
 
-  const allPendingSamples = visitTests.filter(test => test.status === 'PENDING');
-  const allRejectedSamples = visitTests.filter(test => test.status === 'REJECTED').sort((a, b) => new Date(b.last_rejection_at!).getTime() - new Date(a.last_rejection_at!).getTime());
-  const allCollectedSamples = visitTests.filter(test => ['SAMPLE_COLLECTED', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS'].includes(test.status) && test.status !== 'PRINTED').sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
+  // Apply date filter first, then status filter
+  const dateFilteredTests = filterByDate(visitTests, dateFilter, customStartDate, customEndDate);
+
+  const allPendingSamples = dateFilteredTests.filter(test => test.status === 'PENDING');
+  const allRejectedSamples = dateFilteredTests.filter(test => test.status === 'REJECTED').sort((a, b) => new Date(b.last_rejection_at!).getTime() - new Date(a.last_rejection_at!).getTime());
+  const allCollectedSamples = dateFilteredTests.filter(test => ['SAMPLE_COLLECTED', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS'].includes(test.status) && test.status !== 'PRINTED').sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
 
   const pendingSamples = filterTests(allPendingSamples);
   const rejectedSamples = filterTests(allRejectedSamples);
@@ -182,6 +192,12 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
           isSubmitting={isSubmitting}
         />
       )}
+      {barcodeTest && (
+        <BarcodeModal
+          test={barcodeTest}
+          onClose={() => setBarcodeTest(null)}
+        />
+      )}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 max-w-7xl mx-auto">
       {/* Header */}
       <div className="border-b border-gray-200 bg-gradient-to-r from-slate-50 to-gray-50 px-6 py-5">
@@ -209,6 +225,20 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
       </div>
 
       <div className="p-6 space-y-6">
+      {/* Date Filter */}
+      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+        <DateFilter
+          selectedFilter={dateFilter}
+          onFilterChange={setDateFilter}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomDateChange={(start, end) => {
+            setCustomStartDate(start);
+            setCustomEndDate(end);
+          }}
+        />
+      </div>
+
       {/* Pending Samples Section */}
       <div>
         <div className="flex items-center gap-2 mb-4">
@@ -242,13 +272,22 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
                       <StatusBadgeFromTest test={test} />
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => handleInitiateCollection(test.id)}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
-                      >
-                        <Droplet className="h-4 w-4" />
-                        Collect Sample
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleInitiateCollection(test.id)}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+                        >
+                          <Droplet className="h-4 w-4" />
+                          Collect Sample
+                        </button>
+                        <button
+                          onClick={() => setBarcodeTest(test)}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
+                          title="Generate barcode for sample"
+                        >
+                          <Barcode className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -360,54 +399,63 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
                      <td className="px-4 py-3 whitespace-nowrap text-sm">
                       <StatusBadgeFromTest test={test} />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                      {test.status === 'SAMPLE_COLLECTED' && isB2BSample ? (
-                        rejectingSampleId === test.id ? (
-                          <div className="flex flex-col space-y-2">
-                            <textarea
-                              value={rejectionReason}
-                              onChange={(e) => setRejectionReason(e.target.value)}
-                              placeholder="Reason for rejection (e.g., hemolyzed, insufficient, damaged in transit)"
-                              rows={2}
-                              className="w-64 px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                            />
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleRejectSample(test.id)}
-                                disabled={isSubmitting && submittingTestId === test.id}
-                                className="px-3 py-1 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {isSubmitting && submittingTestId === test.id ? '⏳ Rejecting...' : 'Confirm Reject'}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setRejectingSampleId(null);
-                                  setRejectionReason('');
-                                }}
-                                disabled={isSubmitting}
-                                className="px-3 py-1 bg-gray-300 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Cancel
-                              </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex gap-2">
+                        {test.status === 'SAMPLE_COLLECTED' && isB2BSample ? (
+                          rejectingSampleId === test.id ? (
+                            <div className="flex flex-col space-y-2">
+                              <textarea
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                placeholder="Reason for rejection (e.g., hemolyzed, insufficient, damaged in transit)"
+                                rows={2}
+                                className="w-64 px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                              />
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleRejectSample(test.id)}
+                                  disabled={isSubmitting && submittingTestId === test.id}
+                                  className="px-3 py-1 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {isSubmitting && submittingTestId === test.id ? '⏳ Rejecting...' : 'Confirm Reject'}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setRejectingSampleId(null);
+                                    setRejectionReason('');
+                                  }}
+                                  disabled={isSubmitting}
+                                  className="px-3 py-1 bg-gray-300 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
+                          ) : (
+                            <button
+                              onClick={() => setRejectingSampleId(test.id)}
+                              className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors text-xs"
+                            >
+                              Reject B2B Sample
+                            </button>
+                          )
+                        ) : test.status === 'APPROVED' && visit ? (
                           <button
-                            onClick={() => setRejectingSampleId(test.id)}
-                            className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors text-xs"
+                            onClick={() => onInitiateReport(visit)}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
                           >
-                            Reject B2B Sample
+                            <FileText className="h-4 w-4" />
+                            View Report
                           </button>
-                        )
-                      ) : test.status === 'APPROVED' && visit ? (
+                        ) : null}
                         <button
-                          onClick={() => onInitiateReport(visit)}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                          onClick={() => setBarcodeTest(test)}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
+                          title="Generate barcode for sample"
                         >
-                          <FileText className="h-4 w-4" />
-                          View Report
+                          <Barcode className="h-4 w-4" />
                         </button>
-                      ) : null}
+                      </div>
                     </td>
                   </tr>
                   );

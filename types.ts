@@ -91,6 +91,9 @@ export interface VisitTest {
   visitId: number;
   patientName: string; // Denormalized for easier display
   visitCode: string; // Denormalized for easier display
+  referredDoctorName?: string; // Referring doctor name
+  referredDoctorDesignation?: string; // Referring doctor designation
+  otherRefDoctor?: string; // Other referring doctor (free text)
   template: TestTemplate;
   status: VisitTestStatus;
   collectedBy?: string;
@@ -104,6 +107,7 @@ export interface VisitTest {
   approvedAt?: string; // ISO String
   rejection_count?: number;
   last_rejection_at?: string;
+  created_at?: string; // ISO String - when the test was created
 }
 
 

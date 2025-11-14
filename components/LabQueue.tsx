@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Visit, VisitTest } from '../types';
 import { ResultEntryForm } from './ResultEntryForm';
 import { StatusBadgeFromTest } from './StatusBadge';
+import { DateFilter, DateFilterOption, filterByDate } from './DateFilter';
 import { API_BASE_URL } from '../config/api';
 import {
   FlaskConical,
@@ -40,6 +41,9 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
   const [rejectingSampleId, setRejectingSampleId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState<DateFilterOption>('today');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   // LAZY LOADING: Load data only when this component mounts
   useEffect(() => {
@@ -65,9 +69,12 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
     );
   };
 
+  // Apply date filter first, then status filter
+  const dateFilteredTests = filterByDate(visitTests, dateFilter, customStartDate, customEndDate);
+
   // Only show SAMPLE_COLLECTED tests for result entry (not IN_PROGRESS or PRINTED)
-  const allPendingResults = visitTests.filter(test => test.status === 'SAMPLE_COLLECTED');
-  const allProcessedTests = visitTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED'].includes(test.status) && test.status !== 'PRINTED').sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
+  const allPendingResults = dateFilteredTests.filter(test => test.status === 'SAMPLE_COLLECTED');
+  const allProcessedTests = dateFilteredTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED'].includes(test.status) && test.status !== 'PRINTED').sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
 
   const pendingResults = filterTests(allPendingResults);
   const processedTests = filterTests(allProcessedTests);
@@ -161,6 +168,20 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
         </div>
 
         <div className="p-6 space-y-6">
+          {/* Date Filter */}
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <DateFilter
+              selectedFilter={dateFilter}
+              onFilterChange={setDateFilter}
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+              onCustomDateChange={(start, end) => {
+                setCustomStartDate(start);
+                setCustomEndDate(end);
+              }}
+            />
+          </div>
+
           {/* Pending Results Section */}
           <div>
           <div className="flex items-center justify-between mb-4">

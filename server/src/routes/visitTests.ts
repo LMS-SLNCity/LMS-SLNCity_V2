@@ -10,13 +10,15 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT vt.id, vt.visit_id, vt.test_template_id, vt.status, vt.collected_by, vt.collected_at, vt.specimen_type,
-              vt.results, vt.culture_result, vt.entered_by, vt.entered_at, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at,
+              vt.results, vt.culture_result, vt.entered_by, vt.entered_at, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at, vt.created_at,
               tt.id as template_id, tt.code, tt.name, tt.category, tt.price, tt.b2b_price, tt.is_active, tt.report_type, tt.parameters, tt.default_antibiotic_ids,
-              v.visit_code, p.name as patient_name
+              v.visit_code, v.other_ref_doctor, p.name as patient_name,
+              rd.name as referred_doctor_name, rd.designation as referred_doctor_designation
        FROM visit_tests vt
        JOIN test_templates tt ON vt.test_template_id = tt.id
        JOIN visits v ON vt.visit_id = v.id
        JOIN patients p ON v.patient_id = p.id
+       LEFT JOIN referral_doctors rd ON v.referred_doctor_id = rd.id
        ORDER BY vt.created_at DESC`
     );
     res.json(result.rows.map(row => ({
@@ -24,6 +26,9 @@ router.get('/', async (req: Request, res: Response) => {
       visitId: row.visit_id,
       patientName: row.patient_name,
       visitCode: row.visit_code,
+      referredDoctorName: row.referred_doctor_name,
+      referredDoctorDesignation: row.referred_doctor_designation,
+      otherRefDoctor: row.other_ref_doctor,
       template: {
         id: row.template_id,
         code: row.code,
@@ -48,6 +53,7 @@ router.get('/', async (req: Request, res: Response) => {
       approvedAt: row.approved_at,
       rejection_count: row.rejection_count || 0,
       last_rejection_at: row.last_rejection_at,
+      created_at: row.created_at,
     })));
   } catch (error) {
     console.error('Error fetching visit tests:', error);
