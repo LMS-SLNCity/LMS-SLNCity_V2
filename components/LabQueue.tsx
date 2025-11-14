@@ -130,11 +130,15 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
 
   const handleCancelTest = async (testId: number, cancelReason: string, cancelledBy: string) => {
     try {
+      const token = localStorage.getItem('token');
+      console.log('Cancelling test with token:', token ? 'Token exists' : 'No token found');
+      console.log('User role:', user?.role);
+
       const response = await fetch(`${API_BASE_URL}/visit-tests/${testId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           cancelReason,
@@ -143,7 +147,9 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to cancel test');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Cancel test failed:', response.status, errorData);
+        throw new Error(errorData.error || 'Failed to cancel test');
       }
 
       // Reload data to reflect cancellation
