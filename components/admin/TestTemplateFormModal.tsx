@@ -175,7 +175,8 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                                                             <SearchableSelect
                                                                 options={units.map(unit => ({
                                                                     value: unit.symbol,
-                                                                    label: `${unit.name} (${unit.symbol})`,
+                                                                    label: unit.symbol,
+                                                                    searchText: `${unit.name} ${unit.symbol}`,
                                                                     category: unit.category
                                                                 }))}
                                                                 value={param.unit || ''}

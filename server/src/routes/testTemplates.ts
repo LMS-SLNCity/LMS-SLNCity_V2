@@ -1,11 +1,10 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
-import { longCache } from '../middleware/cache.js';
 
 const router = express.Router();
 
-// Get all test templates (cached for 1 hour - rarely changes)
-router.get('/', longCache, async (req: Request, res: Response) => {
+// Get all test templates (no caching for real-time updates)
+router.get('/', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       'SELECT id, code, name, category, price, b2b_price, is_active, report_type, parameters, default_antibiotic_ids, sample_type, tat_hours FROM test_templates ORDER BY id'

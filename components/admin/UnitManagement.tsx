@@ -21,7 +21,7 @@ export const UnitManagement: React.FC = () => {
   const fetchUnits = async () => {
     try {
       const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/units`, {
+      const response = await fetch(`${API_BASE_URL}/api/units`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
       if (response.ok) {
@@ -76,9 +76,9 @@ export const UnitManagement: React.FC = () => {
     try {
       const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
       const url = editingUnit
-        ? `${API_BASE_URL}/units/${editingUnit.id}`
-        : `${API_BASE_URL}/units`;
-      
+        ? `${API_BASE_URL}/api/units/${editingUnit.id}`
+        : `${API_BASE_URL}/api/units`;
+
       const response = await fetch(url, {
         method: editingUnit ? 'PATCH' : 'POST',
         headers: {
@@ -105,7 +105,7 @@ export const UnitManagement: React.FC = () => {
   const handleToggleActive = async (unit: Unit) => {
     try {
       const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/units/${unit.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/units/${unit.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -116,9 +116,40 @@ export const UnitManagement: React.FC = () => {
 
       if (response.ok) {
         await fetchUnits();
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to update unit status');
       }
     } catch (error) {
       console.error('Error toggling unit status:', error);
+      alert('An error occurred while updating unit status');
+    }
+  };
+
+  const handleDelete = async (unit: Unit) => {
+    if (!confirm(`Are you sure you want to permanently delete the unit "${unit.name} (${unit.symbol})"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+      const response = await fetch(`${API_BASE_URL}/api/units/${unit.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (response.ok) {
+        await fetchUnits();
+        alert('Unit deleted successfully');
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to delete unit');
+      }
+    } catch (error) {
+      console.error('Error deleting unit:', error);
+      alert('An error occurred while deleting the unit');
     }
   };
 
@@ -182,9 +213,15 @@ export const UnitManagement: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleToggleActive(unit)}
-                          className={unit.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}
+                          className={unit.isActive ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'}
                         >
                           {unit.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(unit)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
                         </button>
                       </td>
                     </tr>

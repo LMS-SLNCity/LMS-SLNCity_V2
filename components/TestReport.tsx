@@ -636,61 +636,79 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           padding: 0;
         }
 
-        #test-report {
-          box-shadow: none !important;
-          max-width: 100% !important;
-          margin: 0 !important;
-          padding: 0 20mm 0 20mm !important;
-          min-height: 100vh !important;
-          height: auto !important;
-          display: flex !important;
-          flex-direction: column !important;
-          background: white !important;
+        .report-page {
+          position: relative;
+          width: 210mm;
+          height: 297mm;
+          max-width: 210mm;
+          max-height: 297mm;
+          margin: 0 auto;
+          padding: 0 15mm;
+          background: white;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
         }
 
         .report-content {
-          flex: 1 !important;
-          display: flex !important;
-          flex-direction: column !important;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
         }
 
         .report-footer {
-          margin-top: auto !important;
-          padding-bottom: 20px !important;
+          margin-top: auto;
+          padding-top: 8px;
+          padding-bottom: 10mm;
         }
 
         @media print {
           body {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+            margin: 0;
+            padding: 0;
           }
-          #test-report {
-            padding: 0 20mm 0 20mm !important;
-            height: 297mm !important;
-            min-height: 297mm !important;
+
+          .report-page {
             page-break-after: always;
+            width: 210mm;
+            height: 297mm;
+            max-width: 210mm;
+            max-height: 297mm;
+            margin: 0;
+            padding: 0 15mm;
+            box-shadow: none;
           }
+
+          .report-page:last-child {
+            page-break-after: auto;
+          }
+
           .report-footer {
-            padding-bottom: 15mm !important;
+            padding-bottom: 10mm;
           }
         }
 
         .top-space {
-          height: 1.5in;
+          height: 35mm;
+          flex-shrink: 0;
         }
 
         table {
           border-collapse: collapse;
           width: 100%;
-          margin-bottom: 4px;
+          margin-bottom: 3px;
         }
 
         td, th {
           border: 1px solid #000;
-          padding: 6px 8px;
+          padding: 4px 6px;
           text-align: left;
-          font-size: 11px;
-          line-height: 1.5;
+          font-size: 10px;
+          line-height: 1.4;
           vertical-align: middle;
         }
 
@@ -698,40 +716,24 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           background-color: #e5e5e5;
           font-weight: bold;
           text-transform: uppercase;
-          font-size: 10px;
-          padding: 8px;
+          font-size: 9px;
+          padding: 5px 6px;
         }
 
         .section-title {
           background-color: #e5e5e5;
           border: 1px solid #000;
-          padding: 8px 10px;
+          padding: 5px 8px;
           font-weight: bold;
           text-align: center;
           text-transform: uppercase;
           margin-bottom: 0;
-          font-size: 11px;
+          font-size: 10px;
         }
 
         .test-group-row {
           font-weight: bold;
           background-color: #f9f9f9;
-        }
-
-        .report-page {
-          position: relative;
-        }
-
-        @media print {
-          .report-page {
-            page-break-after: always;
-            height: 297mm;
-            min-height: 297mm;
-          }
-
-          .report-page:last-child {
-            page-break-after: auto;
-          }
         }
       `}</style>
 
@@ -754,11 +756,12 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           {/* Top white space for pre-printed letterhead */}
           <div className="top-space"></div>
 
-          <div className="report-content" style={{ minHeight: 'calc(297mm - 1.5in - 120mm)' }}>
-          {/* Patient Details Block - SYMMETRIC LAYOUT */}
+          <div className="report-content">
+          {/* Patient Details Block - COMPACT LAYOUT */}
           <div style={{
-            marginBottom: '10px',
-            border: '1px solid #000'
+            marginBottom: '6px',
+            border: '1px solid #000',
+            flexShrink: 0
           }}>
             {/* Top Row - Patient Info and Barcode */}
             <div style={{
@@ -769,36 +772,36 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
               <div style={{
                 flex: '1',
                 borderRight: '1px solid #000',
-                padding: '8px 12px',
-                fontSize: '11px',
-                lineHeight: '1.6'
+                padding: '5px 8px',
+                fontSize: '10px',
+                lineHeight: '1.5'
               }}>
-                <div style={{ marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '130px' }}>Patient Name</span>
+                <div style={{ marginBottom: '2px' }}>
+                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px' }}>Patient Name</span>
                   <span>: {visit.patient.name}</span>
                 </div>
-                <div style={{ marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '130px' }}>Age / Gender</span>
+                <div style={{ marginBottom: '2px' }}>
+                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px' }}>Age / Gender</span>
                   <span>: {formatAge(visit.patient)} / {visit.patient.sex}</span>
                 </div>
-                <div style={{ marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '130px' }}>Sample Type</span>
+                <div style={{ marginBottom: '2px' }}>
+                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px' }}>Sample Type</span>
                   <span>: {sampleTypes || 'N/A'}</span>
                 </div>
-                <div style={{ marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '130px' }}>Client Name</span>
+                <div style={{ marginBottom: '2px' }}>
+                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px' }}>Client Name</span>
                   <span>: {visit.b2bClient?.name || visit.other_ref_customer || 'Walk-in'}</span>
                 </div>
                 <div>
-                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '130px' }}>Referred By</span>
+                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px' }}>Referred By</span>
                   <span>: {doctorName}</span>
                 </div>
               </div>
 
               {/* Right: Barcode - COMPACT */}
               <div style={{
-                width: '140px',
-                padding: '8px 8px',
+                width: '120px',
+                padding: '5px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -807,27 +810,27 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
               </div>
             </div>
 
-            {/* Bottom Row - Dates and Lab Tech */}
+            {/* Bottom Row - Dates */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(5, 1fr)',
-              fontSize: '10px',
-              lineHeight: '1.5'
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              fontSize: '9px',
+              lineHeight: '1.4'
             }}>
-              <div style={{ padding: '6px 12px', borderRight: '1px solid #000' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Visit Id</div>
+              <div style={{ padding: '4px 8px', borderRight: '1px solid #000' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '1px' }}>Visit Id</div>
                 <div>{visit.visit_code}</div>
               </div>
-              <div style={{ padding: '6px 12px', borderRight: '1px solid #000' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Sample Drawn</div>
+              <div style={{ padding: '4px 8px', borderRight: '1px solid #000' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '1px' }}>Sample Drawn</div>
                 <div>{formatDate(sampleDrawnDate)}</div>
               </div>
-              <div style={{ padding: '6px 12px', borderRight: '1px solid #000' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Registration</div>
+              <div style={{ padding: '4px 8px', borderRight: '1px solid #000' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '1px' }}>Registration</div>
                 <div>{formatDate(visit.registration_datetime)}</div>
               </div>
-              <div style={{ padding: '6px 12px' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Reported</div>
+              <div style={{ padding: '4px 8px' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '1px' }}>Reported</div>
                 <div>{formatDate(firstTest.approvedAt)}</div>
               </div>
             </div>
@@ -839,7 +842,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
             const hasOnlyMicrobiologyTests = group.tests.every(test => test.cultureResult);
 
             return (
-              <div key={`${pageIndex}-${groupIndex}`} style={{ marginBottom: '8px' }}>
+              <div key={`${pageIndex}-${groupIndex}`} style={{ marginBottom: '4px', flexShrink: 0 }}>
                 {/* Section Title */}
                 <div className="section-title">{group.department}</div>
 
@@ -882,8 +885,8 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                                     <tr key={`heading-${paramIndex}`} style={{ backgroundColor: '#f3f4f6' }}>
                                       <td colSpan={4} style={{
                                         fontWeight: 'bold',
-                                        fontSize: '9px',
-                                        padding: '4px 8px',
+                                        fontSize: '8px',
+                                        padding: '3px 6px',
                                         textTransform: 'uppercase',
                                         color: '#374151',
                                         borderTop: '1px solid #d1d5db',
@@ -926,9 +929,10 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
             <div style={{
               textAlign: 'center',
               fontWeight: 'bold',
-              margin: '10px 0',
-              padding: '6px 0',
-              fontSize: '10px'
+              margin: '6px 0',
+              padding: '4px 0',
+              fontSize: '9px',
+              flexShrink: 0
             }}>
               ** End of Report **
             </div>
@@ -937,10 +941,10 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
 
         {/* Footer Section - COMPACT & ALWAYS AT BOTTOM */}
         <div className="report-footer" style={{
-          marginTop: 'auto',
           borderTop: '1px solid #000',
-          paddingTop: '8px',
-          fontSize: '8px'
+          paddingTop: '6px',
+          fontSize: '8px',
+          flexShrink: 0
         }}>
           {/* Signatories - COMPACT with real approver data */}
           <div style={{

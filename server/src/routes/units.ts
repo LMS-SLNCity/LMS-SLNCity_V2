@@ -1,11 +1,10 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
-import { longCache } from '../middleware/cache.js';
 
 const router = express.Router();
 
-// Get all units (cached for 1 hour - rarely changes)
-router.get('/', longCache, async (req: Request, res: Response) => {
+// Get all units (no caching for real-time updates)
+router.get('/', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(`
       SELECT id, name, symbol, category, description, is_active, created_at, updated_at
@@ -19,8 +18,8 @@ router.get('/', longCache, async (req: Request, res: Response) => {
   }
 });
 
-// Get active units only (cached for 1 hour)
-router.get('/active', longCache, async (req: Request, res: Response) => {
+// Get active units only (no caching for real-time updates)
+router.get('/active', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(`
       SELECT id, name, symbol, category, description
@@ -110,14 +109,24 @@ router.patch('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Delete unit (soft delete by setting is_active to false)
+// Delete unit (hard delete - permanently remove from database)
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
+    // Check if unit is being used in any test templates
+    const usageCheck = await pool.query(
+      `SELECT COUNT(*) as count FROM test_templates
+       WHERE parameters::text LIKE $1`,
+      [`%"unit":"%${req.params.id}%"`]
+    );
+
+    if (parseInt(usageCheck.rows[0].count) > 0) {
+      return res.status(400).json({
+        error: 'Cannot delete unit as it is being used in test templates. Please deactivate it instead.'
+      });
+    }
+
     const result = await pool.query(
-      `UPDATE units
-       SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1
-       RETURNING id`,
+      `DELETE FROM units WHERE id = $1 RETURNING id`,
       [req.params.id]
     );
 
@@ -125,7 +134,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Unit not found' });
     }
 
-    res.json({ message: 'Unit deactivated successfully' });
+    res.json({ message: 'Unit deleted successfully' });
   } catch (error) {
     console.error('Error deleting unit:', error);
     res.status(500).json({ error: 'Internal server error' });

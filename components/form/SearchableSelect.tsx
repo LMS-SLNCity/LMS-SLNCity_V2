@@ -4,6 +4,7 @@ interface Option {
   value: string | number;
   label: string;
   category?: string;
+  searchText?: string; // Optional additional text to search through
 }
 
 interface SearchableSelectProps {
@@ -29,10 +30,11 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Filter options based on search term
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter options based on search term - search in both label and searchText
+  const filteredOptions = options.filter(option => {
+    const searchIn = option.searchText || option.label;
+    return searchIn.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   // Group options by category if needed
   const groupedOptions = groupByCategory
