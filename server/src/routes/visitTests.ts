@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
 import { auditSample, auditTestResult } from '../middleware/auditLogger.js';
 import { shortCache } from '../middleware/cache.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
