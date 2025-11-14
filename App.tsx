@@ -1,12 +1,23 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
 import { MainLayout } from './components/MainLayout';
+import { PublicReportView } from './components/PublicReportView';
 
 
 const AppContent: React.FC = () => {
     const { user, isLoading } = useAuth();
+    const location = useLocation();
+
+    // Check if current route is public (doesn't require authentication)
+    const isPublicRoute = location.pathname.startsWith('/verify-report/');
+
+    // If it's a public route, render it directly without authentication
+    if (isPublicRoute) {
+        return <PublicReportView />;
+    }
 
     // Show loading state while restoring session
     if (isLoading) {
@@ -29,11 +40,16 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AppProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </AppProvider>
+    <BrowserRouter>
+      <AppProvider>
+        <AuthProvider>
+          <Routes>
+            <Route path="/verify-report/:visitCode" element={<PublicReportView />} />
+            <Route path="*" element={<AppContent />} />
+          </Routes>
+        </AuthProvider>
+      </AppProvider>
+    </BrowserRouter>
   );
 };
 

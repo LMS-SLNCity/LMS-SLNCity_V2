@@ -29,6 +29,7 @@ import reportsRoutes from './routes/reports.js';
 import b2bFinancialRoutes from './routes/b2bFinancial.js';
 import waiversRoutes from './routes/waivers.js';
 import unitsRoutes from './routes/units.js';
+import publicReportsRoutes from './routes/publicReports.js';
 import { initializeCleanupScheduler } from './services/auditLogCleanup.js';
 
 dotenv.config();
@@ -161,6 +162,10 @@ app.get('/health', async (req, res) => {
 });
 
 // Routes
+// Public routes (no authentication required)
+app.use('/api/public/reports', publicReportsRoutes);
+
+// Protected routes (authentication required)
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/test-templates', testTemplatesRoutes);
