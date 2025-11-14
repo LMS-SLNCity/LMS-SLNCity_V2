@@ -131,6 +131,14 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                                 placeholder="e.g., WB EDTA, Serum, Urine"
                             />
                         </div>
+
+                        <Input
+                            label="Test Method (Optional)"
+                            name="method"
+                            value={formData.method || ''}
+                            onChange={handleChange}
+                            placeholder="e.g., ELISA, PCR, Automated Analyzer, CLIA"
+                        />
                         
                         
                         <div>

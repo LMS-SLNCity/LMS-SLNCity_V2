@@ -874,7 +874,10 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                           <>
                             {/* Test Group Row - only for non-microbiology tests */}
                             <tr className="test-group-row">
-                              <td colSpan={4}>{test.template.name}</td>
+                              <td colSpan={4}>
+                                {test.template.name}
+                                {test.template.method && <span style={{ fontWeight: 'normal' }}> ({test.template.method})</span>}
+                              </td>
                             </tr>
                             {/* Parameter Rows for regular tests */}
                             {test.template.parameters?.fields && test.template.parameters.fields.length > 0 ? (

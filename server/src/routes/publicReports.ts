@@ -24,11 +24,11 @@ router.get('/:visitCode', async (req: Request, res: Response) => {
               v.registration_datetime, v.visit_code, v.total_cost, v.amount_paid, v.payment_mode, v.due_amount, v.created_at,
               p.salutation, p.name, p.age_years, p.age_months, p.age_days, p.sex, p.phone, p.address, p.email,
               rd.name as referred_doctor_name, rd.designation as referred_doctor_designation,
-              rc.name as b2b_client_name
+              bc.name as b2b_client_name
        FROM visits v
        JOIN patients p ON v.patient_id = p.id
        LEFT JOIN referral_doctors rd ON v.referred_doctor_id = rd.id
-       LEFT JOIN ref_customers rc ON v.ref_customer_id = rc.id
+       LEFT JOIN b2b_clients bc ON v.ref_customer_id = bc.id
        WHERE v.visit_code = $1`,
       [visitCode]
     );
@@ -52,7 +52,7 @@ router.get('/:visitCode', async (req: Request, res: Response) => {
               vt.created_at, vt.updated_at,
               tt.id as template_id, tt.code, tt.name, tt.category,
               tt.price, tt.b2b_price, tt.is_active, tt.report_type,
-              tt.parameters, tt.default_antibiotic_ids, tt.sample_type, tt.tat_hours
+              tt.parameters, tt.default_antibiotic_ids, tt.sample_type, tt.tat_hours, tt.method
        FROM visit_tests vt
        JOIN test_templates tt ON vt.test_template_id = tt.id
        WHERE vt.visit_id = $1 AND vt.status IN ('APPROVED', 'PRINTED', 'COMPLETED')
@@ -162,7 +162,8 @@ router.get('/:visitCode', async (req: Request, res: Response) => {
           parameters: test.parameters,
           defaultAntibioticIds: test.default_antibiotic_ids || [],
           sampleType: test.sample_type,
-          tatHours: test.tat_hours
+          tatHours: test.tat_hours,
+          method: test.method
         }
       }))
     };

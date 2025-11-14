@@ -59,6 +59,7 @@ export interface TestTemplate {
   defaultAntibioticIds?: number[];
   sampleType?: string;
   tatHours?: number; // Turnaround time in hours
+  method?: string; // Test method/methodology (e.g., "ELISA", "PCR", "Automated Analyzer")
 }
 
 export type VisitTestStatus = 'PENDING' | 'SAMPLE_COLLECTED' | 'REJECTED' | 'CANCELLED' | 'IN_PROGRESS' | 'AWAITING_APPROVAL' | 'APPROVED' | 'PRINTED' | 'COMPLETED';
