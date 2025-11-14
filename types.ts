@@ -38,9 +38,10 @@ export interface Branch {
 
 export interface TestTemplateParameter {
     name: string;
-    type: 'number' | 'text';
+    type: 'number' | 'text' | 'heading'; // Added 'heading' type for section headers
     unit?: string;
     reference_range?: string;
+    group?: string; // Optional group name for organizing parameters
 }
 
 export interface TestTemplate {

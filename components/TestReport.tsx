@@ -826,10 +826,6 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                 <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Registration</div>
                 <div>{formatDate(visit.registration_datetime)}</div>
               </div>
-              <div style={{ padding: '6px 12px', borderRight: '1px solid #000' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Lab Tech</div>
-                <div>{firstTest.enteredBy || 'N/A'}</div>
-              </div>
               <div style={{ padding: '6px 12px' }}>
                 <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Reported</div>
                 <div>{formatDate(firstTest.approvedAt)}</div>
@@ -879,16 +875,37 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                             </tr>
                             {/* Parameter Rows for regular tests */}
                             {test.template.parameters?.fields && test.template.parameters.fields.length > 0 ? (
-                              test.template.parameters.fields.map((param: any) => (
-                                <tr key={param.name}>
-                                  <td>{param.name}</td>
-                                  <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
-                                    {String(test.results?.[param.name] ?? '-')}
-                                  </td>
-                                  <td style={{ textAlign: 'center' }}>{param.unit ?? ''}</td>
-                                  <td>{param.reference_range ?? ''}</td>
-                                </tr>
-                              ))
+                              test.template.parameters.fields.map((param: any, paramIndex: number) => {
+                                // Check if this is a heading type parameter
+                                if (param.type === 'heading') {
+                                  return (
+                                    <tr key={`heading-${paramIndex}`} style={{ backgroundColor: '#f3f4f6' }}>
+                                      <td colSpan={4} style={{
+                                        fontWeight: 'bold',
+                                        fontSize: '9px',
+                                        padding: '4px 8px',
+                                        textTransform: 'uppercase',
+                                        color: '#374151',
+                                        borderTop: '1px solid #d1d5db',
+                                        borderBottom: '1px solid #d1d5db'
+                                      }}>
+                                        {param.name}
+                                      </td>
+                                    </tr>
+                                  );
+                                }
+                                // Regular parameter row
+                                return (
+                                  <tr key={param.name}>
+                                    <td>{param.name}</td>
+                                    <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                                      {String(test.results?.[param.name] ?? '-')}
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>{param.unit ?? ''}</td>
+                                    <td>{param.reference_range ?? ''}</td>
+                                  </tr>
+                                );
+                              })
                             ) : (
                               <tr>
                                 <td colSpan={4} style={{ textAlign: 'center' }}>No parameters</td>
@@ -968,7 +985,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                   </div>
                 ))}
 
-                {/* QR Code - ALWAYS SHOW - positioned based on approver count */}
+                {/* QR Code with Lab Tech - ALWAYS SHOW - positioned based on approver count */}
                 {visit.qr_code && (
                   <div style={{ textAlign: 'center', flex: 1 }}>
                     <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
@@ -980,6 +997,9 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                     </div>
                     <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
                       Scan to verify
+                    </div>
+                    <div style={{ fontSize: '7px', color: '#333', marginTop: '4px', fontWeight: 'bold' }}>
+                      Lab Tech: {firstTest.enteredBy || 'N/A'}
                     </div>
                   </div>
                 )}
@@ -1002,7 +1022,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                   </div>
                 </div>
 
-                {/* QR Code - Center */}
+                {/* QR Code with Lab Tech - Center */}
                 {visit.qr_code && (
                   <div style={{ textAlign: 'center', flex: 1 }}>
                     <div style={{ width: '40px', height: '40px', margin: '0 auto' }}>
@@ -1014,6 +1034,9 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                     </div>
                     <div style={{ fontSize: '6px', color: '#555', marginTop: '2px' }}>
                       Scan to verify
+                    </div>
+                    <div style={{ fontSize: '7px', color: '#333', marginTop: '4px', fontWeight: 'bold' }}>
+                      Lab Tech: {firstTest.enteredBy || 'N/A'}
                     </div>
                   </div>
                 )}
