@@ -75,8 +75,8 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
   // Apply date filter first, then status filter
   const dateFilteredTests = filterByDate(visitTests, dateFilter, customStartDate, customEndDate);
 
-  // Only show SAMPLE_COLLECTED tests for result entry (not IN_PROGRESS or PRINTED)
-  const allPendingResults = dateFilteredTests.filter(test => test.status === 'SAMPLE_COLLECTED');
+  // Pending results - show ALL SAMPLE_COLLECTED tests regardless of date filter
+  const allPendingResults = visitTests.filter(test => test.status === 'SAMPLE_COLLECTED');
   const allCancelledTests = dateFilteredTests.filter(test => test.status === 'CANCELLED').sort((a, b) => new Date(b.updated_at!).getTime() - new Date(a.updated_at!).getTime());
   const allProcessedTests = dateFilteredTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED'].includes(test.status) && test.status !== 'PRINTED').sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
 

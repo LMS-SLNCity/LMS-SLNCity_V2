@@ -138,9 +138,13 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
 
   const amountDue = useMemo(() => totalCost - formData.amount_paid, [totalCost, formData.amount_paid]);
 
-  // Calculate pending tests count
+  // Calculate pending tests count - ALL tests that are not yet printed (across all dates)
   const pendingTestsCount = useMemo(() => {
-    return visitTests.filter(test => test.status === 'PENDING').length;
+    return visitTests.filter(test =>
+      test.status !== 'PRINTED' &&
+      test.status !== 'COMPLETED' &&
+      test.status !== 'CANCELLED'
+    ).length;
   }, [visitTests]);
 
   // Sort visits by created_at DESC (most recent first), filter by date and search, and limit to 20
@@ -587,7 +591,7 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1">Pending Tests</h3>
-            <p className="text-sm text-gray-600">Tests awaiting sample collection</p>
+            <p className="text-sm text-gray-600">All tests pending until report is printed (across all dates)</p>
           </div>
           <div className="text-right">
             <div className="text-3xl sm:text-4xl font-bold text-yellow-600">{pendingTestsCount}</div>

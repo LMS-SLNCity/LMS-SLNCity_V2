@@ -70,7 +70,8 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
   // Apply date filter first, then status filter
   const dateFilteredTests = filterByDate(visitTests, dateFilter, customStartDate, customEndDate);
 
-  const allAwaitingApproval = dateFilteredTests.filter(test => test.status === 'AWAITING_APPROVAL');
+  // Awaiting approval - show ALL tests regardless of date filter
+  const allAwaitingApproval = visitTests.filter(test => test.status === 'AWAITING_APPROVAL');
   const allCancelledTests = dateFilteredTests.filter(test => test.status === 'CANCELLED').sort((a, b) => new Date(b.updated_at!).getTime() - new Date(a.updated_at!).getTime());
   const allRecentlyApproved = dateFilteredTests.filter(test => test.status === 'APPROVED' || test.status === 'PRINTED').sort((a, b) => new Date(b.approvedAt!).getTime() - new Date(a.approvedAt!).getTime());
 
