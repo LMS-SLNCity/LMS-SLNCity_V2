@@ -56,7 +56,7 @@ services:
       DB_PASSWORD: lms_password
       DB_NAME: lms_slncity
       JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://13.201.165.54:3000}
     ports:
       - "5002:5002"
     depends_on:
