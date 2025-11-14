@@ -3,6 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { Visit, VisitTest } from '../types';
 import { ResultEntryForm } from './ResultEntryForm';
+import { CancelTestModal } from './CancelTestModal';
 import { StatusBadgeFromTest } from './StatusBadge';
 import { DateFilter, DateFilterOption, filterByDate } from './DateFilter';
 import { API_BASE_URL } from '../config/api';
@@ -16,7 +17,8 @@ import {
   User,
   Beaker,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
 
 interface LabQueueProps {
@@ -38,6 +40,7 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
   const { visits, visitTests, updateVisitTestStatus, loadVisits, loadVisitTests, loadAntibiotics, loadUnits } = useAppContext();
   const { user } = useAuth();
   const [selectedTest, setSelectedTest] = useState<VisitTest | null>(null);
+  const [cancellingTest, setCancellingTest] = useState<VisitTest | null>(null);
   const [rejectingSampleId, setRejectingSampleId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,12 +126,47 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
     }
   }
 
+  const handleCancelTest = async (testId: number, cancelReason: string, cancelledBy: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/visit-tests/${testId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          cancelReason,
+          cancelledBy,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel test');
+      }
+
+      // Reload data to reflect cancellation
+      await loadVisitTests();
+      await loadVisits();
+    } catch (error) {
+      console.error('Error cancelling test:', error);
+      throw error;
+    }
+  };
+
   return (
     <>
       {selectedTest && (
         <ResultEntryForm
           test={selectedTest}
           onClose={() => setSelectedTest(null)}
+        />
+      )}
+      {cancellingTest && (
+        <CancelTestModal
+          test={cancellingTest}
+          onClose={() => setCancellingTest(null)}
+          onConfirm={handleCancelTest}
+          username={user?.username || 'Unknown'}
         />
       )}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 max-w-7xl mx-auto">
@@ -279,6 +317,13 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
                             >
                               <XCircle className="h-4 w-4" />
                               Reject
+                            </button>
+                            <button
+                              onClick={() => setCancellingTest(test)}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors"
+                              title="Cancel test"
+                            >
+                              <X className="h-4 w-4" />
                             </button>
                           </div>
                         )}

@@ -256,5 +256,71 @@ router.post('/:id/reject-sample', async (req: Request, res: Response) => {
   }
 });
 
+// Cancel test endpoint (admin cancels test that won't be performed)
+router.post('/:id/cancel', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { cancelReason, cancelledBy } = req.body;
+    const testId = parseInt(req.params.id);
+
+    if (!cancelReason || !cancelledBy) {
+      return res.status(400).json({ error: 'Cancel reason and cancelled by are required' });
+    }
+
+    // Get test details for audit log
+    const testDetails = await pool.query(
+      `SELECT vt.*, tt.name as test_name, v.visit_code, p.name as patient_name
+       FROM visit_tests vt
+       JOIN test_templates tt ON vt.test_template_id = tt.id
+       JOIN visits v ON vt.visit_id = v.id
+       JOIN patients p ON v.patient_id = p.id
+       WHERE vt.id = $1`,
+      [testId]
+    );
+
+    if (testDetails.rows.length === 0) {
+      return res.status(404).json({ error: 'Visit test not found' });
+    }
+
+    const testData = testDetails.rows[0];
+
+    // Update visit_test status to CANCELLED
+    const result = await pool.query(
+      `UPDATE visit_tests
+       SET status = 'CANCELLED',
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING id, visit_id, test_template_id, status`,
+      [testId]
+    );
+
+    // Log cancellation in audit trail
+    await pool.query(
+      `INSERT INTO audit_logs (
+        username,
+        action,
+        details,
+        user_id,
+        resource,
+        resource_id
+      ) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        cancelledBy,
+        'CANCEL_TEST',
+        `Cancelled test ${testData.test_name} for ${testData.patient_name} (${testData.visit_code}). Reason: ${cancelReason}`,
+        (req as any).user?.id || null,
+        'visit_test',
+        testId
+      ]
+    );
+
+    console.log(`Test cancelled: ${testId} by ${cancelledBy}: ${cancelReason}`);
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error cancelling test:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
 

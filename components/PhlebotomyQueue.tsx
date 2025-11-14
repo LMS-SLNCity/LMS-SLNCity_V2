@@ -4,6 +4,7 @@ import { VisitTest, Visit } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { SampleCollectionModal } from './SampleCollectionModal';
 import { BarcodeModal } from './BarcodeModal';
+import { CancelTestModal } from './CancelTestModal';
 import { StatusBadgeFromTest } from './StatusBadge';
 import { DateFilter, DateFilterOption, filterByDate } from './DateFilter';
 import { API_BASE_URL } from '../config/api';
@@ -17,7 +18,8 @@ import {
   FileText,
   AlertCircle,
   Droplet,
-  Barcode
+  Barcode,
+  X
 } from 'lucide-react';
 
 interface PhlebotomyQueueProps {
@@ -40,6 +42,7 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
   const { user } = useAuth();
   const [collectingTest, setCollectingTest] = useState<VisitTest | null>(null);
   const [barcodeTest, setBarcodeTest] = useState<VisitTest | null>(null);
+  const [cancellingTest, setCancellingTest] = useState<VisitTest | null>(null);
   const [rejectingSampleId, setRejectingSampleId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -178,6 +181,33 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
     }
   };
 
+  const handleCancelTest = async (testId: number, cancelReason: string, cancelledBy: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/visit-tests/${testId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          cancelReason,
+          cancelledBy,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel test');
+      }
+
+      // Reload data to reflect cancellation
+      await loadVisitTests();
+      await loadVisits();
+    } catch (error) {
+      console.error('Error cancelling test:', error);
+      throw error;
+    }
+  };
+
   const findVisitForTest = (test: VisitTest): Visit | undefined => {
     return visits.find(v => v.id === test.visitId);
   }
@@ -196,6 +226,14 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
         <BarcodeModal
           test={barcodeTest}
           onClose={() => setBarcodeTest(null)}
+        />
+      )}
+      {cancellingTest && (
+        <CancelTestModal
+          test={cancellingTest}
+          onClose={() => setCancellingTest(null)}
+          onConfirm={handleCancelTest}
+          username={user?.username || 'Unknown'}
         />
       )}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 max-w-7xl mx-auto">
@@ -286,6 +324,13 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
                           title="Generate barcode for sample"
                         >
                           <Barcode className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setCancellingTest(test)}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
+                          title="Cancel test"
+                        >
+                          <X className="h-4 w-4" />
                         </button>
                       </div>
                     </td>

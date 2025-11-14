@@ -215,15 +215,15 @@ router.post('/', async (req: Request, res: Response) => {
 router.patch('/:id', async (req: Request, res: Response) => {
   try {
     const { amount_paid, payment_mode } = req.body;
-    
+
     // Get current visit to calculate new due amount
     const visitResult = await pool.query('SELECT total_cost FROM visits WHERE id = $1', [req.params.id]);
     if (visitResult.rows.length === 0) return res.status(404).json({ error: 'Visit not found' });
-    
+
     const total_cost = visitResult.rows[0].total_cost;
     const new_amount_paid = amount_paid || 0;
     const due_amount = total_cost - new_amount_paid;
-    
+
     const result = await pool.query(
       `UPDATE visits
        SET amount_paid = COALESCE($1, amount_paid),
@@ -237,6 +237,129 @@ router.patch('/:id', async (req: Request, res: Response) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating visit:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PATCH /api/visits/:id/edit-details - Edit visit and patient details (admin only)
+router.patch('/:id/edit-details', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+
+    // Only SUDO and ADMIN can edit visit details
+    if (!['SUDO', 'ADMIN'].includes(user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions. Only admins can edit visit details.' });
+    }
+
+    const visitId = parseInt(req.params.id);
+    const {
+      patientName,
+      ageYears,
+      ageMonths,
+      ageDays,
+      sex,
+      phone,
+      address,
+      referredDoctorId,
+      otherRefDoctor,
+      refCustomerId,
+      otherRefCustomer,
+      editReason,
+      editedBy
+    } = req.body;
+
+    if (!editReason || !editedBy) {
+      return res.status(400).json({ error: 'Edit reason and edited by are required' });
+    }
+
+    // Get current visit and patient details for audit log
+    const oldData = await pool.query(
+      `SELECT v.*, p.name as patient_name, p.age_years, p.age_months, p.age_days, p.sex, p.phone, p.address
+       FROM visits v
+       JOIN patients p ON v.patient_id = p.id
+       WHERE v.id = $1`,
+      [visitId]
+    );
+
+    if (oldData.rows.length === 0) {
+      return res.status(404).json({ error: 'Visit not found' });
+    }
+
+    const oldVisit = oldData.rows[0];
+
+    // Update patient details
+    if (patientName || ageYears !== undefined || ageMonths !== undefined || ageDays !== undefined || sex || phone || address) {
+      await pool.query(
+        `UPDATE patients
+         SET name = COALESCE($1, name),
+             age_years = COALESCE($2, age_years),
+             age_months = COALESCE($3, age_months),
+             age_days = COALESCE($4, age_days),
+             sex = COALESCE($5, sex),
+             phone = COALESCE($6, phone),
+             address = COALESCE($7, address),
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $8`,
+        [patientName, ageYears, ageMonths, ageDays, sex, phone, address, oldVisit.patient_id]
+      );
+    }
+
+    // Update visit details
+    const visitResult = await pool.query(
+      `UPDATE visits
+       SET referred_doctor_id = COALESCE($1, referred_doctor_id),
+           other_ref_doctor = COALESCE($2, other_ref_doctor),
+           ref_customer_id = COALESCE($3, ref_customer_id),
+           other_ref_customer = COALESCE($4, other_ref_customer),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $5
+       RETURNING id, patient_id, referred_doctor_id, ref_customer_id, other_ref_doctor, other_ref_customer, registration_datetime, visit_code, total_cost, amount_paid, payment_mode, due_amount`,
+      [referredDoctorId, otherRefDoctor, refCustomerId, otherRefCustomer, visitId]
+    );
+
+    // Build change summary for audit log
+    const changes: string[] = [];
+    if (patientName && patientName !== oldVisit.patient_name) changes.push(`Name: ${oldVisit.patient_name} → ${patientName}`);
+    if (ageYears !== undefined && ageYears !== oldVisit.age_years) changes.push(`Age Years: ${oldVisit.age_years} → ${ageYears}`);
+    if (ageMonths !== undefined && ageMonths !== oldVisit.age_months) changes.push(`Age Months: ${oldVisit.age_months} → ${ageMonths}`);
+    if (ageDays !== undefined && ageDays !== oldVisit.age_days) changes.push(`Age Days: ${oldVisit.age_days} → ${ageDays}`);
+    if (sex && sex !== oldVisit.sex) changes.push(`Sex: ${oldVisit.sex} → ${sex}`);
+    if (phone && phone !== oldVisit.phone) changes.push(`Phone: ${oldVisit.phone} → ${phone}`);
+    if (address && address !== oldVisit.address) changes.push(`Address: ${oldVisit.address} → ${address}`);
+    if (referredDoctorId !== undefined && referredDoctorId !== oldVisit.referred_doctor_id) changes.push(`Referred Doctor ID: ${oldVisit.referred_doctor_id} → ${referredDoctorId}`);
+    if (otherRefDoctor && otherRefDoctor !== oldVisit.other_ref_doctor) changes.push(`Other Ref Doctor: ${oldVisit.other_ref_doctor} → ${otherRefDoctor}`);
+    if (refCustomerId !== undefined && refCustomerId !== oldVisit.ref_customer_id) changes.push(`Ref Customer ID: ${oldVisit.ref_customer_id} → ${refCustomerId}`);
+    if (otherRefCustomer && otherRefCustomer !== oldVisit.other_ref_customer) changes.push(`Other Ref Customer: ${oldVisit.other_ref_customer} → ${otherRefCustomer}`);
+
+    // Log edit in audit trail
+    await pool.query(
+      `INSERT INTO audit_logs (
+        username,
+        action,
+        details,
+        user_id,
+        resource,
+        resource_id,
+        old_value,
+        new_value
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        editedBy,
+        'EDIT_VISIT_DETAILS',
+        `Edited visit ${oldVisit.visit_code}. Changes: ${changes.join(', ')}. Reason: ${editReason}`,
+        user.id,
+        'visit',
+        visitId,
+        JSON.stringify({ patient: { name: oldVisit.patient_name, age_years: oldVisit.age_years, age_months: oldVisit.age_months, age_days: oldVisit.age_days, sex: oldVisit.sex, phone: oldVisit.phone, address: oldVisit.address }, visit: { referred_doctor_id: oldVisit.referred_doctor_id, other_ref_doctor: oldVisit.other_ref_doctor, ref_customer_id: oldVisit.ref_customer_id, other_ref_customer: oldVisit.other_ref_customer } }),
+        JSON.stringify({ patient: { name: patientName, age_years: ageYears, age_months: ageMonths, age_days: ageDays, sex, phone, address }, visit: { referred_doctor_id: referredDoctorId, other_ref_doctor: otherRefDoctor, ref_customer_id: refCustomerId, other_ref_customer: otherRefCustomer } })
+      ]
+    );
+
+    console.log(`Visit details edited: ${visitId} by ${editedBy}. Changes: ${changes.join(', ')}`);
+
+    res.json(visitResult.rows[0]);
+  } catch (error) {
+    console.error('Error editing visit details:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Visit } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useAppContext } from '../../context/AppContext';
+import { EditVisitModal, EditVisitData } from '../EditVisitModal';
+import { Edit } from 'lucide-react';
 
 // API Base URL from environment variable
 const API_BASE_URL = import.meta.env.VITE_API_URL
@@ -10,11 +12,12 @@ const API_BASE_URL = import.meta.env.VITE_API_URL
 
 export const VisitsManagement: React.FC = () => {
     const { user: actor } = useAuth();
-    const { clients } = useAppContext();
+    const { clients, referralDoctors } = useAppContext();
     const [visits, setVisits] = useState<Visit[]>([]);
     const [filteredVisits, setFilteredVisits] = useState<Visit[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [editingVisit, setEditingVisit] = useState<Visit | null>(null);
 
     // Filter states
     const [filters, setFilters] = useState({
@@ -182,6 +185,39 @@ export const VisitsManagement: React.FC = () => {
         window.URL.revokeObjectURL(url);
     };
 
+    const handleEditVisit = async (visitId: number, updates: EditVisitData, editReason: string, editedBy: string) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/visits/${visitId}/edit-details`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+                body: JSON.stringify({
+                    ...updates,
+                    editReason,
+                    editedBy,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to edit visit');
+            }
+
+            // Reload visits after successful edit
+            await loadVisits();
+            setEditingVisit(null);
+        } catch (err) {
+            console.error('Error editing visit:', err);
+            throw err;
+        }
+    };
+
+    const canEditVisit = () => {
+        return actor && ['SUDO', 'ADMIN'].includes(actor.role);
+    };
+
     if (loading) {
         return <div className="text-center py-8">Loading visits...</div>;
     }
@@ -327,6 +363,9 @@ export const VisitsManagement: React.FC = () => {
                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Mode</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tests</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
+                            {canEditVisit() && (
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                            )}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -371,6 +410,17 @@ export const VisitsManagement: React.FC = () => {
                                 </td>
                                 <td className="px-4 py-3 text-sm text-gray-600">{visit.tests.length}</td>
                                 <td className="px-4 py-3 text-sm text-gray-600">{new Date(visit.created_at).toLocaleDateString()}</td>
+                                {canEditVisit() && (
+                                    <td className="px-4 py-3 text-sm">
+                                        <button
+                                            onClick={() => setEditingVisit(visit)}
+                                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                                            title="Edit Visit"
+                                        >
+                                            <Edit size={18} />
+                                        </button>
+                                    </td>
+                                )}
                             </tr>
                         ))}
                     </tbody>
@@ -381,6 +431,18 @@ export const VisitsManagement: React.FC = () => {
                 <div className="text-center py-8 text-gray-500">
                     <p>No visits found matching your filters.</p>
                 </div>
+            )}
+
+            {/* Edit Visit Modal */}
+            {editingVisit && canEditVisit() && (
+                <EditVisitModal
+                    visit={editingVisit}
+                    referralDoctors={referralDoctors}
+                    clients={clients}
+                    onClose={() => setEditingVisit(null)}
+                    onConfirm={handleEditVisit}
+                    username={actor?.username || 'Unknown'}
+                />
             )}
         </div>
     );
