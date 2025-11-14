@@ -127,7 +127,8 @@ const QueuePopup: React.FC<QueuePopupProps> = ({ title, tests, onClose }) => {
 };
 
 export const Dashboard: React.FC = () => {
-  const { visitTests } = useAppContext();
+  const { visits } = useAppContext();
+  const [visitTests, setVisitTests] = useState<VisitTest[]>([]);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [revenue, setRevenue] = useState<RevenueData | null>(null);
   const [tests, setTests] = useState<TestData | null>(null);
@@ -183,12 +184,13 @@ export const Dashboard: React.FC = () => {
 
       const { startDate, endDate } = getDateRange();
 
-      const [metricsData, revenueData, testsData, clientsData, trendsData] = await Promise.all([
+      const [metricsData, revenueData, testsData, clientsData, trendsData, freshVisitTests] = await Promise.all([
         apiClient.getDashboardOverview(startDate, endDate),
         apiClient.getDashboardRevenue(startDate, endDate),
         apiClient.getDashboardTests(startDate, endDate),
         apiClient.getDashboardClients(),
         apiClient.getDashboardTrends(startDate, endDate),
+        apiClient.getVisitTests(), // Fetch fresh visit tests for queue counts
       ]);
 
       console.log('✅ Dashboard data fetched:', {
@@ -197,6 +199,7 @@ export const Dashboard: React.FC = () => {
         tests: testsData,
         clients: clientsData,
         trends: trendsData,
+        visitTestsCount: freshVisitTests.length,
       });
 
       setMetrics(metricsData);
@@ -204,6 +207,7 @@ export const Dashboard: React.FC = () => {
       setTests(testsData);
       setClients(clientsData);
       setTrends(trendsData);
+      setVisitTests(freshVisitTests); // Update local state with fresh data
     } catch (err) {
       console.error('❌ Error fetching dashboard data:', err);
       setError('Failed to load dashboard data: ' + (err instanceof Error ? err.message : String(err)));

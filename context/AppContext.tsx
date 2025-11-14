@@ -327,8 +327,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           ),
         }));
 
-        // Invalidate cache for next load (but don't refetch now)
+        // Invalidate cache and force background refresh
         invalidateDataCache('visit-tests');
+
+        // Fetch fresh data in background to update cache
+        setTimeout(async () => {
+          try {
+            const freshTests = await getCachedData<VisitTest[]>('visit-tests', true);
+            setState(prevState => ({
+              ...prevState,
+              visitTests: freshTests,
+            }));
+            console.log('🔄 Background refresh completed after status update');
+          } catch (err) {
+            console.error('Background refresh failed:', err);
+          }
+        }, 100);
       } else {
         // ROLLBACK on error: refetch the single test
         console.error('Error updating visit test status:', response.statusText);
@@ -405,8 +419,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           ),
         }));
 
-        // Invalidate cache for next load
+        // Invalidate cache and force background refresh
         invalidateDataCache('visit-tests');
+
+        // Fetch fresh data in background
+        setTimeout(async () => {
+          try {
+            const freshTests = await getCachedData<VisitTest[]>('visit-tests', true);
+            setState(prevState => ({
+              ...prevState,
+              visitTests: freshTests,
+            }));
+            console.log('🔄 Background refresh completed after adding result');
+          } catch (err) {
+            console.error('Background refresh failed:', err);
+          }
+        }, 100);
       } else {
         console.error('Error adding test result:', response.statusText);
         // ROLLBACK on error
@@ -521,8 +549,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           ),
         }));
 
-        // Invalidate cache for next load
+        // Invalidate cache and force background refresh
         invalidateDataCache('visit-tests');
+
+        // Fetch fresh data in background
+        setTimeout(async () => {
+          try {
+            const freshTests = await getCachedData<VisitTest[]>('visit-tests', true);
+            setState(prevState => ({
+              ...prevState,
+              visitTests: freshTests,
+            }));
+            console.log('🔄 Background refresh completed after approval');
+          } catch (err) {
+            console.error('Background refresh failed:', err);
+          }
+        }, 100);
       } else {
         console.error('Error approving test result:', response.statusText);
         // ROLLBACK on error
@@ -610,8 +652,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }));
         }
 
-        // Invalidate cache for next load
+        // Invalidate cache and force background refresh
         invalidateDataCache('visit-tests');
+
+        // Fetch fresh data in background
+        setTimeout(async () => {
+          try {
+            const freshTests = await getCachedData<VisitTest[]>('visit-tests', true);
+            setState(prevState => ({
+              ...prevState,
+              visitTests: freshTests,
+            }));
+            console.log('🔄 Background refresh completed after rejection');
+          } catch (err) {
+            console.error('Background refresh failed:', err);
+          }
+        }, 100);
 
         alert('Test result rejected successfully. Lab technician will be notified.');
       } else {
