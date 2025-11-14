@@ -8,6 +8,7 @@ import { AdminPanel } from './AdminPanel';
 import { B2BClientDashboard } from './B2BClientDashboard';
 import { ReportModal } from './ReportModal';
 import { SignatorySelectionModal } from './SignatorySelectionModal';
+import { DueCollectionModal } from './DueCollectionModal';
 import { Visit, Signatory, User, Permission, VisitTest } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useAppContext } from '../context/AppContext';
@@ -103,6 +104,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
 
   const [visitForReport, setVisitForReport] = useState<Visit | null>(null);
   const [isSignatoryModalOpen, setIsSignatoryModalOpen] = useState(false);
+  const [isDueCollectionModalOpen, setIsDueCollectionModalOpen] = useState(false);
   const [selectedSignatory, setSelectedSignatory] = useState<Signatory | null>(null);
 
   const [testToEdit, setTestToEdit] = useState<VisitTest | null>(null);
@@ -111,8 +113,32 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
 
 
   const handleInitiateReport = (visit: Visit) => {
-    setVisitForReport(visit);
+    // Check if this is a walk-in patient (not B2B) with outstanding dues
+    const isWalkIn = !visit.b2bClient || visit.b2bClient === null;
+    const hasDues = visit.due_amount > 0;
+
+    if (isWalkIn && hasDues) {
+      // Show due collection modal first
+      setVisitForReport(visit);
+      setIsDueCollectionModalOpen(true);
+    } else {
+      // Proceed directly to signatory selection
+      setVisitForReport(visit);
+      setIsSignatoryModalOpen(true);
+    }
+  };
+
+  const handleDuePaymentCollected = () => {
+    setIsDueCollectionModalOpen(false);
+    // After payment, proceed to signatory selection
     setIsSignatoryModalOpen(true);
+    // Reload data to get updated visit with new due amount
+    reloadData();
+  };
+
+  const handleCloseDueCollection = () => {
+    setVisitForReport(null);
+    setIsDueCollectionModalOpen(false);
   };
 
   const handleSignatoryConfirm = (signatory: Signatory) => {
@@ -208,6 +234,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ user }) => {
             />
         )}
 
+        {isDueCollectionModalOpen && visitForReport && (
+            <DueCollectionModal
+                visit={visitForReport}
+                onClose={handleCloseDueCollection}
+                onPaymentCollected={handleDuePaymentCollected}
+            />
+        )}
 
         {isSignatoryModalOpen && visitForReport && (
         <SignatorySelectionModal

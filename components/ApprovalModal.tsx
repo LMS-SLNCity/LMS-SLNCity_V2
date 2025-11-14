@@ -14,6 +14,74 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedResults, setEditedResults] = useState<any>(test.results || {});
+  const [editReason, setEditReason] = useState('');
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditedResults(test.results || {});
+  };
+
+  const handleSaveEdit = async () => {
+    if (!user) {
+      alert("User session has expired. Please log in again.");
+      return;
+    }
+    if (!editReason.trim()) {
+      alert("Please provide a reason for editing the results.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/visit-tests/${test.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          results: editedResults,
+          editedBy: user.username,
+          editReason: editReason
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update test results');
+      }
+
+      // Create audit log for the edit
+      await fetch(`${import.meta.env.VITE_API_URL}/audit-logs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          username: user.username,
+          action: 'EDIT_RESULT_BEFORE_APPROVAL',
+          details: `Edited results for ${test.template.name} (${test.visitCode} - ${test.patientName}). Reason: ${editReason}`,
+          user_id: user.id,
+          resource: 'visit_test',
+          resource_id: test.id,
+          old_value: JSON.stringify(test.results),
+          new_value: JSON.stringify(editedResults)
+        })
+      });
+
+      alert('Results updated successfully');
+      setIsEditing(false);
+      setEditReason('');
+      window.location.reload(); // Reload to show updated results
+    } catch (error) {
+      alert(`Failed to update results: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleApprove = async () => {
     if (!user) {
@@ -91,15 +159,34 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
             )}
 
             <div className="mt-6 border-t pt-4">
-                <h4 className="font-semibold text-gray-800 mb-2">Entered Results:</h4>
+                <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-semibold text-gray-800">Entered Results:</h4>
+                    {!isEditing && !showRejectForm && test.results && Object.keys(test.results).length > 0 && (
+                        <button
+                            onClick={handleEdit}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                            Edit Results
+                        </button>
+                    )}
+                </div>
                 {test.results && Object.keys(test.results).length > 0 ? (
                     <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {Object.entries(test.results).map(([key, value]) => {
+                        {Object.entries(isEditing ? editedResults : test.results).map(([key, value]) => {
                             const parameter = test.template.parameters.fields.find(p => p.name === key);
                             return (
-                                <div key={key} className="grid grid-cols-2 text-sm">
+                                <div key={key} className="grid grid-cols-2 gap-4 text-sm items-center">
                                     <span className="text-gray-600 font-medium">{key}:</span>
-                                    <span className="text-gray-900">{String(value)} {parameter?.unit || ''}</span>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={String(editedResults[key] || '')}
+                                            onChange={(e) => setEditedResults({...editedResults, [key]: e.target.value})}
+                                            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    ) : (
+                                        <span className="text-gray-900">{String(value)} {parameter?.unit || ''}</span>
+                                    )}
                                 </div>
                             );
                         })}
@@ -167,6 +254,20 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
                 )}
             </div>
 
+            {/* Edit Reason Form */}
+            {isEditing && (
+                <div className="mt-6 border-t pt-4">
+                    <h4 className="font-semibold text-gray-800 mb-2">Reason for Editing</h4>
+                    <textarea
+                        value={editReason}
+                        onChange={(e) => setEditReason(e.target.value)}
+                        placeholder="Please provide a reason for editing these results. This will be logged in the audit trail."
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+            )}
+
             {/* Rejection Form */}
             {showRejectForm && (
                 <div className="mt-6 border-t pt-4">
@@ -196,7 +297,26 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
             </button>
 
             <div className="flex space-x-3">
-                {!showRejectForm ? (
+                {isEditing ? (
+                    <>
+                        <button
+                            type="button"
+                            onClick={() => { setIsEditing(false); setEditReason(''); setEditedResults(test.results || {}); }}
+                            disabled={isSubmitting}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50"
+                        >
+                            Cancel Edit
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSaveEdit}
+                            disabled={isSubmitting || !editReason.trim()}
+                            className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                        >
+                            {isSubmitting ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </>
+                ) : !showRejectForm ? (
                     <>
                         <button
                             type="button"

@@ -242,5 +242,90 @@ router.patch('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/visits/:id/collect-due - Collect due payment for a visit
+router.post('/:id/collect-due', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { amount, payment_mode } = req.body;
+    const visitId = parseInt(req.params.id);
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Valid amount is required' });
+    }
+
+    if (!payment_mode || !['Cash', 'Card', 'UPI'].includes(payment_mode)) {
+      return res.status(400).json({ error: 'Valid payment mode is required' });
+    }
+
+    // Get current visit details
+    const visitResult = await pool.query(
+      'SELECT id, visit_code, patient_id, amount_paid, due_amount, payment_mode FROM visits WHERE id = $1',
+      [visitId]
+    );
+
+    if (visitResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Visit not found' });
+    }
+
+    const visit = visitResult.rows[0];
+
+    if (amount > visit.due_amount) {
+      return res.status(400).json({ error: 'Amount exceeds due amount' });
+    }
+
+    // Update visit with new payment
+    const newAmountPaid = parseFloat(visit.amount_paid) + parseFloat(amount);
+    const newDueAmount = parseFloat(visit.due_amount) - parseFloat(amount);
+
+    const updateResult = await pool.query(
+      `UPDATE visits
+       SET amount_paid = $1,
+           due_amount = $2,
+           payment_mode = $3,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $4
+       RETURNING *`,
+      [newAmountPaid, newDueAmount, payment_mode, visitId]
+    );
+
+    // Get patient name for audit log
+    const patientResult = await pool.query(
+      'SELECT name FROM patients WHERE id = $1',
+      [visit.patient_id]
+    );
+    const patientName = patientResult.rows[0]?.name || 'Unknown';
+
+    // Create audit log
+    await pool.query(
+      `INSERT INTO audit_logs (
+        username,
+        action,
+        details,
+        user_id,
+        resource,
+        resource_id
+      ) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        (req as any).user?.username || 'system',
+        'COLLECT_DUE_PAYMENT',
+        `Collected ₹${amount} via ${payment_mode} for visit ${visit.visit_code} (${patientName}). New due: ₹${newDueAmount.toFixed(2)}`,
+        (req as any).user?.id || null,
+        'visit',
+        visitId
+      ]
+    );
+
+    res.json({
+      success: true,
+      message: 'Payment collected successfully',
+      visit: updateResult.rows[0],
+      amount_collected: amount,
+      new_due_amount: newDueAmount
+    });
+  } catch (error) {
+    console.error('Error collecting due payment:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
 
