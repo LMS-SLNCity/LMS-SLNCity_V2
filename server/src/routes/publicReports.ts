@@ -16,6 +16,7 @@ const router = express.Router();
 router.get('/:visitCode', async (req: Request, res: Response) => {
   try {
     const { visitCode } = req.params;
+    console.log(`📋 Public report request for visit code: ${visitCode}`);
 
     // Get visit details
     const visitResult = await pool.query(
@@ -33,22 +34,24 @@ router.get('/:visitCode', async (req: Request, res: Response) => {
     );
 
     if (visitResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Report not found' });
+      console.log(`❌ Visit not found for code: ${visitCode}`);
+      return res.status(404).json({ error: 'Report not found. Please check the visit code.' });
     }
 
     const visit = visitResult.rows[0];
+    console.log(`✅ Visit found: ${visit.visit_code}, Patient: ${visit.name}`);
 
     // Get all tests for this visit with full details including timestamps
     const testsResult = await pool.query(
-      `SELECT vt.id, vt.visit_id, vt.test_template_id, vt.status, 
+      `SELECT vt.id, vt.visit_id, vt.test_template_id, vt.status,
               vt.collected_by, vt.collected_at, vt.specimen_type,
-              vt.results, vt.culture_result, 
-              vt.entered_by, vt.entered_at, 
+              vt.results, vt.culture_result,
+              vt.entered_by, vt.entered_at,
               vt.approved_by, vt.approved_at,
               vt.rejection_count, vt.last_rejection_at,
               vt.created_at, vt.updated_at,
-              tt.id as template_id, tt.code, tt.name, tt.category, 
-              tt.price, tt.b2b_price, tt.is_active, tt.report_type, 
+              tt.id as template_id, tt.code, tt.name, tt.category,
+              tt.price, tt.b2b_price, tt.is_active, tt.report_type,
               tt.parameters, tt.default_antibiotic_ids, tt.sample_type, tt.tat_hours
        FROM visit_tests vt
        JOIN test_templates tt ON vt.test_template_id = tt.id
@@ -56,6 +59,15 @@ router.get('/:visitCode', async (req: Request, res: Response) => {
        ORDER BY tt.category, tt.name`,
       [visit.id]
     );
+
+    console.log(`📊 Found ${testsResult.rows.length} approved tests for visit ${visit.visit_code}`);
+
+    if (testsResult.rows.length === 0) {
+      console.log(`⚠️  No approved tests found for visit ${visit.visit_code}`);
+      return res.status(404).json({
+        error: 'Report not ready yet. Tests are still being processed or have not been approved.'
+      });
+    }
 
     // Get antibiotics for culture tests
     const antibioticsResult = await pool.query(
@@ -155,6 +167,8 @@ router.get('/:visitCode', async (req: Request, res: Response) => {
       }))
     };
 
+    console.log(`✅ Sending public report for visit ${visit.visit_code} with ${testsResult.rows.length} tests`);
+
     res.json({
       visit: formattedVisit,
       signatory,
@@ -162,8 +176,8 @@ router.get('/:visitCode', async (req: Request, res: Response) => {
       approvers: approversResult.rows
     });
   } catch (error) {
-    console.error('Error fetching public report:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Error fetching public report:', error);
+    res.status(500).json({ error: 'Failed to load report. Please try again later.' });
   }
 });
 

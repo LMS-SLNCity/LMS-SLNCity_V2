@@ -28,16 +28,21 @@ export const PublicReportView: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      console.log('Fetching public report for visit code:', visitCode);
+      console.log('API URL:', `${API_BASE_URL}/public/reports/${visitCode}`);
+
       const response = await fetch(`${API_BASE_URL}/public/reports/${visitCode}`);
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('Report not found. Please check the visit code.');
-        }
-        throw new Error('Failed to load report');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Error response:', errorData);
+        throw new Error(errorData.error || 'Failed to load report');
       }
 
       const data = await response.json();
+      console.log('Report data received:', data);
       setReportData(data);
     } catch (err: any) {
       console.error('Error fetching public report:', err);
