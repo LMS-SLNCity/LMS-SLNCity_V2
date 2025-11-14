@@ -786,10 +786,6 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                   <span>: {formatAge(visit.patient)} / {visit.patient.sex}</span>
                 </div>
                 <div style={{ marginBottom: '2px' }}>
-                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px' }}>Sample Type</span>
-                  <span>: {sampleTypes || 'N/A'}</span>
-                </div>
-                <div style={{ marginBottom: '2px' }}>
                   <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px' }}>Client Name</span>
                   <span>: {visit.b2bClient?.name || visit.other_ref_customer || 'Walk-in'}</span>
                 </div>
@@ -849,17 +845,6 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
 
                 {/* Test Results Table */}
                 <table>
-                  {/* Only show headers for non-microbiology tests */}
-                  {!hasOnlyMicrobiologyTests && (
-                    <thead>
-                      <tr>
-                        <th style={{ width: '40%' }}>Test Description</th>
-                        <th style={{ width: '15%', textAlign: 'center' }}>Result</th>
-                        <th style={{ width: '15%', textAlign: 'center' }}>Units</th>
-                        <th style={{ width: '30%' }}>Biological Reference Range</th>
-                      </tr>
-                    </thead>
-                  )}
                   <tbody>
                     {group.tests.map((test) => (
                       <React.Fragment key={test.id}>
@@ -873,15 +858,30 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                           </tr>
                         ) : (
                           <>
-                            {/* Test Group Row - only for non-microbiology tests */}
+                            {/* Test Name Row with Sample Type - appears first */}
                             <tr className="test-group-row">
                               <td colSpan={4}>
                                 {test.template.name}
+                                {test.specimen_type && (
+                                  <span style={{ fontSize: '9px', fontWeight: 'normal', marginLeft: '10px', color: '#333' }}>
+                                    (Sample: {test.specimen_type})
+                                  </span>
+                                )}
                               </td>
                             </tr>
+                            {/* Table Headers Row - appears second */}
+                            {!hasOnlyMicrobiologyTests && (
+                              <tr>
+                                <th style={{ width: '40%' }}>Test Description</th>
+                                <th style={{ width: '15%', textAlign: 'center' }}>Result</th>
+                                <th style={{ width: '15%', textAlign: 'center' }}>Units</th>
+                                <th style={{ width: '30%' }}>Biological Reference Range</th>
+                              </tr>
+                            )}
                             {/* Parameter Rows for regular tests */}
                             {test.template.parameters?.fields && test.template.parameters.fields.length > 0 ? (
-                              test.template.parameters.fields.map((param: any, paramIndex: number) => {
+                              <>
+                                {test.template.parameters.fields.map((param: any, paramIndex: number) => {
                                 // Check if this is a heading type parameter
                                 if (param.type === 'heading') {
                                   return (
@@ -920,7 +920,8 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                                     </tr>
                                   </React.Fragment>
                                 );
-                              })
+                              })}
+                              </>
                             ) : (
                               <tr>
                                 <td colSpan={4} style={{ textAlign: 'center' }}>No parameters</td>
