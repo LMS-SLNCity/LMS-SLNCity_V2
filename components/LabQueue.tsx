@@ -77,9 +77,11 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
 
   // Only show SAMPLE_COLLECTED tests for result entry (not IN_PROGRESS or PRINTED)
   const allPendingResults = dateFilteredTests.filter(test => test.status === 'SAMPLE_COLLECTED');
+  const allCancelledTests = dateFilteredTests.filter(test => test.status === 'CANCELLED').sort((a, b) => new Date(b.updated_at!).getTime() - new Date(a.updated_at!).getTime());
   const allProcessedTests = dateFilteredTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED'].includes(test.status) && test.status !== 'PRINTED').sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
 
   const pendingResults = filterTests(allPendingResults);
+  const cancelledTests = filterTests(allCancelledTests);
   const processedTests = filterTests(allProcessedTests);
 
   const findVisitForTest = (test: VisitTest): Visit | undefined => {
@@ -343,6 +345,49 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
             />
           )}
           </div>
+
+          {/* Cancelled Tests Section */}
+          {cancelledTests.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <XCircle className="h-5 w-5 text-gray-600" />
+                <h3 className="text-lg font-semibold text-gray-700">Cancelled Tests</h3>
+              </div>
+              <div className="overflow-hidden border-2 border-gray-300 rounded-lg bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Visit Code</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Patient Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Test Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Cancelled At</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {cancelledTests.map(test => (
+                      <tr key={test.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-blue-600">{test.visitCode}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm font-medium text-gray-900">{test.patientName}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{test.template.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <StatusBadgeFromTest test={test} />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {test.updated_at ? new Date(test.updated_at).toLocaleString() : 'N/A'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Processed Tests Section */}
           <div>
