@@ -24,11 +24,11 @@ router.get('/:visitCode', async (req: Request, res: Response) => {
               v.registration_datetime, v.visit_code, v.total_cost, v.amount_paid, v.payment_mode, v.due_amount, v.created_at,
               p.salutation, p.name, p.age_years, p.age_months, p.age_days, p.sex, p.phone, p.address, p.email,
               rd.name as referred_doctor_name, rd.designation as referred_doctor_designation,
-              bc.name as b2b_client_name
+              c.name as b2b_client_name
        FROM visits v
        JOIN patients p ON v.patient_id = p.id
        LEFT JOIN referral_doctors rd ON v.referred_doctor_id = rd.id
-       LEFT JOIN b2b_clients bc ON v.ref_customer_id = bc.id
+       LEFT JOIN clients c ON v.ref_customer_id = c.id
        WHERE v.visit_code = $1`,
       [visitCode]
     );
