@@ -906,7 +906,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                                       <td>
                                         {param.name}
                                         {param.method && (
-                                          <div style={{ fontSize: '7px', color: '#666', fontWeight: 'normal', marginTop: '2px' }}>
+                                          <div style={{ fontSize: '8px', color: '#333', fontWeight: '500', marginTop: '2px' }}>
                                             ({param.method})
                                           </div>
                                         )}
