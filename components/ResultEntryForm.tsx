@@ -59,11 +59,20 @@ const StandardResultForm: React.FC<{ test: VisitTest, onClose: () => void, isEdi
     };
     
     const renderField = (field: TestTemplateParameter) => {
+        // Skip heading type parameters - they're only for report display
+        if (field.type === 'heading') {
+            return (
+                <div key={field.name} className="col-span-3 py-2 px-3 bg-blue-50 border-l-4 border-blue-500">
+                    <p className="text-sm font-semibold text-blue-900 uppercase">{field.name}</p>
+                </div>
+            );
+        }
+
         const value = results[field.name] || '';
         return (
             <div key={field.name} className="grid grid-cols-3 gap-4 items-center">
                 <label htmlFor={field.name} className="text-sm font-medium text-gray-700 col-span-1">{field.name} {field.unit && `(${field.unit})`}</label>
-                <Input 
+                <Input
                     id={field.name}
                     name={field.name}
                     label=""

@@ -166,25 +166,37 @@ export const TestTemplateFormModal: React.FC<TestTemplateFormModalProps> = ({ te
                                                     <select value={param.type} onChange={e => handleParamChange(index, 'type', e.target.value)} className="w-full px-2 py-1 text-sm border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary">
                                                         <option value="text">Text</option>
                                                         <option value="number">Number</option>
+                                                        <option value="heading">Heading</option>
                                                     </select>
                                                 </div>
-                                                <div className="col-span-6 sm:col-span-2">
-                                                    <SearchableSelect
-                                                        options={units.map(unit => ({
-                                                            value: unit.symbol,
-                                                            label: `${unit.name} (${unit.symbol})`,
-                                                            category: unit.category
-                                                        }))}
-                                                        value={param.unit || ''}
-                                                        onChange={(value) => handleParamChange(index, 'unit', value as string)}
-                                                        placeholder="Select Unit"
-                                                        groupByCategory={true}
-                                                        className="text-sm"
-                                                    />
-                                                </div>
-                                                <div className="col-span-11 sm:col-span-3">
-                                                    <input type="text" placeholder="Reference Range" value={param.reference_range || ''} onChange={e => handleParamChange(index, 'reference_range', e.target.value)} className="w-full px-2 py-1 text-sm border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary" />
-                                                </div>
+                                                {param.type !== 'heading' && (
+                                                    <>
+                                                        <div className="col-span-6 sm:col-span-2">
+                                                            <SearchableSelect
+                                                                options={units.map(unit => ({
+                                                                    value: unit.symbol,
+                                                                    label: `${unit.name} (${unit.symbol})`,
+                                                                    category: unit.category
+                                                                }))}
+                                                                value={param.unit || ''}
+                                                                onChange={(value) => handleParamChange(index, 'unit', value as string)}
+                                                                placeholder="Select Unit"
+                                                                groupByCategory={true}
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                        <div className="col-span-11 sm:col-span-3">
+                                                            <input type="text" placeholder="Reference Range" value={param.reference_range || ''} onChange={e => handleParamChange(index, 'reference_range', e.target.value)} className="w-full px-2 py-1 text-sm border-gray-300 rounded-md focus:ring-brand-primary focus:border-brand-primary" />
+                                                        </div>
+                                                    </>
+                                                )}
+                                                {param.type === 'heading' && (
+                                                    <div className="col-span-11 sm:col-span-5">
+                                                        <div className="px-2 py-1 text-sm text-gray-500 italic bg-blue-50 rounded-md border border-blue-200">
+                                                            This will appear as a section heading in the report
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 <div className="col-span-1 flex justify-end">
                                                     <button type="button" onClick={() => removeParameter(index)} className="text-red-500 hover:text-red-700">
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
