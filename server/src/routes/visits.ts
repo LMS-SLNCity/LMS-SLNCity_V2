@@ -364,6 +364,160 @@ router.patch('/:id/edit-details', authMiddleware, async (req: Request, res: Resp
   }
 });
 
+// PATCH /api/visits/:id/edit-tests - Add or remove tests from a visit (admin only)
+router.patch('/:id/edit-tests', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+
+    // Only SUDO and ADMIN can edit visit tests
+    if (!['SUDO', 'ADMIN'].includes(user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions. Only admins can edit visit tests.' });
+    }
+
+    const visitId = parseInt(req.params.id);
+    const {
+      testsToAdd,      // Array of test_template_ids to add
+      testsToRemove,   // Array of visit_test_ids to remove
+      editReason,
+      editedBy
+    } = req.body;
+
+    if (!editReason || !editedBy) {
+      return res.status(400).json({ error: 'Edit reason and edited by are required' });
+    }
+
+    if ((!testsToAdd || testsToAdd.length === 0) && (!testsToRemove || testsToRemove.length === 0)) {
+      return res.status(400).json({ error: 'No tests to add or remove' });
+    }
+
+    // Get current visit details
+    const visitResult = await pool.query(
+      `SELECT id, visit_code, total_cost, amount_paid, due_amount, ref_customer_id
+       FROM visits WHERE id = $1`,
+      [visitId]
+    );
+
+    if (visitResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Visit not found' });
+    }
+
+    const visit = visitResult.rows[0];
+    const isB2BVisit = visit.ref_customer_id !== null;
+
+    // Get current tests for audit log
+    const currentTestsResult = await pool.query(
+      `SELECT vt.id, vt.status, tt.name, tt.code, tt.price, tt.b2b_price
+       FROM visit_tests vt
+       JOIN test_templates tt ON vt.test_template_id = tt.id
+       WHERE vt.visit_id = $1`,
+      [visitId]
+    );
+
+    const currentTests = currentTestsResult.rows;
+    const changes: string[] = [];
+    let totalCostChange = 0;
+
+    // Remove tests (only if they're in PENDING status)
+    if (testsToRemove && testsToRemove.length > 0) {
+      for (const visitTestId of testsToRemove) {
+        const testToRemove = currentTests.find(t => t.id === visitTestId);
+
+        if (!testToRemove) {
+          return res.status(404).json({ error: `Test with ID ${visitTestId} not found in this visit` });
+        }
+
+        if (testToRemove.status !== 'PENDING') {
+          return res.status(400).json({
+            error: `Cannot remove test "${testToRemove.name}" (${testToRemove.code}). Only PENDING tests can be removed. Current status: ${testToRemove.status}`
+          });
+        }
+
+        // Delete the test
+        await pool.query('DELETE FROM visit_tests WHERE id = $1', [visitTestId]);
+
+        const testPrice = isB2BVisit ? parseFloat(testToRemove.b2b_price) : parseFloat(testToRemove.price);
+        totalCostChange -= testPrice;
+        changes.push(`Removed: ${testToRemove.name} (${testToRemove.code}) - ₹${testPrice.toFixed(2)}`);
+      }
+    }
+
+    // Add tests
+    if (testsToAdd && testsToAdd.length > 0) {
+      for (const testTemplateId of testsToAdd) {
+        // Get test template details
+        const templateResult = await pool.query(
+          `SELECT id, name, code, price, b2b_price FROM test_templates WHERE id = $1`,
+          [testTemplateId]
+        );
+
+        if (templateResult.rows.length === 0) {
+          return res.status(404).json({ error: `Test template with ID ${testTemplateId} not found` });
+        }
+
+        const template = templateResult.rows[0];
+
+        // Add the test
+        await pool.query(
+          `INSERT INTO visit_tests (visit_id, test_template_id, status)
+           VALUES ($1, $2, 'PENDING')`,
+          [visitId, testTemplateId]
+        );
+
+        const testPrice = isB2BVisit ? parseFloat(template.b2b_price) : parseFloat(template.price);
+        totalCostChange += testPrice;
+        changes.push(`Added: ${template.name} (${template.code}) - ₹${testPrice.toFixed(2)}`);
+      }
+    }
+
+    // Update visit total_cost and due_amount
+    const newTotalCost = parseFloat(visit.total_cost) + totalCostChange;
+    const newDueAmount = parseFloat(visit.due_amount) + totalCostChange;
+
+    await pool.query(
+      `UPDATE visits
+       SET total_cost = $1,
+           due_amount = $2,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      [newTotalCost, newDueAmount, visitId]
+    );
+
+    // Log edit in audit trail
+    await pool.query(
+      `INSERT INTO audit_logs (
+        username,
+        action,
+        details,
+        user_id,
+        resource,
+        resource_id
+      ) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        editedBy,
+        'EDIT_VISIT_TESTS',
+        `Edited tests for visit ${visit.visit_code}. ${changes.join('; ')}. Total cost: ₹${parseFloat(visit.total_cost).toFixed(2)} → ₹${newTotalCost.toFixed(2)}. Reason: ${editReason}`,
+        user.id,
+        'visit',
+        visitId
+      ]
+    );
+
+    console.log(`Visit tests edited: ${visitId} by ${editedBy}. Changes: ${changes.join('; ')}`);
+
+    res.json({
+      success: true,
+      message: 'Tests updated successfully',
+      changes,
+      old_total_cost: parseFloat(visit.total_cost),
+      new_total_cost: newTotalCost,
+      cost_change: totalCostChange
+    });
+  } catch (error) {
+    console.error('Error editing visit tests:', error);
+    res.status(500).json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
 // POST /api/visits/:id/collect-due - Collect due payment for a visit
 router.post('/:id/collect-due', authMiddleware, async (req: Request, res: Response) => {
   try {
