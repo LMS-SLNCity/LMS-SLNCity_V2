@@ -11,9 +11,13 @@ interface SampleCollectionModalProps {
 
 export const SampleCollectionModal: React.FC<SampleCollectionModalProps> = ({ test, onClose, onConfirm, isSubmitting = false }) => {
   // Pre-fill with template's default sample type if available
-  const defaultSampleType = test.template.sampleType || '';
+  const defaultSampleType = test.template.sampleType?.trim() || '';
   const [sampleType, setSampleType] = useState(defaultSampleType);
   const [customSampleType, setCustomSampleType] = useState('');
+
+  // Debug log
+  console.log('SampleCollectionModal - Default Sample Type:', defaultSampleType);
+  console.log('SampleCollectionModal - Current Sample Type State:', sampleType);
 
   // Common sample types based on test category
   const getSampleTypeOptions = () => {
@@ -58,6 +62,9 @@ export const SampleCollectionModal: React.FC<SampleCollectionModalProps> = ({ te
   };
 
   const sampleTypeOptions = getSampleTypeOptions();
+
+  // Debug log options
+  console.log('SampleCollectionModal - Sample Type Options:', sampleTypeOptions);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

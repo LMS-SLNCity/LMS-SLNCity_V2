@@ -12,7 +12,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL
 
 export const VisitsManagement: React.FC = () => {
     const { user: actor } = useAuth();
-    const { clients, referralDoctors } = useAppContext();
+    const { clients, referralDoctors, loadVisitTests: reloadVisitTests } = useAppContext();
     const [visits, setVisits] = useState<Visit[]>([]);
     const [filteredVisits, setFilteredVisits] = useState<Visit[]>([]);
     const [loading, setLoading] = useState(true);
@@ -207,8 +207,11 @@ export const VisitsManagement: React.FC = () => {
                 throw new Error(errorData.error || 'Failed to edit visit');
             }
 
-            // Reload visits after successful edit
-            await loadVisits();
+            // Reload all related data after successful edit
+            await Promise.all([
+                loadVisits(),
+                reloadVisitTests(),
+            ]);
             setEditingVisit(null);
         } catch (err) {
             console.error('Error editing visit:', err);

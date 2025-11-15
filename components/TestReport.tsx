@@ -704,13 +704,21 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
         }
 
         td, th {
-          border: 0.5px solid #999;
+          border-left: 0.5px solid #999;
+          border-right: 0.5px solid #999;
+          border-bottom: 0.5px solid #999;
           padding: 4px 6px;
           text-align: left;
           font-size: 10px;
           line-height: 1.4;
           vertical-align: middle;
           color: #000;
+        }
+
+        /* First row in tbody gets top border */
+        tbody tr:first-child td,
+        tbody tr:first-child th {
+          border-top: 0.5px solid #999;
         }
 
         th {
@@ -732,7 +740,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           font-size: 10px;
         }
 
-        .test-group-row {
+        .test-group-row td {
           font-weight: bold;
           background-color: #f9f9f9;
         }

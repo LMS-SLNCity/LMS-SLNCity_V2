@@ -27,7 +27,10 @@ router.get('/', async (req: Request, res: Response) => {
         al.action,
         al.details,
         al.resource,
+        al.resource_id,
         al.ip_address,
+        al.old_value as old_values,
+        al.new_value as new_values,
         u.id as user_id,
         u.role as user_role
       FROM audit_logs al
