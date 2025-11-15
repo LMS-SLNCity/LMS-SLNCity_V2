@@ -18,7 +18,7 @@ export const SampleCollectionModal: React.FC<SampleCollectionModalProps> = ({ te
   // Common sample types based on test category
   const getSampleTypeOptions = () => {
     const category = test.template.category.toLowerCase();
-    
+
     // Common sample types for different test categories
     const commonTypes: { [key: string]: string[] } = {
       'hematology': ['WB EDTA', 'WB Citrate', 'WB Heparin', 'Capillary Blood'],
@@ -33,14 +33,28 @@ export const SampleCollectionModal: React.FC<SampleCollectionModalProps> = ({ te
     };
 
     // Find matching category
-    for (const [key, types] of Object.entries(commonTypes)) {
+    let types: string[] = [];
+    for (const [key, categoryTypes] of Object.entries(commonTypes)) {
       if (category.includes(key)) {
-        return types;
+        types = categoryTypes;
+        break;
       }
     }
 
-    // Default common types
-    return ['WB EDTA', 'Serum', 'Plasma', 'Urine', 'Stool', 'Other'];
+    // If no category match, use default common types
+    if (types.length === 0) {
+      types = ['WB EDTA', 'Serum', 'Plasma', 'Urine', 'Stool'];
+    }
+
+    // If test template has a default sample type, ensure it's in the list
+    if (defaultSampleType && !types.includes(defaultSampleType)) {
+      types = [defaultSampleType, ...types];
+    }
+
+    // Always add "Other" option at the end
+    types.push('Other');
+
+    return types;
   };
 
   const sampleTypeOptions = getSampleTypeOptions();

@@ -891,9 +891,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                                         fontSize: '8px',
                                         padding: '3px 6px',
                                         textTransform: 'uppercase',
-                                        color: '#000',
-                                        borderTop: '0.5px solid #999',
-                                        borderBottom: '0.5px solid #999'
+                                        color: '#000'
                                       }}>
                                         {param.name}
                                       </td>

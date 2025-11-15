@@ -7,6 +7,7 @@
 import express, { Request, Response } from 'express';
 import pool from '../db/connection.js';
 import { auditReport } from '../middleware/auditLogger.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -53,13 +54,15 @@ router.post('/generate', async (req: Request, res: Response) => {
  * POST /api/reports/print
  * Log report printing and mark tests as PRINTED
  */
-router.post('/print', async (req: Request, res: Response) => {
+router.post('/print', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { visit_id } = req.body;
 
     if (!visit_id) {
       return res.status(400).json({ error: 'visit_id is required' });
     }
+
+    console.log('📄 Marking tests as PRINTED for visit_id:', visit_id);
 
     // Get visit details
     const visitResult = await pool.query(
@@ -68,31 +71,43 @@ router.post('/print', async (req: Request, res: Response) => {
     );
 
     if (visitResult.rows.length === 0) {
+      console.error('❌ Visit not found:', visit_id);
       return res.status(404).json({ error: 'Visit not found' });
     }
 
     const visit = visitResult.rows[0];
+    console.log('✅ Found visit:', visit.visit_code);
 
     // Update all APPROVED tests for this visit to PRINTED status
-    await pool.query(
+    const updateResult = await pool.query(
       `UPDATE visit_tests
        SET status = 'PRINTED', updated_at = CURRENT_TIMESTAMP
-       WHERE visit_id = $1 AND status = 'APPROVED'`,
+       WHERE visit_id = $1 AND status = 'APPROVED'
+       RETURNING id`,
       [visit_id]
     );
 
+    console.log(`✅ Updated ${updateResult.rowCount} tests to PRINTED status`);
+
     // Audit log: Report printing
-    await auditReport.print(req, visit.id, visit.visit_code);
+    try {
+      await auditReport.print(req, visit.id, visit.visit_code);
+      console.log('✅ Audit log created');
+    } catch (auditError) {
+      console.error('⚠️ Audit log failed (non-critical):', auditError);
+      // Don't fail the request if audit logging fails
+    }
 
     res.json({
       success: true,
       message: `Report print logged for visit ${visit.visit_code}`,
       visit_id: visit.id,
       visit_code: visit.visit_code,
+      tests_updated: updateResult.rowCount
     });
   } catch (error) {
-    console.error('Error logging report print:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Error logging report print:', error);
+    res.status(500).json({ error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 

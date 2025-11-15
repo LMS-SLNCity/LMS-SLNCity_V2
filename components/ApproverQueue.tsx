@@ -87,7 +87,7 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
 
   const handleCancelTest = async (testId: number, cancelReason: string, cancelledBy: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
       console.log('Cancelling test with token:', token ? 'Token exists' : 'No token found');
       console.log('User role:', user?.role);
 
