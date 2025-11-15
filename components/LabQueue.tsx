@@ -77,10 +77,13 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
 
   // Pending results - show ALL SAMPLE_COLLECTED tests regardless of date filter
   const allPendingResults = visitTests.filter(test => test.status === 'SAMPLE_COLLECTED');
+  // Result rejections - show ALL tests with rejection_count > 0 and status IN_PROGRESS (high priority!)
+  const allResultRejections = visitTests.filter(test => test.status === 'IN_PROGRESS' && test.rejection_count && test.rejection_count > 0).sort((a, b) => new Date(b.last_rejection_at!).getTime() - new Date(a.last_rejection_at!).getTime());
   const allCancelledTests = dateFilteredTests.filter(test => test.status === 'CANCELLED').sort((a, b) => new Date(b.updated_at!).getTime() - new Date(a.updated_at!).getTime());
-  const allProcessedTests = dateFilteredTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED'].includes(test.status) && test.status !== 'PRINTED').sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
+  const allProcessedTests = dateFilteredTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED'].includes(test.status) && test.status !== 'PRINTED' && !(test.status === 'IN_PROGRESS' && test.rejection_count && test.rejection_count > 0)).sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
 
   const pendingResults = filterTests(allPendingResults);
+  const resultRejections = filterTests(allResultRejections);
   const cancelledTests = filterTests(allCancelledTests);
   const processedTests = filterTests(allProcessedTests);
 
@@ -352,6 +355,69 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
             />
           )}
           </div>
+
+          {/* Result Rejections Section - Always show if there are any */}
+          {resultRejections.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+                <h3 className="text-lg font-semibold text-orange-700">Results Rejected by Approver - Correction Required</h3>
+              </div>
+              <div className="overflow-hidden border-2 border-orange-200 rounded-lg bg-orange-50">
+                <table className="min-w-full divide-y divide-orange-200">
+                  <thead className="bg-orange-100">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Visit Code</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Patient Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Test Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rejection Count</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Last Rejected</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-orange-200 bg-white">
+                    {resultRejections.map(test => (
+                      <tr key={test.id} className="hover:bg-orange-50 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-blue-600">{test.visitCode}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm font-medium text-gray-900">{test.patientName}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm text-gray-700">{test.template.name}</span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-orange-100 text-orange-800 border border-orange-300">
+                            ⚠️ {test.rejection_count} {test.rejection_count === 1 ? 'time' : 'times'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                            <Clock className="h-4 w-4 text-gray-400" />
+                            {test.last_rejection_at ? new Date(test.last_rejection_at).toLocaleString('en-IN', {
+                              dateStyle: 'short',
+                              timeStyle: 'short'
+                            }) : 'N/A'}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                          <button
+                            onClick={() => setSelectedTest(test)}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700 transition-colors"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                            Correct Results
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Cancelled Tests Section */}
           {cancelledTests.length > 0 && (

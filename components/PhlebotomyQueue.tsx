@@ -79,7 +79,8 @@ export const PhlebotomyQueue: React.FC<PhlebotomyQueueProps> = ({ onInitiateRepo
 
   // Pending samples - show ALL pending regardless of date filter
   const allPendingSamples = visitTests.filter(test => test.status === 'PENDING');
-  const allRejectedSamples = dateFilteredTests.filter(test => test.status === 'REJECTED').sort((a, b) => new Date(b.last_rejection_at!).getTime() - new Date(a.last_rejection_at!).getTime());
+  // Rejected samples - show ALL rejected regardless of date filter (high priority!)
+  const allRejectedSamples = visitTests.filter(test => test.status === 'REJECTED').sort((a, b) => new Date(b.last_rejection_at!).getTime() - new Date(a.last_rejection_at!).getTime());
   const allCancelledSamples = dateFilteredTests.filter(test => test.status === 'CANCELLED').sort((a, b) => new Date(b.updated_at!).getTime() - new Date(a.updated_at!).getTime());
   const allCollectedSamples = dateFilteredTests.filter(test => ['SAMPLE_COLLECTED', 'AWAITING_APPROVAL', 'APPROVED', 'IN_PROGRESS'].includes(test.status) && test.status !== 'PRINTED').sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
 

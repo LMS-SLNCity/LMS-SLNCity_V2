@@ -42,6 +42,9 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
   const { user } = useAuth();
   const [selectedTest, setSelectedTest] = useState<VisitTest | null>(null);
   const [cancellingTest, setCancellingTest] = useState<VisitTest | null>(null);
+  const [editingTest, setEditingTest] = useState<VisitTest | null>(null);
+  const [editReason, setEditReason] = useState<string>('');
+  const [showEditReasonModal, setShowEditReasonModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilterOption>('today');
   const [customStartDate, setCustomStartDate] = useState('');
@@ -372,14 +375,16 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
                               View Report
                             </button>
                           )}
-                          <button
-                            onClick={() => handleEditApprovedTest(test)}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-600 text-white text-sm font-medium rounded-md hover:bg-yellow-700 transition-colors"
-                            title="Edit approved test results"
-                          >
-                            <Edit3 className="h-4 w-4" />
-                            Edit
-                          </button>
+                          {(user?.role === 'ADMIN' || user?.role === 'SUDO') && (
+                            <button
+                              onClick={() => handleEditApprovedTest(test)}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-600 text-white text-sm font-medium rounded-md hover:bg-yellow-700 transition-colors"
+                              title="Edit approved test results (Admin only)"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                              Edit
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
