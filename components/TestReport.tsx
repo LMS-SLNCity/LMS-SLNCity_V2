@@ -704,21 +704,35 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
         }
 
         td, th {
-          border-left: 0.5px solid #999;
-          border-right: 0.5px solid #999;
-          border-bottom: 0.5px solid #999;
+          border: none;
           padding: 4px 6px;
           text-align: left;
           font-size: 10px;
           line-height: 1.4;
           vertical-align: middle;
           color: #000;
+          font-weight: 500;
         }
 
-        /* First row in tbody gets top border */
-        tbody tr:first-child td,
-        tbody tr:first-child th {
-          border-top: 0.5px solid #999;
+        /* Apply borders only where needed to avoid overlaps */
+        table {
+          border: 0.5px solid #666;
+        }
+
+        thead th {
+          border-bottom: 0.5px solid #666;
+        }
+
+        thead th:not(:last-child) {
+          border-right: 0.5px solid #666;
+        }
+
+        tbody td {
+          border-bottom: 0.5px solid #666;
+        }
+
+        tbody td:not(:last-child) {
+          border-right: 0.5px solid #666;
         }
 
         th {
@@ -727,22 +741,25 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           text-transform: uppercase;
           font-size: 9px;
           padding: 5px 6px;
+          color: #000;
         }
 
         .section-title {
           background-color: #e5e5e5;
-          border: 0.5px solid #999;
+          border: 0.5px solid #666;
           padding: 5px 8px;
           font-weight: bold;
           text-align: center;
           text-transform: uppercase;
           margin-bottom: 0;
           font-size: 10px;
+          color: #000;
         }
 
         .test-group-row td {
           font-weight: bold;
           background-color: #f9f9f9;
+          color: #000;
         }
       `}</style>
 
@@ -769,37 +786,39 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           {/* Patient Details Block - COMPACT LAYOUT */}
           <div style={{
             marginBottom: '3px',
-            border: '0.5px solid #999',
+            border: '0.5px solid #666',
             flexShrink: 0
           }}>
             {/* Top Row - Patient Info and Barcode */}
             <div style={{
               display: 'flex',
-              borderBottom: '0.5px solid #999'
+              borderBottom: '0.5px solid #666'
             }}>
               {/* Left: Patient Details */}
               <div style={{
                 flex: '1',
-                borderRight: '0.5px solid #999',
+                borderRight: '0.5px solid #666',
                 padding: '5px 8px',
                 fontSize: '10px',
-                lineHeight: '1.5'
+                lineHeight: '1.5',
+                color: '#000',
+                fontWeight: '500'
               }}>
                 <div style={{ marginBottom: '2px' }}>
-                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px' }}>Patient Name</span>
-                  <span>: {visit.patient.name}</span>
+                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px', color: '#000' }}>Patient Name</span>
+                  <span style={{ color: '#000' }}>: {visit.patient.name}</span>
                 </div>
                 <div style={{ marginBottom: '2px' }}>
-                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px' }}>Age / Gender</span>
-                  <span>: {formatAge(visit.patient)} / {visit.patient.sex}</span>
+                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px', color: '#000' }}>Age / Gender</span>
+                  <span style={{ color: '#000' }}>: {formatAge(visit.patient)} / {visit.patient.sex}</span>
                 </div>
                 <div style={{ marginBottom: '2px' }}>
-                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px' }}>Client Name</span>
-                  <span>: {visit.b2bClient?.name || visit.other_ref_customer || 'Walk-in'}</span>
+                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px', color: '#000' }}>Client Name</span>
+                  <span style={{ color: '#000' }}>: {visit.b2bClient?.name || visit.other_ref_customer || 'Walk-in'}</span>
                 </div>
                 <div>
-                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px' }}>Referred By</span>
-                  <span>: {doctorName}</span>
+                  <span style={{ fontWeight: 'bold', display: 'inline-block', width: '110px', color: '#000' }}>Referred By</span>
+                  <span style={{ color: '#000' }}>: {doctorName}</span>
                 </div>
               </div>
 
@@ -820,23 +839,25 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
               display: 'grid',
               gridTemplateColumns: 'repeat(4, 1fr)',
               fontSize: '9px',
-              lineHeight: '1.4'
+              lineHeight: '1.4',
+              color: '#000',
+              fontWeight: '500'
             }}>
-              <div style={{ padding: '4px 8px', borderRight: '0.5px solid #999' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '1px' }}>Visit Id</div>
-                <div>{visit.visit_code}</div>
+              <div style={{ padding: '4px 8px', borderRight: '0.5px solid #666' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '1px', color: '#000' }}>Visit Id</div>
+                <div style={{ color: '#000' }}>{visit.visit_code}</div>
               </div>
-              <div style={{ padding: '4px 8px', borderRight: '0.5px solid #999' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '1px' }}>Specimen Drawn</div>
-                <div>{formatDate(specimenDrawnDate)}</div>
+              <div style={{ padding: '4px 8px', borderRight: '0.5px solid #666' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '1px', color: '#000' }}>Specimen Drawn</div>
+                <div style={{ color: '#000' }}>{formatDate(specimenDrawnDate)}</div>
               </div>
-              <div style={{ padding: '4px 8px', borderRight: '0.5px solid #999' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '1px' }}>Registration</div>
-                <div>{formatDate(visit.registration_datetime)}</div>
+              <div style={{ padding: '4px 8px', borderRight: '0.5px solid #666' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '1px', color: '#000' }}>Registration</div>
+                <div style={{ color: '#000' }}>{formatDate(visit.registration_datetime)}</div>
               </div>
               <div style={{ padding: '4px 8px' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '1px' }}>Reported</div>
-                <div>{formatDate(firstTest.approvedAt)}</div>
+                <div style={{ fontWeight: 'bold', marginBottom: '1px', color: '#000' }}>Reported</div>
+                <div style={{ color: '#000' }}>{formatDate(firstTest.approvedAt)}</div>
               </div>
             </div>
           </div>
@@ -960,7 +981,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
 
         {/* Footer Section - COMPACT & ALWAYS AT BOTTOM */}
         <div className="report-footer" style={{
-          borderTop: '0.5px solid #999',
+          borderTop: '0.5px solid #666',
           paddingTop: '6px',
           fontSize: '8px',
           flexShrink: 0
@@ -994,12 +1015,12 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                       <div style={{
                         width: '80px',
                         height: '20px',
-                        borderBottom: '0.5px solid #999',
+                        borderBottom: '0.5px solid #666',
                         marginBottom: '2px',
                         margin: index === 0 ? '0 0 2px 0' : index === approvers.length - 1 ? '0 0 2px auto' : '0 auto 2px'
                       }}></div>
                     )}
-                    <div style={{ fontWeight: 'bold', fontSize: '8px', marginBottom: '1px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '8px', marginBottom: '1px', color: '#000' }}>
                       {approver.name}
                     </div>
                     <div style={{ fontSize: '7px', color: '#000' }}>
@@ -1023,7 +1044,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                         Scan to verify
                       </div>
                     </div>
-                    <div style={{ textAlign: 'left', borderLeft: '0.5px solid #999', paddingLeft: '8px' }}>
+                    <div style={{ textAlign: 'left', borderLeft: '0.5px solid #666', paddingLeft: '8px' }}>
                       <div style={{ fontSize: '7px', color: '#000', marginBottom: '2px' }}>
                         Lab Technician
                       </div>
@@ -1041,10 +1062,10 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                   <div style={{
                     width: '80px',
                     height: '20px',
-                    borderBottom: '0.5px solid #999',
+                    borderBottom: '0.5px solid #666',
                     marginBottom: '2px'
                   }}></div>
-                  <div style={{ fontWeight: 'bold', fontSize: '8px', marginBottom: '1px' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '8px', marginBottom: '1px', color: '#000' }}>
                     Lab Director
                   </div>
                   <div style={{ fontSize: '7px', color: '#000' }}>
@@ -1067,7 +1088,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                         Scan to verify
                       </div>
                     </div>
-                    <div style={{ textAlign: 'left', borderLeft: '0.5px solid #999', paddingLeft: '8px' }}>
+                    <div style={{ textAlign: 'left', borderLeft: '0.5px solid #666', paddingLeft: '8px' }}>
                       <div style={{ fontSize: '7px', color: '#000', marginBottom: '2px' }}>
                         Lab Technician
                       </div>
@@ -1091,7 +1112,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
             color: '#000',
             marginTop: '6px',
             paddingTop: '6px',
-            borderTop: '0.5px solid #999'
+            borderTop: '0.5px solid #666'
           }}>
             <p style={{ margin: '2px 0' }}>
               Assay result should be correlated clinically with other laboratory finding and the total clinical status of the patient.

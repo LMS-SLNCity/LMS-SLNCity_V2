@@ -38,6 +38,20 @@ const StandardResultForm: React.FC<{ test: VisitTest, onClose: () => void, isEdi
         }
         if (isSubmitting) return;
 
+        // Validate that all required parameters are filled (excluding headings)
+        if (!isEditMode && test.template.parameters?.fields) {
+            const requiredFields = test.template.parameters.fields.filter(f => f.type !== 'heading');
+            const missingFields = requiredFields.filter(field => {
+                const value = results[field.name];
+                return value === undefined || value === null || value === '';
+            });
+
+            if (missingFields.length > 0) {
+                alert(`⚠️ Partially Tested - Cannot send to approval.\n\nPlease fill in all parameters:\n${missingFields.map(f => `• ${f.name}`).join('\n')}\n\nAll test parameters must be completed before sending for approval.`);
+                return;
+            }
+        }
+
         setIsSubmitting(true);
         try {
             if (isEditMode) {
