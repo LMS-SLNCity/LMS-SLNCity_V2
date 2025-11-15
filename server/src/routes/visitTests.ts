@@ -180,12 +180,30 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
       await auditSample.collect(req, oldData.visit_id, visitCode);
     }
 
+    // Handle result entry and edits (standard tests)
     if (results && !oldData.results) {
       // Result entry (first time)
       await auditTestResult.enter(req, parseInt(req.params.id), testName, visitCode, results);
     } else if (results && oldData.results && editedBy && editReason) {
       // Result edit with reason (before or after approval)
       const isAfterApproval = oldData.approved_by !== null;
+
+      // Build detailed change log
+      const changes: any = {};
+      const oldResults = oldData.results || {};
+      const newResults = results || {};
+
+      // Find what changed
+      const allKeys = new Set([...Object.keys(oldResults), ...Object.keys(newResults)]);
+      for (const key of allKeys) {
+        if (oldResults[key] !== newResults[key]) {
+          changes[key] = {
+            from: oldResults[key],
+            to: newResults[key]
+          };
+        }
+      }
+
       await pool.query(
         `INSERT INTO audit_logs (
           username,
@@ -200,17 +218,68 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
         [
           editedBy,
           isAfterApproval ? 'EDIT_RESULT_AFTER_APPROVAL' : 'EDIT_RESULT_BEFORE_APPROVAL',
-          `Edited results for ${testName} (${visitCode} - ${patientName})${isAfterApproval ? ' [AFTER APPROVAL]' : ''}. Reason: ${editReason}`,
+          `Edited results for ${testName} (${visitCode} - ${patientName})${isAfterApproval ? ' [AFTER APPROVAL]' : ''}. Reason: ${editReason}. Changes: ${Object.keys(changes).length} parameter(s) modified.`,
           (req as any).user?.id || null,
           'visit_test',
           req.params.id,
-          JSON.stringify(oldData.results),
-          JSON.stringify(results)
+          JSON.stringify({ results: oldData.results, changes }),
+          JSON.stringify({ results, changes })
         ]
       );
     } else if (results && oldData.results) {
-      // Result update (normal)
+      // Result update (normal - without explicit edit reason)
       await auditTestResult.update(req, parseInt(req.params.id), testName, visitCode, oldData.results, results);
+    }
+
+    // Handle culture result entry and edits
+    if (culture_result && !oldData.culture_result) {
+      // Culture result entry (first time)
+      await auditTestResult.enter(req, parseInt(req.params.id), testName, visitCode, culture_result);
+    } else if (culture_result && oldData.culture_result && editedBy && editReason) {
+      // Culture result edit with reason (before or after approval)
+      const isAfterApproval = oldData.approved_by !== null;
+
+      // Build detailed change log for culture results
+      const oldCulture = oldData.culture_result || {};
+      const newCulture = culture_result || {};
+      const changes: any = {};
+
+      // Check what changed in culture result
+      if (oldCulture.result !== newCulture.result) {
+        changes.result = { from: oldCulture.result, to: newCulture.result };
+      }
+      if (oldCulture.organism !== newCulture.organism) {
+        changes.organism = { from: oldCulture.organism, to: newCulture.organism };
+      }
+      if (JSON.stringify(oldCulture.sensitivity) !== JSON.stringify(newCulture.sensitivity)) {
+        changes.sensitivity = { from: oldCulture.sensitivity, to: newCulture.sensitivity };
+      }
+
+      await pool.query(
+        `INSERT INTO audit_logs (
+          username,
+          action,
+          details,
+          user_id,
+          resource,
+          resource_id,
+          old_value,
+          new_value
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          editedBy,
+          isAfterApproval ? 'EDIT_CULTURE_RESULT_AFTER_APPROVAL' : 'EDIT_CULTURE_RESULT_BEFORE_APPROVAL',
+          `Edited culture results for ${testName} (${visitCode} - ${patientName})${isAfterApproval ? ' [AFTER APPROVAL]' : ''}. Reason: ${editReason}. Changes: ${Object.keys(changes).join(', ')}.`,
+          (req as any).user?.id || null,
+          'visit_test',
+          req.params.id,
+          JSON.stringify({ culture_result: oldData.culture_result, changes }),
+          JSON.stringify({ culture_result, changes })
+        ]
+      );
+    } else if (culture_result && oldData.culture_result) {
+      // Culture result update (normal - without explicit edit reason)
+      await auditTestResult.update(req, parseInt(req.params.id), testName, visitCode, oldData.culture_result, culture_result);
     }
 
     if (approved_by && !oldData.approved_by) {

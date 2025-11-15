@@ -482,7 +482,17 @@ router.patch('/:id/edit-tests', authMiddleware, async (req: Request, res: Respon
       [newTotalCost, newDueAmount, visitId]
     );
 
-    // Log edit in audit trail
+    // Get updated tests list for audit log
+    const updatedTestsResult = await pool.query(
+      `SELECT vt.id, tt.name, tt.code, tt.price, tt.b2b_price
+       FROM visit_tests vt
+       JOIN test_templates tt ON vt.test_template_id = tt.id
+       WHERE vt.visit_id = $1`,
+      [visitId]
+    );
+    const updatedTests = updatedTestsResult.rows;
+
+    // Log edit in audit trail with detailed before/after values
     await pool.query(
       `INSERT INTO audit_logs (
         username,
@@ -490,15 +500,29 @@ router.patch('/:id/edit-tests', authMiddleware, async (req: Request, res: Respon
         details,
         user_id,
         resource,
-        resource_id
-      ) VALUES ($1, $2, $3, $4, $5, $6)`,
+        resource_id,
+        old_value,
+        new_value
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         editedBy,
         'EDIT_VISIT_TESTS',
         `Edited tests for visit ${visit.visit_code}. ${changes.join('; ')}. Total cost: ₹${parseFloat(visit.total_cost).toFixed(2)} → ₹${newTotalCost.toFixed(2)}. Reason: ${editReason}`,
         user.id,
         'visit',
-        visitId
+        visitId,
+        JSON.stringify({
+          tests: currentTests.map((t: any) => ({ id: t.id, name: t.name, code: t.code, price: isB2BVisit ? t.b2b_price : t.price })),
+          total_cost: parseFloat(visit.total_cost),
+          due_amount: parseFloat(visit.due_amount),
+          changes_summary: changes
+        }),
+        JSON.stringify({
+          tests: updatedTests.map((t: any) => ({ id: t.id, name: t.name, code: t.code, price: isB2BVisit ? t.b2b_price : t.price })),
+          total_cost: newTotalCost,
+          due_amount: newDueAmount,
+          cost_change: totalCostChange
+        })
       ]
     );
 

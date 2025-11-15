@@ -462,7 +462,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const authToken = getAuthToken();
       const test = state.visitTests.find(t => t.id === visitTestId);
 
-      const updateData: any = {};
+      const updateData: any = {
+        editedBy: actor.username,
+        editReason: reason,
+      };
       if (data.results) updateData.results = data.results;
       if (data.cultureResult) updateData.culture_result = data.cultureResult;
 
@@ -476,9 +479,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
 
       if (response.ok) {
-        if (test) {
-          addAuditLog(actor.username, 'EDIT_APPROVED_REPORT', `Edited approved results for test ${test.template.code} (Visit: ${test.visitCode}). Reason: ${reason}`);
-        }
+        // Backend now handles audit logging with detailed before/after values
         setState(prevState => ({
           ...prevState,
           visitTests: prevState.visitTests.map(t =>
@@ -492,10 +493,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           ),
         }));
       } else {
-        console.error('Error editing test result:', response.statusText);
+        const errorData = await response.json();
+        console.error('Error editing test result:', errorData);
+        throw new Error(errorData.error || 'Failed to edit test result');
       }
     } catch (error) {
       console.error('Error editing test result:', error);
+      throw error;
     }
   };
 
