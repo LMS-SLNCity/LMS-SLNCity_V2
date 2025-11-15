@@ -187,11 +187,13 @@ export const VisitsManagement: React.FC = () => {
 
     const handleEditVisit = async (visitId: number, updates: EditVisitData, editReason: string, editedBy: string) => {
         try {
+            const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+
             const response = await fetch(`${API_BASE_URL}/visits/${visitId}/edit-details`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${authToken}`,
                 },
                 body: JSON.stringify({
                     ...updates,
