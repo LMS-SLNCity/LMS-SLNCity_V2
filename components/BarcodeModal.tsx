@@ -106,22 +106,24 @@ export const BarcodeModal: React.FC<BarcodeModalProps> = ({ test, onClose }) => 
       {/* Print-only styles */}
       <style>{`
         @media print {
+          /* Hide everything */
           body * {
             visibility: hidden;
           }
-          .bg-white.rounded-xl.shadow-2xl * {
-            visibility: visible;
-          }
-          .bg-white.rounded-xl.shadow-2xl {
+
+          /* Show only the barcode SVG */
+          svg {
+            visibility: visible !important;
             position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            box-shadow: none;
-            border-radius: 0;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
           }
-          button {
-            display: none !important;
+
+          /* Hide all other elements */
+          .fixed, .bg-white, .rounded-xl, .shadow-2xl,
+          button, h3, p, div:not(svg) {
+            visibility: hidden !important;
           }
         }
       `}</style>

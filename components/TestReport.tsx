@@ -506,9 +506,15 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
   // Get all tests for this visit
   const testsForVisit = visitTests.filter(t => visit.tests.includes(t.id));
 
-  // Get the earliest collection date from all tests
-  const specimenDrawnDate = testsForVisit
+  // Get the earliest collection date from all tests (phlebotomy collection time)
+  const sampleDrawnDate = testsForVisit
     .map(t => t.collectedAt)
+    .filter(date => date)
+    .sort()[0];
+
+  // Get the earliest approval date from all tests (reported time)
+  const reportedDate = testsForVisit
+    .map(t => t.approvedAt)
     .filter(date => date)
     .sort()[0];
 
@@ -854,16 +860,16 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                 <div style={{ color: '#000' }}>{visit.visit_code}</div>
               </div>
               <div style={{ padding: '4px 8px', borderRight: '0.5px solid #666' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '1px', color: '#000' }}>Specimen Drawn</div>
-                <div style={{ color: '#000' }}>{formatDate(specimenDrawnDate)}</div>
+                <div style={{ fontWeight: 'bold', marginBottom: '1px', color: '#000' }}>Sample Drawn</div>
+                <div style={{ color: '#000' }}>{formatDate(sampleDrawnDate)}</div>
               </div>
               <div style={{ padding: '4px 8px', borderRight: '0.5px solid #666' }}>
                 <div style={{ fontWeight: 'bold', marginBottom: '1px', color: '#000' }}>Registration</div>
-                <div style={{ color: '#000' }}>{formatDate(visit.registration_datetime)}</div>
+                <div style={{ color: '#000' }}>{formatDate(visit.created_at)}</div>
               </div>
               <div style={{ padding: '4px 8px' }}>
                 <div style={{ fontWeight: 'bold', marginBottom: '1px', color: '#000' }}>Reported</div>
-                <div style={{ color: '#000' }}>{formatDate(firstTest.approvedAt)}</div>
+                <div style={{ color: '#000' }}>{formatDate(reportedDate)}</div>
               </div>
             </div>
           </div>
