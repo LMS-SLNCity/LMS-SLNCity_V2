@@ -11,7 +11,7 @@ router.get('/', async (req: Request, res: Response) => {
     const result = await pool.query(
       `SELECT vt.id, vt.visit_id, vt.test_template_id, vt.status, vt.collected_by, vt.collected_at, vt.specimen_type,
               vt.results, vt.culture_result, vt.entered_by, vt.entered_at, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at, vt.created_at,
-              tt.id as template_id, tt.code, tt.name, tt.category, tt.price, tt.b2b_price, tt.is_active, tt.report_type, tt.parameters, tt.default_antibiotic_ids,
+              tt.id as template_id, tt.code, tt.name, tt.category, tt.price, tt.b2b_price, tt.is_active, tt.report_type, tt.parameters, tt.default_antibiotic_ids, tt.sample_type, tt.tat_hours,
               v.visit_code, v.other_ref_doctor, p.name as patient_name,
               rd.name as referred_doctor_name, rd.designation as referred_doctor_designation
        FROM visit_tests vt
@@ -40,6 +40,8 @@ router.get('/', async (req: Request, res: Response) => {
         reportType: row.report_type,
         parameters: typeof row.parameters === 'string' ? JSON.parse(row.parameters) : row.parameters,
         defaultAntibioticIds: row.default_antibiotic_ids,
+        sampleType: row.sample_type,
+        tatHours: row.tat_hours,
       },
       status: row.status,
       collectedBy: row.collected_by,
@@ -66,7 +68,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     const result = await pool.query(
       `SELECT vt.id, vt.visit_id, vt.test_template_id, vt.status, vt.collected_by, vt.collected_at, vt.specimen_type,
               vt.results, vt.culture_result, vt.entered_by, vt.entered_at, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at,
-              tt.id as template_id, tt.code, tt.name, tt.category, tt.price, tt.b2b_price, tt.is_active, tt.report_type, tt.parameters, tt.default_antibiotic_ids,
+              tt.id as template_id, tt.code, tt.name, tt.category, tt.price, tt.b2b_price, tt.is_active, tt.report_type, tt.parameters, tt.default_antibiotic_ids, tt.sample_type, tt.tat_hours,
               v.visit_code, p.name as patient_name
        FROM visit_tests vt
        JOIN test_templates tt ON vt.test_template_id = tt.id
@@ -94,6 +96,8 @@ router.get('/:id', async (req: Request, res: Response) => {
         reportType: row.report_type,
         parameters: typeof row.parameters === 'string' ? JSON.parse(row.parameters) : row.parameters,
         defaultAntibioticIds: row.default_antibiotic_ids,
+        sampleType: row.sample_type,
+        tatHours: row.tat_hours,
       },
       status: row.status,
       collectedBy: row.collected_by,

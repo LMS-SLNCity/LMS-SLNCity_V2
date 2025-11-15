@@ -351,13 +351,19 @@ const formatAge = (p: Visit['patient']) => {
 
 const formatDate = (dateString?: string) => {
   if (!dateString) return 'N/A';
-  return new Date(dateString).toLocaleString('en-GB', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).replace(',', '');
+
+  // Parse the date string and format it consistently
+  // The database returns timestamps in UTC, so we need to handle them properly
+  const date = new Date(dateString);
+
+  // Format: DD/MM/YYYY HH:MM
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
 };
 
 // Pagination types and logic
