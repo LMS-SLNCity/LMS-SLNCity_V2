@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { Visit, VisitTest } from '../types';
 import { ApprovalModal } from './ApprovalModal';
 import { CancelTestModal } from './CancelTestModal';
+import { EditReasonModal } from './EditReasonModal';
+import { ResultEntryForm } from './ResultEntryForm';
 import { StatusBadgeFromTest } from './StatusBadge';
 import { DateFilter, DateFilterOption, filterByDate } from './DateFilter';
 import { API_BASE_URL } from '../config/api';
@@ -16,7 +18,8 @@ import {
   AlertCircle,
   FileText,
   X,
-  XCircle
+  XCircle,
+  Edit3
 } from 'lucide-react';
 
 interface ApproverQueueProps {
@@ -112,6 +115,17 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
     }
   };
 
+  const handleEditApprovedTest = (test: VisitTest) => {
+    setEditingTest(test);
+    setShowEditReasonModal(true);
+  };
+
+  const handleEditReasonSubmit = (reason: string) => {
+    setEditReason(reason);
+    setShowEditReasonModal(false);
+    // The ResultEntryForm will open automatically when editingTest is set
+  };
+
   const findVisitForTest = (test: VisitTest): Visit | undefined => {
     return visits.find(v => v.id === test.visitId);
   }
@@ -130,6 +144,26 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
           onClose={() => setCancellingTest(null)}
           onConfirm={handleCancelTest}
           username={user?.username || 'Unknown'}
+        />
+      )}
+      {showEditReasonModal && editingTest && (
+        <EditReasonModal
+          onClose={() => {
+            setShowEditReasonModal(false);
+            setEditingTest(null);
+          }}
+          onSubmit={handleEditReasonSubmit}
+        />
+      )}
+      {editingTest && !showEditReasonModal && editReason && (
+        <ResultEntryForm
+          test={editingTest}
+          onClose={() => {
+            setEditingTest(null);
+            setEditReason('');
+          }}
+          isEditMode={true}
+          editReason={editReason}
         />
       )}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 max-w-7xl mx-auto">
@@ -328,15 +362,25 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
                         </div>
                       </td>
                        <td className="px-4 py-3 whitespace-nowrap text-sm">
-                        {visit &&
-                        <button
-                          onClick={() => onInitiateReport(visit)}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-                        >
-                          <FileText className="h-4 w-4" />
-                          View Report
-                        </button>
-                        }
+                        <div className="flex gap-2">
+                          {visit && (
+                            <button
+                              onClick={() => onInitiateReport(visit)}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                            >
+                              <FileText className="h-4 w-4" />
+                              View Report
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleEditApprovedTest(test)}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-600 text-white text-sm font-medium rounded-md hover:bg-yellow-700 transition-colors"
+                            title="Edit approved test results"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                            Edit
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     );

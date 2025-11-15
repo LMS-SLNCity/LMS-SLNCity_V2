@@ -810,6 +810,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         report_type: templateData.reportType,
         parameters: templateData.parameters,
         defaultAntibioticIds: templateData.defaultAntibioticIds || [],
+        sampleType: templateData.sampleType || null,
+        tatHours: templateData.tatHours || 24,
       };
 
       const response = await fetch(`${API_BASE_URL}/test-templates`, {
@@ -850,6 +852,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         report_type: templateData.reportType,
         parameters: templateData.parameters,
         defaultAntibioticIds: templateData.defaultAntibioticIds || [],
+        sampleType: templateData.sampleType || null,
+        tatHours: templateData.tatHours || 24,
         is_active: templateData.isActive,
       };
 

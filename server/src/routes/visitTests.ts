@@ -184,7 +184,8 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
       // Result entry (first time)
       await auditTestResult.enter(req, parseInt(req.params.id), testName, visitCode, results);
     } else if (results && oldData.results && editedBy && editReason) {
-      // Result edit before approval
+      // Result edit with reason (before or after approval)
+      const isAfterApproval = oldData.approved_by !== null;
       await pool.query(
         `INSERT INTO audit_logs (
           username,
@@ -198,8 +199,8 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
           editedBy,
-          'EDIT_RESULT_BEFORE_APPROVAL',
-          `Edited results for ${testName} (${visitCode} - ${patientName}). Reason: ${editReason}`,
+          isAfterApproval ? 'EDIT_RESULT_AFTER_APPROVAL' : 'EDIT_RESULT_BEFORE_APPROVAL',
+          `Edited results for ${testName} (${visitCode} - ${patientName})${isAfterApproval ? ' [AFTER APPROVAL]' : ''}. Reason: ${editReason}`,
           (req as any).user?.id || null,
           'visit_test',
           req.params.id,

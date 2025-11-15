@@ -35,21 +35,27 @@ export const createAuditLog = async (data: AuditLogData): Promise<void> => {
         details,
         user_id,
         resource,
+        resource_id,
         ip_address,
         user_agent,
         session_id,
+        old_values,
+        new_values,
         retention_category,
         timestamp
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'PERMANENT', CURRENT_TIMESTAMP)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'PERMANENT', CURRENT_TIMESTAMP)`,
       [
         data.username,
         data.action,
         data.details,
         data.userId || null,
         data.resource || null,
+        data.resourceId || null,
         data.ipAddress || null,
         data.userAgent || null,
         data.sessionId || null,
+        data.oldValues ? JSON.stringify(data.oldValues) : null,
+        data.newValues ? JSON.stringify(data.newValues) : null,
       ]
     );
   } catch (error) {
