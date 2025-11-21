@@ -40,10 +40,10 @@ ALTER TABLE visit_tests
 ADD COLUMN IF NOT EXISTS rejection_count INTEGER DEFAULT 0,
 ADD COLUMN IF NOT EXISTS last_rejection_at TIMESTAMP;
 
--- Update status constraint to include REJECTED status
+-- Update status constraint to include REJECTED, CANCELLED, and PRINTED statuses
 ALTER TABLE visit_tests DROP CONSTRAINT IF EXISTS visit_tests_status_check;
 ALTER TABLE visit_tests ADD CONSTRAINT visit_tests_status_check
-CHECK (status IN ('PENDING', 'SAMPLE_COLLECTED', 'REJECTED', 'IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED', 'COMPLETED'));
+CHECK (status IN ('PENDING', 'SAMPLE_COLLECTED', 'REJECTED', 'CANCELLED', 'IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED', 'PRINTED', 'COMPLETED'));
 
 -- ============================================================================
 -- 3. ENHANCE AUDIT_LOGS TABLE
