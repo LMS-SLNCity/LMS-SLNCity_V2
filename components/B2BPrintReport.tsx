@@ -35,7 +35,12 @@ export const B2BPrintReport: React.FC = () => {
 
   const fetchVisits = async () => {
     try {
-      const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+      const token = sessionStorage.getItem('authToken');
+
+      if (!token) {
+        setError('Session expired. Please log in again.');
+        return;
+      }
 
       // Fetch all visits for this client
       const response = await fetch(`${API_BASE_URL}/visits`, {

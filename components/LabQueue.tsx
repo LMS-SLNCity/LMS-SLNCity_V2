@@ -133,8 +133,13 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
 
   const handleCancelTest = async (testId: number, cancelReason: string, cancelledBy: string) => {
     try {
-      const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
-      console.log('Cancelling test with token:', token ? 'Token exists' : 'No token found');
+      const token = sessionStorage.getItem('authToken');
+      if (!token) {
+        console.error('Cancel test failed: No auth token in sessionStorage');
+        throw new Error('Session expired. Please log in again.');
+      }
+
+      console.log('Cancelling test with token: Token exists');
       console.log('User role:', user?.role);
 
       const response = await fetch(`${API_BASE_URL}/visit-tests/${testId}/cancel`, {

@@ -55,13 +55,12 @@ export const LoginScreen: React.FC = () => {
 
       console.log('✅ B2B Client login successful:', data.user);
 
-      // Clear any existing session first
-      sessionStorage.clear();
-      localStorage.clear();
+      // Clear any existing auth tokens first
+      sessionStorage.removeItem('authToken');
+      localStorage.removeItem('authToken');
 
-      // Store new token in both sessionStorage and localStorage
+      // Store new token in sessionStorage only (no persistent storage)
       sessionStorage.setItem('authToken', data.token);
-      localStorage.setItem('authToken', data.token);
 
       // Reload the page to trigger session restore with new token
       window.location.reload();

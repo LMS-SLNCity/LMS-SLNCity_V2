@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import pool from './db/connection.js';
+import { authMiddleware } from './middleware/auth.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -36,6 +37,11 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Trust proxy (needed for correct IPs behind reverse proxies/load balancers)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
 
 // Request timing middleware - log slow requests
 app.use((req, res, next) => {
@@ -117,21 +123,23 @@ if (process.env.NODE_ENV === 'production') {
 // Rate Limiting for Authentication Endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 attempts per window (increased for development)
+  max: process.env.NODE_ENV === 'production' ? 5 : 10, // 5 attempts in production, 10 in dev
   message: { error: 'Too many authentication attempts, please try again after 15 minutes' },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful logins
   handler: (req, res) => {
+    console.warn(`⚠️  Rate limit exceeded for IP: ${req.ip} on ${req.path}`);
     res.status(429).json({
       error: 'Too many authentication attempts, please try again after 15 minutes'
     });
   }
 });
 
-// General API Rate Limiting (very permissive for development)
+// General API Rate Limiting
 const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 1000, // 1000 requests per minute (very high for development)
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 100 req/min in production, 1000 in dev
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -140,6 +148,7 @@ const apiLimiter = rateLimit({
     return req.path === '/health';
   },
   handler: (req, res) => {
+    console.warn(`⚠️  API rate limit exceeded for IP: ${req.ip} on ${req.path}`);
     res.status(429).json({
       error: 'Too many requests, please try again later'
     });
@@ -161,34 +170,39 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// Apply general API rate limiting to all /api routes
+app.use('/api', apiLimiter);
+
 // Routes
 // Public routes (no authentication required)
 app.use('/api/public/reports', publicReportsRoutes);
 
-// Protected routes (authentication required)
-app.use('/api/auth', authRoutes);
-app.use('/api/users', usersRoutes);
-app.use('/api/test-templates', testTemplatesRoutes);
-app.use('/api/antibiotics', antibioticsRoutes);
-app.use('/api/clients', clientsRoutes);
-app.use('/api/patients', patientsRoutes);
-app.use('/api/visits', visitsRoutes);
-app.use('/api/visit-tests', visitTestsRoutes);
-app.use('/api/signatories', signatariesRoutes);
-app.use('/api/referral-doctors', referralDoctorsRoutes);
-app.use('/api/audit-logs', auditLogsRoutes);
-app.use('/api/branches', branchesRoutes);
-app.use('/api/signatures', signaturesRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/role-permissions', rolePermissionsRoutes);
-app.use('/api/approvers', approversRoutes);
-app.use('/api/patient-edit-requests', patientEditRequestsRoutes);
-app.use('/api/result-rejections', resultRejectionsRoutes);
-app.use('/api/audit-log-management', auditLogManagementRoutes);
-app.use('/api/reports', reportsRoutes);
-app.use('/api/b2b-financial', b2bFinancialRoutes);
-app.use('/api/waivers', waiversRoutes);
-app.use('/api/units', unitsRoutes);
+// Auth routes (no auth middleware needed - handles its own auth)
+app.use('/api/auth', authLimiter, authRoutes);
+
+// Protected routes (authentication required for ALL)
+app.use('/api/users', authMiddleware, usersRoutes);
+app.use('/api/test-templates', authMiddleware, testTemplatesRoutes);
+app.use('/api/antibiotics', authMiddleware, antibioticsRoutes);
+app.use('/api/clients', authMiddleware, clientsRoutes);
+app.use('/api/patients', authMiddleware, patientsRoutes);
+app.use('/api/visits', authMiddleware, visitsRoutes);
+app.use('/api/visit-tests', authMiddleware, visitTestsRoutes);
+app.use('/api/signatories', authMiddleware, signatariesRoutes);
+app.use('/api/referral-doctors', authMiddleware, referralDoctorsRoutes);
+app.use('/api/audit-logs', authMiddleware, auditLogsRoutes);
+app.use('/api/branches', authMiddleware, branchesRoutes);
+app.use('/api/signatures', authMiddleware, signaturesRoutes);
+app.use('/api/dashboard', authMiddleware, dashboardRoutes);
+app.use('/api/role-permissions', authMiddleware, rolePermissionsRoutes);
+app.use('/api/approvers', authMiddleware, approversRoutes);
+app.use('/api/patient-edit-requests', authMiddleware, patientEditRequestsRoutes);
+app.use('/api/result-rejections', authMiddleware, resultRejectionsRoutes);
+app.use('/api/audit-log-management', authMiddleware, auditLogManagementRoutes);
+app.use('/api/reports', authMiddleware, reportsRoutes);
+app.use('/api/b2b-financial', authMiddleware, b2bFinancialRoutes);
+app.use('/api/waivers', authMiddleware, waiversRoutes);
+app.use('/api/units', authMiddleware, unitsRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

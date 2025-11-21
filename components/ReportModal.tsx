@@ -101,24 +101,29 @@ export const ReportModal: React.FC<ReportModalProps> = ({ visit, signatory, onCl
 
       // Call API to mark tests as PRINTED
       try {
-        const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
-        const response = await fetch(`${API_BASE_URL}/reports/print`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ visit_id: visit.id }),
-        });
-
-        if (response.ok) {
-          console.log('✅ Tests marked as PRINTED');
-          // Invalidate cache to refresh data
-          invalidateCache();
-          // Dispatch event to refresh visit tests
-          window.dispatchEvent(new CustomEvent('visit-test-updated'));
+        const token = sessionStorage.getItem('authToken');
+        if (!token) {
+          console.error('❌ Failed to mark tests as PRINTED: No auth token in sessionStorage');
         } else {
-          console.error('❌ Failed to mark tests as PRINTED:', response.status);
+          const response = await fetch(`${API_BASE_URL}/reports/print`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ visit_id: visit.id }),
+          });
+
+          if (response.ok) {
+            console.log('✅ Tests marked as PRINTED');
+            // Invalidate cache to refresh data
+            invalidateCache();
+            // Dispatch event to refresh visit tests
+            window.dispatchEvent(new CustomEvent('visit-test-updated'));
+          } else {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('❌ Failed to mark tests as PRINTED:', response.status, errorData);
+          }
         }
       } catch (apiError) {
         console.error('❌ Error calling print API:', apiError);

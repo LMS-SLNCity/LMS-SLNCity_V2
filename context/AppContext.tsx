@@ -130,9 +130,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     units: [],
   });
 
-  // Helper function to get auth token from sessionStorage (current session) or localStorage (remember me)
+  // Helper function to get auth token from sessionStorage (current session)
+  // For security, we avoid localStorage to reduce persistence on shared machines
   const getAuthToken = (): string | null => {
-    return sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+    return sessionStorage.getItem('authToken');
   };
 
   // DO NOT load all data on mount - use lazy loading instead

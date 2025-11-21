@@ -13,11 +13,12 @@ import {
   getCleanupHistory,
   triggerManualCleanup
 } from '../services/auditLogCleanup.js';
+import { requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // GET /api/audit-log-management/stats - Get audit log statistics
-router.get('/stats', async (req: Request, res: Response) => {
+router.get('/stats', requireRole(['SUDO', 'ADMIN']), async (req: Request, res: Response) => {
   try {
     const stats = await getAuditLogStats();
     res.json(stats);
@@ -28,7 +29,7 @@ router.get('/stats', async (req: Request, res: Response) => {
 });
 
 // GET /api/audit-log-management/cleanup-history - Get cleanup history
-router.get('/cleanup-history', async (req: Request, res: Response) => {
+router.get('/cleanup-history', requireRole(['SUDO', 'ADMIN']), async (req: Request, res: Response) => {
   try {
     const { limit = '50' } = req.query;
     const history = await getCleanupHistory(parseInt(limit as string));
@@ -40,7 +41,7 @@ router.get('/cleanup-history', async (req: Request, res: Response) => {
 });
 
 // POST /api/audit-log-management/cleanup - Trigger manual cleanup
-router.post('/cleanup', async (req: Request, res: Response) => {
+router.post('/cleanup', requireRole(['SUDO', 'ADMIN']), async (req: Request, res: Response) => {
   try {
     const { executedBy = 'ADMIN' } = req.body;
     
@@ -64,7 +65,7 @@ router.post('/cleanup', async (req: Request, res: Response) => {
 });
 
 // GET /api/audit-log-management/retention-policies - Get retention policies
-router.get('/retention-policies', async (req: Request, res: Response) => {
+router.get('/retention-policies', requireRole(['SUDO', 'ADMIN']), async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       'SELECT * FROM audit_log_retention_policies ORDER BY category'
@@ -77,7 +78,7 @@ router.get('/retention-policies', async (req: Request, res: Response) => {
 });
 
 // GET /api/audit-log-management/compliance-report - Get NABL compliance report
-router.get('/compliance-report', async (req: Request, res: Response) => {
+router.get('/compliance-report', requireRole(['SUDO', 'ADMIN']), async (req: Request, res: Response) => {
   try {
     const result = await pool.query('SELECT * FROM nabl_audit_compliance_report');
     res.json(result.rows);
@@ -88,16 +89,19 @@ router.get('/compliance-report', async (req: Request, res: Response) => {
 });
 
 // GET /api/audit-log-management/login-activity - Get login activity summary
-router.get('/login-activity', async (req: Request, res: Response) => {
+router.get('/login-activity', requireRole(['SUDO', 'ADMIN']), async (req: Request, res: Response) => {
   try {
     const { days = '30' } = req.query;
-    
+
+    const daysNum = Math.min(Math.max(parseInt(days as string) || 30, 1), 365);
+
     const result = await pool.query(
-      `SELECT * FROM login_activity_summary 
-       WHERE login_date >= CURRENT_DATE - INTERVAL '${parseInt(days as string)} days'
+      `SELECT * FROM login_activity_summary
+       WHERE login_date >= CURRENT_DATE - ($1::int * INTERVAL '1 day')
        ORDER BY login_date DESC, action`,
+      [daysNum]
     );
-    
+
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching login activity:', error);
@@ -106,12 +110,16 @@ router.get('/login-activity', async (req: Request, res: Response) => {
 });
 
 // GET /api/audit-log-management/failed-logins - Get recent failed login attempts
-router.get('/failed-logins', async (req: Request, res: Response) => {
+router.get('/failed-logins', requireRole(['SUDO', 'ADMIN']), async (req: Request, res: Response) => {
   try {
     const { limit = '100', hours = '24' } = req.query;
-    
+
+    // Validate and sanitize inputs
+    const limitNum = Math.min(Math.max(parseInt(limit as string) || 100, 1), 1000);
+    const hoursNum = Math.min(Math.max(parseInt(hours as string) || 24, 1), 168); // Max 1 week
+
     const result = await pool.query(
-      `SELECT 
+      `SELECT
         id,
         timestamp,
         username,
@@ -120,12 +128,12 @@ router.get('/failed-logins', async (req: Request, res: Response) => {
         user_agent
       FROM audit_logs
       WHERE action = 'LOGIN_FAILED'
-        AND timestamp >= CURRENT_TIMESTAMP - INTERVAL '${parseInt(hours as string)} hours'
+        AND timestamp >= CURRENT_TIMESTAMP - ($2::int * INTERVAL '1 hour')
       ORDER BY timestamp DESC
       LIMIT $1`,
-      [parseInt(limit as string)]
+      [limitNum, hoursNum]
     );
-    
+
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching failed logins:', error);
@@ -134,7 +142,7 @@ router.get('/failed-logins', async (req: Request, res: Response) => {
 });
 
 // GET /api/audit-log-management/suspicious-activity - Detect suspicious login patterns
-router.get('/suspicious-activity', async (req: Request, res: Response) => {
+router.get('/suspicious-activity', requireRole(['SUDO', 'ADMIN']), async (req: Request, res: Response) => {
   try {
     // Find users with multiple failed login attempts
     const multipleFailures = await pool.query(
@@ -182,7 +190,7 @@ router.get('/suspicious-activity', async (req: Request, res: Response) => {
 });
 
 // GET /api/audit-log-management/user-sessions - Get active user sessions
-router.get('/user-sessions', async (req: Request, res: Response) => {
+router.get('/user-sessions', requireRole(['SUDO', 'ADMIN']), async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `WITH latest_logins AS (

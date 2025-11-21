@@ -19,12 +19,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Restore session on mount
   useEffect(() => {
     const restoreSession = async () => {
-      // Check sessionStorage first (persists only during browser session, survives refresh)
-      const sessionToken = sessionStorage.getItem('authToken');
-      const token = sessionToken || localStorage.getItem('authToken');
+      const token = sessionStorage.getItem('authToken');
 
       console.log('🔄 Attempting session restore...');
-      console.log('📍 Token found in:', sessionToken ? 'sessionStorage' : (token ? 'localStorage' : 'none'));
+      console.log('📍 Token found in:', token ? 'sessionStorage' : 'none');
 
       if (!token) {
         console.log('❌ No token found, showing login screen');
@@ -48,7 +46,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           console.error('❌ Failed to decode token:', decodeError);
           // If we can't decode, clear the token and show login
           sessionStorage.removeItem('authToken');
-          localStorage.removeItem('authToken');
           setUser(null);
           setIsLoading(false);
           return;
@@ -90,13 +87,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           console.log('❌ Token verification failed');
           // Token invalid or expired, clear it
           sessionStorage.removeItem('authToken');
-          localStorage.removeItem('authToken');
           setUser(null);
         }
       } catch (error) {
         console.error('❌ Session restoration error:', error);
         sessionStorage.removeItem('authToken');
-        localStorage.removeItem('authToken');
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -112,8 +107,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (response && response.user && response.token) {
         // Store token in sessionStorage (persists during browser session, survives refresh)
         sessionStorage.setItem('authToken', response.token);
-        // Also store in localStorage as backup for "remember me" functionality
-        localStorage.setItem('authToken', response.token);
         setUser(response.user);
       } else {
         throw new Error('Invalid response from server');
@@ -127,7 +120,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Log the logout event
     if (user) {
       try {
-        const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+        const authToken = sessionStorage.getItem('authToken');
         const API_BASE_URL = import.meta.env.VITE_API_URL
           ? `${import.meta.env.VITE_API_URL}/api`
           : 'http://localhost:5002/api';
@@ -148,9 +141,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     }
 
-    // Clear tokens from both storages
+    // Clear token from storage
     sessionStorage.removeItem('authToken');
-    localStorage.removeItem('authToken');
     setUser(null);
   }, [user]);
 

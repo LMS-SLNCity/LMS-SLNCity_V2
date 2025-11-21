@@ -340,6 +340,10 @@ router.post('/:id/cancel', authMiddleware, requireRole(['SUDO', 'ADMIN']), async
       return res.status(400).json({ error: 'Cancel reason and cancelled by are required' });
     }
 
+    if (Number.isNaN(testId)) {
+      return res.status(400).json({ error: 'Invalid test id' });
+    }
+
     // Get test details for audit log
     const testDetails = await pool.query(
       `SELECT vt.*, tt.name as test_name, v.visit_code, p.name as patient_name
@@ -367,32 +371,41 @@ router.post('/:id/cancel', authMiddleware, requireRole(['SUDO', 'ADMIN']), async
       [testId]
     );
 
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Visit test not found after update' });
+    }
+
     // Log cancellation in audit trail
-    await pool.query(
-      `INSERT INTO audit_logs (
-        username,
-        action,
-        details,
-        user_id,
-        resource,
-        resource_id
-      ) VALUES ($1, $2, $3, $4, $5, $6)`,
-      [
-        cancelledBy,
-        'CANCEL_TEST',
-        `Cancelled test ${testData.test_name} for ${testData.patient_name} (${testData.visit_code}). Reason: ${cancelReason}`,
-        (req as any).user?.id || null,
-        'visit_test',
-        testId
-      ]
-    );
+    try {
+      await pool.query(
+        `INSERT INTO audit_logs (
+          username,
+          action,
+          details,
+          user_id,
+          resource,
+          resource_id
+        ) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          cancelledBy,
+          'CANCEL_TEST',
+          `Cancelled test ${testData.test_name} for ${testData.patient_name} (${testData.visit_code}). Reason: ${cancelReason}`,
+          (req as any).user?.id || null,
+          'visit_test',
+          testId
+        ]
+      );
+    } catch (auditError) {
+      console.error('Error writing cancel audit log:', auditError);
+      // Do not fail the cancellation if audit logging fails
+    }
 
     console.log(`Test cancelled: ${testId} by ${cancelledBy}: ${cancelReason}`);
 
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error cancelling test:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error instanceof Error ? error.message : String(error) });
   }
 });
 

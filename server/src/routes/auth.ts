@@ -75,6 +75,23 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
+    // Check for account lockout - prevent brute force attacks
+    const failedAttemptsResult = await pool.query(
+      `SELECT COUNT(*) as count FROM audit_logs
+       WHERE username = $1
+       AND action = 'LOGIN_FAILED'
+       AND timestamp > NOW() - INTERVAL '1 hour'`,
+      [username]
+    );
+
+    const failedAttempts = parseInt(failedAttemptsResult.rows[0].count);
+    if (failedAttempts >= 5) {
+      await logAuthAttempt(username, 'LOGIN_FAILED', 'Account temporarily locked due to multiple failed attempts', req);
+      return res.status(429).json({
+        error: 'Account temporarily locked due to multiple failed login attempts. Please try again in 1 hour or contact administrator.'
+      });
+    }
+
     console.log('Querying database for user:', username);
     const result = await pool.query(
       'SELECT id, username, password_hash, role, is_active FROM users WHERE username = $1',
@@ -94,15 +111,9 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User account is inactive' });
     }
 
-    console.log('Comparing passwords...');
-    console.log('Password length:', password.length);
-    console.log('Hash length:', user.password_hash.length);
-    console.log('Hash preview:', user.password_hash.substring(0, 20));
-
     let passwordMatch = false;
     try {
       passwordMatch = await bcrypt.compare(password, user.password_hash);
-      console.log('Password match result:', passwordMatch);
     } catch (error) {
       console.error('Error comparing passwords:', error);
       await logAuthAttempt(username, 'LOGIN_FAILED', `Password comparison error: ${error}`, req, user.id);
@@ -138,7 +149,7 @@ router.post('/login', async (req: Request, res: Response) => {
     );
 
     console.log('Login successful for user:', username);
-    // Store token in localStorage on client side
+    // Token is returned to the client; it must be stored securely on the frontend (sessionStorage or HTTP-only cookies)
     res.json({
       token,
       user: {

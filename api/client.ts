@@ -4,10 +4,10 @@ const API_BASE_URL = import.meta.env.VITE_API_URL
 
 /**
  * Get authorization headers with JWT token
- * Checks sessionStorage first (current session), then localStorage (remember me)
+ * Reads token from sessionStorage (current browser session)
  */
 const getAuthHeaders = () => {
-  const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+  const token = sessionStorage.getItem('authToken');
   return {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` }),

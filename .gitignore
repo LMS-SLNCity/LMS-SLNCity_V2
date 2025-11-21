@@ -23,22 +23,35 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment files
+# Environment files (NEVER commit these!)
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.staging
+.env.aws
+server/.env
+server/.env.*
 
 # Credentials (NEVER commit)
 CREDENTIALS.md
 *credentials*
 *CREDENTIALS*
+*password*
+*secret*
+
+# Security audit reports (may contain sensitive info)
+SECURITY-AUDIT-*.md
 
 # Docker volumes
 postgres_data/
 
-# Backups
+# Backups (may contain sensitive data)
 *.sql
+*.dump
 backup_*
+db-backup/*.sql
 
 # Test results
 test-results/
