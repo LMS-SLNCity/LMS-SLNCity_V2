@@ -30,7 +30,7 @@ export const DueCollectionModal: React.FC<DueCollectionModalProps> = ({ visit, o
     setIsSubmitting(true);
 
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = sessionStorage.getItem('authToken');
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/visits/${visit.id}/collect-due`, {
         method: 'POST',
         headers: {

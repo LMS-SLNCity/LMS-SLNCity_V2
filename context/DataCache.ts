@@ -98,7 +98,7 @@ class DataCache {
    * Fetch data from API
    */
   private async fetchFromAPI<T>(endpoint: string): Promise<T> {
-    const authToken = localStorage.getItem('authToken');
+    const authToken = sessionStorage.getItem('authToken');
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };

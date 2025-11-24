@@ -40,7 +40,7 @@ export const AuditLogViewer: React.FC = () => {
 
     const fetchFilterOptions = async () => {
         try {
-            const authToken = localStorage.getItem('authToken');
+            const authToken = sessionStorage.getItem('authToken');
 
             const [usernamesRes, actionsRes, resourcesRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/audit-logs/users`, {
@@ -67,7 +67,7 @@ export const AuditLogViewer: React.FC = () => {
         setError(null);
 
         try {
-            const authToken = localStorage.getItem('authToken');
+            const authToken = sessionStorage.getItem('authToken');
             const params = new URLSearchParams({
                 limit: logsPerPage.toString(),
                 offset: ((currentPage - 1) * logsPerPage).toString()

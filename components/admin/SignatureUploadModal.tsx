@@ -119,10 +119,16 @@ export const SignatureUploadModal: React.FC<SignatureUploadModalProps> = ({ appr
 
             console.log('Uploading signature for user:', approver.id);
 
+            const authToken = sessionStorage.getItem('authToken');
+            if (!authToken) {
+                throw new Error('No authentication token found. Please login again.');
+            }
+
             const response = await fetch(`${API_BASE_URL}/signatures/upload/${approver.id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`,
                 },
                 body: JSON.stringify({ imageData }),
             });

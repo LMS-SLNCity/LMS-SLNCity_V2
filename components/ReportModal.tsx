@@ -213,7 +213,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ visit, signatory, onCl
 
       // Call API to mark tests as PRINTED
       try {
-        const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         const response = await fetch(`${API_BASE_URL}/reports/print`, {
           method: 'POST',
           headers: {

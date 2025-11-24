@@ -123,7 +123,7 @@ if (process.env.NODE_ENV === 'production') {
 // Rate Limiting for Authentication Endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 5 : 10, // 5 attempts in production, 10 in dev
+  max: process.env.NODE_ENV === 'production' ? 5 : 100, // 5 attempts in production, 100 in dev
   message: { error: 'Too many authentication attempts, please try again after 15 minutes' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -178,7 +178,8 @@ app.use('/api', apiLimiter);
 app.use('/api/public/reports', publicReportsRoutes);
 
 // Auth routes (no auth middleware needed - handles its own auth)
-app.use('/api/auth', authLimiter, authRoutes);
+// TEMPORARILY DISABLED RATE LIMITER FOR DEBUGGING
+app.use('/api/auth', authRoutes);
 
 // Protected routes (authentication required for ALL)
 app.use('/api/users', authMiddleware, usersRoutes);

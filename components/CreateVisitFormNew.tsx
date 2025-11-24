@@ -643,13 +643,14 @@ export const CreateVisitFormNew: React.FC<CreateVisitFormNewProps> = ({ onInitia
                 const visitTestsForVisit = visit.tests.map(testId => visitTests.find(vt => vt.id === testId)).filter(Boolean) as VisitTest[];
                 const client = clients.find(c => c.id === visit.ref_customer_id);
                 const isB2BVisit = client?.type === 'REFERRAL_LAB';
-                const allTestsApproved = visitTestsForVisit.length > 0 && visitTestsForVisit.every(vt => vt.status === 'APPROVED');
+                // Allow printing for both APPROVED and PRINTED statuses (for reprinting)
+                const allTestsReadyToPrint = visitTestsForVisit.length > 0 && visitTestsForVisit.every(vt => vt.status === 'APPROVED' || vt.status === 'PRINTED');
 
                 const canPrintDirectly = isB2BVisit || visit.due_amount <= 0;
                 const needsDueCollection = !isB2BVisit && visit.due_amount > 0;
 
                 let button;
-                if (allTestsApproved) {
+                if (allTestsReadyToPrint) {
                   if (canPrintDirectly) {
                     button = (
                       <button

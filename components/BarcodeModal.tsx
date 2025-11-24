@@ -31,8 +31,74 @@ export const BarcodeModal: React.FC<BarcodeModalProps> = ({ test, onClose }) => 
     }
   }, [test.visitCode]);
 
-  const handlePrint = () => {
-    window.print();
+  const handleDownload = () => {
+    if (!barcodeRef.current) {
+      alert('Barcode not generated yet. Please wait.');
+      return;
+    }
+
+    try {
+      // Get the SVG element
+      const svg = barcodeRef.current;
+
+      // Serialize the SVG to a string
+      const serializer = new XMLSerializer();
+      const svgString = serializer.serializeToString(svg);
+
+      // Create a canvas to convert SVG to PNG
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        alert('Failed to create canvas context');
+        return;
+      }
+
+      // Create an image from the SVG
+      const img = new Image();
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        // Set canvas size to match the image
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        // Draw white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw the barcode image
+        ctx.drawImage(img, 0, 0);
+
+        // Convert canvas to blob and download
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const downloadUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `barcode_${test.visitCode}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Clean up
+            URL.revokeObjectURL(downloadUrl);
+            URL.revokeObjectURL(url);
+          }
+        }, 'image/png');
+      };
+
+      img.onerror = () => {
+        alert('Failed to generate barcode image');
+        URL.revokeObjectURL(url);
+      };
+
+      img.src = url;
+    } catch (error) {
+      console.error('Error downloading barcode:', error);
+      alert('Failed to download barcode');
+    }
   };
 
   return (
@@ -77,10 +143,10 @@ export const BarcodeModal: React.FC<BarcodeModalProps> = ({ test, onClose }) => 
               <svg ref={barcodeRef} style={{ maxWidth: '100%', height: 'auto' }}></svg>
             </div>
 
-            {/* Print Instructions */}
+            {/* Download Instructions */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-800">
-                💡 <strong>Tip:</strong> Click "Print Label" to print this barcode and attach it to the sample container.
+                💡 <strong>Tip:</strong> Click "Download Label" to save the barcode image and print it to attach to the sample container.
               </p>
             </div>
           </div>
@@ -88,10 +154,10 @@ export const BarcodeModal: React.FC<BarcodeModalProps> = ({ test, onClose }) => 
           {/* Actions */}
           <div className="flex gap-3 mt-6">
             <button
-              onClick={handlePrint}
+              onClick={handleDownload}
               className="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors"
             >
-              Print Label
+              Download Label
             </button>
             <button
               onClick={onClose}
@@ -102,31 +168,6 @@ export const BarcodeModal: React.FC<BarcodeModalProps> = ({ test, onClose }) => 
           </div>
         </div>
       </div>
-
-      {/* Print-only styles */}
-      <style>{`
-        @media print {
-          /* Hide everything */
-          body * {
-            visibility: hidden;
-          }
-
-          /* Show only the barcode SVG */
-          svg {
-            visibility: visible !important;
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-          }
-
-          /* Hide all other elements */
-          .fixed, .bg-white, .rounded-xl, .shadow-2xl,
-          button, h3, p, div:not(svg) {
-            visibility: hidden !important;
-          }
-        }
-      `}</style>
     </div>
   );
 };

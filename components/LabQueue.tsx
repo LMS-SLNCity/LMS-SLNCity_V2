@@ -80,7 +80,8 @@ export const LabQueue: React.FC<LabQueueProps> = ({ onInitiateReport }) => {
   // Result rejections - show ALL tests with rejection_count > 0 and status IN_PROGRESS (high priority!)
   const allResultRejections = visitTests.filter(test => test.status === 'IN_PROGRESS' && test.rejection_count && test.rejection_count > 0).sort((a, b) => new Date(b.last_rejection_at!).getTime() - new Date(a.last_rejection_at!).getTime());
   const allCancelledTests = dateFilteredTests.filter(test => test.status === 'CANCELLED').sort((a, b) => new Date(b.updated_at!).getTime() - new Date(a.updated_at!).getTime());
-  const allProcessedTests = dateFilteredTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED'].includes(test.status) && test.status !== 'PRINTED' && !(test.status === 'IN_PROGRESS' && test.rejection_count && test.rejection_count > 0)).sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
+  // Processed tests - show ALL tests regardless of date filter (IN_PROGRESS, AWAITING_APPROVAL, APPROVED, PRINTED)
+  const allProcessedTests = visitTests.filter(test => ['IN_PROGRESS', 'AWAITING_APPROVAL', 'APPROVED', 'PRINTED'].includes(test.status) && !(test.status === 'IN_PROGRESS' && test.rejection_count && test.rejection_count > 0)).sort((a, b) => new Date(b.collectedAt!).getTime() - new Date(a.collectedAt!).getTime());
 
   const pendingResults = filterTests(allPendingResults);
   const resultRejections = filterTests(allResultRejections);

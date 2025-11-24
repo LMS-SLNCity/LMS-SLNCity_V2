@@ -62,7 +62,7 @@ router.post('/print', authMiddleware, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'visit_id is required' });
     }
 
-    console.log('📄 Marking tests as PRINTED for visit_id:', visit_id);
+    console.log('📄 Processing print request for visit_id:', visit_id);
 
     // Get visit details
     const visitResult = await pool.query(
@@ -78,7 +78,7 @@ router.post('/print', authMiddleware, async (req: Request, res: Response) => {
     const visit = visitResult.rows[0];
     console.log('✅ Found visit:', visit.visit_code);
 
-    // Update all APPROVED tests for this visit to PRINTED status
+    // Check if there are any APPROVED tests to update to PRINTED
     const updateResult = await pool.query(
       `UPDATE visit_tests
        SET status = 'PRINTED', updated_at = CURRENT_TIMESTAMP
@@ -87,9 +87,23 @@ router.post('/print', authMiddleware, async (req: Request, res: Response) => {
       [visit_id]
     );
 
-    console.log(`✅ Updated ${updateResult.rowCount} tests to PRINTED status`);
+    if (updateResult.rowCount > 0) {
+      console.log(`✅ Updated ${updateResult.rowCount} tests from APPROVED to PRINTED status`);
+    } else {
+      // Check if tests are already printed (reprint scenario)
+      const printedTestsResult = await pool.query(
+        `SELECT COUNT(*) as count FROM visit_tests WHERE visit_id = $1 AND status = 'PRINTED'`,
+        [visit_id]
+      );
 
-    // Audit log: Report printing
+      if (printedTestsResult.rows[0].count > 0) {
+        console.log(`ℹ️ Reprint request - ${printedTestsResult.rows[0].count} tests already PRINTED`);
+      } else {
+        console.warn('⚠️ No APPROVED or PRINTED tests found for this visit');
+      }
+    }
+
+    // Audit log: Report printing (log both first print and reprints)
     try {
       await auditReport.print(req, visit.id, visit.visit_code);
       console.log('✅ Audit log created');
@@ -100,10 +114,13 @@ router.post('/print', authMiddleware, async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: `Report print logged for visit ${visit.visit_code}`,
+      message: updateResult.rowCount > 0
+        ? `Report printed for visit ${visit.visit_code}`
+        : `Report reprinted for visit ${visit.visit_code}`,
       visit_id: visit.id,
       visit_code: visit.visit_code,
-      tests_updated: updateResult.rowCount
+      tests_updated: updateResult.rowCount,
+      is_reprint: updateResult.rowCount === 0
     });
   } catch (error) {
     console.error('❌ Error logging report print:', error);

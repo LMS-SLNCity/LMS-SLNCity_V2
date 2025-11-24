@@ -384,110 +384,125 @@ const getTestParameterCount = (test: VisitTest): number => {
   return test.template.parameters?.fields?.length || 0;
 };
 
-// Estimate if tests can fit on one page
-// Rough estimate: ~18-20 parameters per page (considering headers, footers, spacing)
-const MAX_PARAMETERS_PER_PAGE = 18;
-const MAX_PARAMETERS_FOR_SINGLE_TEST = 15; // If a test has more than this, give it its own page
+// Check if a test is a Culture & Sensitivity test
+const isCultureTest = (test: VisitTest): boolean => {
+  return !!test.cultureResult;
+};
 
-// Create pages with proper department grouping
+// SIMPLE PAGINATION LOGIC:
+// - Each test is a complete block
+// - If test fits on current page → add it
+// - If test doesn't fit → move to new page
+// - NEVER split a test across pages
+// - ALWAYS include ALL tests
+// - Culture & Sensitivity tests ALWAYS start on a new page
+
+const MAX_PARAMETERS_PER_PAGE = 18; // Conservative - ensures proper spacing and no footer bleeding
+
 const createReportPages = (testsByCategory: Record<string, VisitTest[]>): ReportPage[] => {
   const pages: ReportPage[] = [];
   let currentPage: ReportPage = { pageNumber: 1, groups: [], totalParameters: 0 };
 
-  // Process each department
+  console.log('🔄 Starting pagination...');
+  console.log('📊 Tests by category:', Object.entries(testsByCategory).map(([cat, tests]) =>
+    `${cat}: ${tests.length} tests`
+  ).join(', '));
+
+  // Process each department and each test
   Object.entries(testsByCategory).forEach(([department, tests]) => {
-    // Calculate total parameters for this department
-    const departmentParamCount = tests.reduce((sum, test) => sum + getTestParameterCount(test), 0);
+    console.log(`\n📁 Processing department: ${department} (${tests.length} tests)`);
 
-    // Check if any single test in this department is too large
-    const hasLargeTest = tests.some(test => getTestParameterCount(test) > MAX_PARAMETERS_FOR_SINGLE_TEST);
+    tests.forEach((test, testIndex) => {
+      const paramCount = getTestParameterCount(test);
+      const isCulture = isCultureTest(test);
+      console.log(`  📝 Test ${testIndex + 1}: "${test.template.name}" - ${paramCount} parameters${isCulture ? ' [CULTURE TEST]' : ''}`);
 
-    if (hasLargeTest) {
-      // Process each test individually
-      tests.forEach(test => {
-        const paramCount = getTestParameterCount(test);
+      // RULE: Culture & Sensitivity tests ALWAYS start on a new page
+      if (isCulture && currentPage.groups.length > 0) {
+        console.log(`    🧫 Culture test detected - forcing new page`);
+        console.log(`    📄 Saving current page with ${currentPage.groups.length} groups, ${currentPage.totalParameters} parameters`);
 
-        if (paramCount > MAX_PARAMETERS_FOR_SINGLE_TEST) {
-          // Large test gets its own page
-          if (currentPage.groups.length > 0) {
-            pages.push(currentPage);
-            currentPage = { pageNumber: pages.length + 1, groups: [], totalParameters: 0 };
-          }
+        // Save current page and start new one
+        pages.push(currentPage);
+        currentPage = { pageNumber: pages.length + 1, groups: [], totalParameters: 0 };
 
-          pages.push({
-            pageNumber: pages.length + 1,
-            groups: [{ department, tests: [test], parameterCount: paramCount }],
-            totalParameters: paramCount
-          });
-        } else {
-          // Small test - try to fit with others
-          if (currentPage.totalParameters + paramCount > MAX_PARAMETERS_PER_PAGE) {
-            // Start new page
-            pages.push(currentPage);
-            currentPage = { pageNumber: pages.length + 1, groups: [], totalParameters: 0 };
-          }
-
-          // Add to current page
-          const existingGroup = currentPage.groups.find(g => g.department === department);
-          if (existingGroup) {
-            existingGroup.tests.push(test);
-            existingGroup.parameterCount += paramCount;
-          } else {
-            currentPage.groups.push({ department, tests: [test], parameterCount: paramCount });
-          }
-          currentPage.totalParameters += paramCount;
-        }
-      });
-    } else {
-      // All tests in department are small - try to keep together
-      if (currentPage.totalParameters + departmentParamCount > MAX_PARAMETERS_PER_PAGE) {
-        // Department doesn't fit on current page
-        if (currentPage.groups.length > 0) {
-          pages.push(currentPage);
-          currentPage = { pageNumber: pages.length + 1, groups: [], totalParameters: 0 };
-        }
-
-        // Check if entire department fits on one page
-        if (departmentParamCount <= MAX_PARAMETERS_PER_PAGE) {
-          // Entire department on one page
-          currentPage.groups.push({ department, tests, parameterCount: departmentParamCount });
-          currentPage.totalParameters = departmentParamCount;
-        } else {
-          // Department needs to be split across pages
-          let remainingTests = [...tests];
-          while (remainingTests.length > 0) {
-            let pageParamCount = 0;
-            const pageTests: VisitTest[] = [];
-
-            while (remainingTests.length > 0 && pageParamCount + getTestParameterCount(remainingTests[0]) <= MAX_PARAMETERS_PER_PAGE) {
-              const test = remainingTests.shift()!;
-              pageTests.push(test);
-              pageParamCount += getTestParameterCount(test);
-            }
-
-            if (pageTests.length > 0) {
-              currentPage.groups.push({ department, tests: pageTests, parameterCount: pageParamCount });
-              currentPage.totalParameters = pageParamCount;
-
-              if (remainingTests.length > 0) {
-                pages.push(currentPage);
-                currentPage = { pageNumber: pages.length + 1, groups: [], totalParameters: 0 };
-              }
-            }
-          }
-        }
-      } else {
-        // Department fits on current page
-        currentPage.groups.push({ department, tests, parameterCount: departmentParamCount });
-        currentPage.totalParameters += departmentParamCount;
+        console.log(`    ✅ Started new page ${currentPage.pageNumber} for Culture test`);
       }
-    }
+
+      // Check if this test fits on the current page (only for non-culture tests)
+      const wouldExceedPageLimit = currentPage.totalParameters + paramCount > MAX_PARAMETERS_PER_PAGE;
+      const isPageEmpty = currentPage.groups.length === 0;
+
+      // Decision: Move to new page if:
+      // 1. Adding this test would exceed page limit
+      // 2. AND the page is not empty (don't create empty pages)
+      // 3. AND it's not a culture test (culture tests already handled above)
+      if (wouldExceedPageLimit && !isPageEmpty && !isCulture) {
+        console.log(`    ⚠️ Test doesn't fit (current: ${currentPage.totalParameters}, would be: ${currentPage.totalParameters + paramCount})`);
+        console.log(`    📄 Creating new page. Current page has ${currentPage.groups.length} groups, ${currentPage.totalParameters} parameters`);
+
+        // Save current page and start new one
+        pages.push(currentPage);
+        currentPage = { pageNumber: pages.length + 1, groups: [], totalParameters: 0 };
+
+        console.log(`    ✅ Started page ${currentPage.pageNumber}`);
+      }
+
+      // Add test to current page
+      // Check if we already have a group for this department on this page
+      const existingGroup = currentPage.groups.find(g => g.department === department);
+
+      if (existingGroup) {
+        // Add to existing department group
+        existingGroup.tests.push(test);
+        existingGroup.parameterCount += paramCount;
+        console.log(`    ➕ Added to existing ${department} group on page ${currentPage.pageNumber}`);
+      } else {
+        // Create new department group
+        currentPage.groups.push({
+          department,
+          tests: [test],
+          parameterCount: paramCount
+        });
+        console.log(`    ➕ Created new ${department} group on page ${currentPage.pageNumber}`);
+      }
+
+      currentPage.totalParameters += paramCount;
+      console.log(`    📊 Page ${currentPage.pageNumber} now has ${currentPage.totalParameters} parameters`);
+    });
   });
 
-  // Add last page if it has content
+  // Don't forget the last page!
   if (currentPage.groups.length > 0) {
+    console.log(`\n📄 Adding final page ${currentPage.pageNumber} with ${currentPage.totalParameters} parameters`);
     pages.push(currentPage);
   }
+
+  // Verification: Count all tests
+  const totalTestsInPages = pages.reduce((sum, page) =>
+    sum + page.groups.reduce((groupSum, group) => groupSum + group.tests.length, 0), 0
+  );
+  const totalTestsOriginal = Object.values(testsByCategory).reduce((sum, tests) => sum + tests.length, 0);
+
+  console.log('\n✅ PAGINATION COMPLETE');
+  console.log(`📊 Total pages: ${pages.length}`);
+  console.log(`📝 Total tests in pages: ${totalTestsInPages}`);
+  console.log(`📝 Total tests original: ${totalTestsOriginal}`);
+
+  if (totalTestsInPages !== totalTestsOriginal) {
+    console.error(`❌ ERROR: Test count mismatch! Expected ${totalTestsOriginal}, got ${totalTestsInPages}`);
+  } else {
+    console.log('✅ All tests accounted for!');
+  }
+
+  // Detailed page breakdown
+  pages.forEach((page, idx) => {
+    const testCount = page.groups.reduce((sum, g) => sum + g.tests.length, 0);
+    console.log(`  Page ${idx + 1}: ${testCount} tests, ${page.totalParameters} parameters`);
+    page.groups.forEach(group => {
+      console.log(`    - ${group.department}: ${group.tests.length} tests (${group.tests.map(t => t.template.name).join(', ')})`);
+    });
+  });
 
   return pages;
 };
@@ -530,9 +545,9 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
 
     const fetchActualApprovers = async () => {
       try {
-        // Get all approved tests for this visit
+        // Get all approved or printed tests for this visit (to support reprinting)
         const approvedTests = visit.tests
-          .map((testId: number) => visitTests.find(vt => vt.id === testId && vt.status === 'APPROVED'))
+          .map((testId: number) => visitTests.find(vt => vt.id === testId && (vt.status === 'APPROVED' || vt.status === 'PRINTED')))
           .filter(Boolean) as VisitTest[];
 
         // Get unique approver usernames
@@ -553,7 +568,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
         }
 
         // Fetch user details for each approver
-        const authToken = localStorage.getItem('authToken');
+        const authToken = sessionStorage.getItem('authToken');
         const approverPromises = approverUsernames.map(async (username) => {
           const response = await fetch(`${API_BASE_URL}/users`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
@@ -603,12 +618,13 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
     return <div className="bg-white p-8 max-w-4xl mx-auto text-red-500">Error: Visit data not found.</div>;
   }
 
+  // Allow both APPROVED and PRINTED tests for report generation (to support reprinting)
   const approvedTestsForVisit = visit.tests
-    .map((testId: number) => visitTests.find(vt => vt.id === testId && vt.status === 'APPROVED'))
+    .map((testId: number) => visitTests.find(vt => vt.id === testId && (vt.status === 'APPROVED' || vt.status === 'PRINTED')))
     .filter(Boolean) as VisitTest[];
 
   if (approvedTestsForVisit.length === 0) {
-    return <div className="bg-white p-8 max-w-4xl mx-auto text-yellow-600">Report not ready. No approved tests found for this visit.</div>;
+    return <div className="bg-white p-8 max-w-4xl mx-auto text-yellow-600">Report not ready. No approved or printed tests found for this visit.</div>;
   }
 
   const firstTest = approvedTestsForVisit[0];
@@ -634,6 +650,48 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
   const reportPages = createReportPages(testsByCategory);
   const totalPages = reportPages.length;
 
+  // Debug: Log pagination info
+  console.log('📊 Report Pagination Info:');
+  console.log(`  Total approved tests: ${approvedTestsForVisit.length}`);
+  console.log(`  Tests by category:`, Object.entries(testsByCategory).map(([cat, tests]) => `${cat}: ${tests.length}`));
+  console.log(`  Total pages: ${totalPages}`);
+
+  // Log each test with its parameter count
+  approvedTestsForVisit.forEach((test, idx) => {
+    const paramCount = test.template.parameters?.fields?.length || 0;
+    console.log(`  Test ${idx + 1}: ${test.template.name} (${test.template.category}) - ${paramCount} parameters`);
+  });
+
+  // Log each page
+  reportPages.forEach((page, idx) => {
+    const testsOnPage = page.groups.reduce((sum, g) => sum + g.tests.length, 0);
+    console.log(`  Page ${idx + 1}: ${testsOnPage} tests, ${page.totalParameters} parameters`);
+    page.groups.forEach(group => {
+      console.log(`    - ${group.department}: ${group.tests.length} tests (${group.tests.map(t => t.template.name).join(', ')})`);
+    });
+  });
+
+  // Verify all tests are included
+  const totalTestsInPages = reportPages.reduce((sum, page) =>
+    sum + page.groups.reduce((gSum, g) => gSum + g.tests.length, 0), 0
+  );
+  if (totalTestsInPages !== approvedTestsForVisit.length) {
+    console.error(`⚠️ WARNING: ${approvedTestsForVisit.length - totalTestsInPages} tests are missing from the report!`);
+    console.error(`  Expected: ${approvedTestsForVisit.length}, Got: ${totalTestsInPages}`);
+
+    // Find which tests are missing
+    const testsInPages = new Set<number>();
+    reportPages.forEach(page => {
+      page.groups.forEach(group => {
+        group.tests.forEach(test => testsInPages.add(test.id));
+      });
+    });
+    const missingTests = approvedTestsForVisit.filter(test => !testsInPages.has(test.id));
+    console.error(`  Missing tests:`, missingTests.map(t => `${t.template.name} (${t.template.parameters?.fields?.length || 0} params)`));
+  } else {
+    console.log(`✅ All ${approvedTestsForVisit.length} tests are included in the report`);
+  }
+
   return (
     <>
       <style>{`
@@ -655,7 +713,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           max-width: 210mm;
           max-height: 297mm;
           margin: 0 auto;
-          padding: 0 15mm;
+          padding: 0 15mm 25mm 15mm;
           background: white;
           box-sizing: border-box;
           display: flex;
@@ -673,26 +731,33 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
         .report-footer {
           margin-top: auto;
           padding-top: 8px;
-          padding-bottom: 10mm;
+          margin-bottom: 0;
+          flex-shrink: 0;
         }
 
         @media print {
+          @page {
+            margin: 0;
+          }
+
           body {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
-            margin: 0;
-            padding: 0;
+            margin: 0 !important;
+            padding: 0 !important;
           }
 
           .report-page {
             page-break-after: always;
             width: 210mm;
             height: 297mm;
-            max-width: 210mm;
+            min-height: 297mm;
             max-height: 297mm;
-            margin: 0;
-            padding: 0 15mm;
+            max-width: 210mm;
+            margin: 0 !important;
+            padding: 0 15mm 25mm 15mm !important;
             box-shadow: none;
+            overflow: hidden;
           }
 
           .report-page:last-child {
@@ -700,30 +765,42 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           }
 
           .report-footer {
-            padding-bottom: 10mm;
+            flex-shrink: 0;
+            margin-bottom: 0;
+          }
+
+          .top-space {
+            height: 25mm !important;
           }
         }
 
         .top-space {
-          height: 35mm;
+          height: 25mm;
           flex-shrink: 0;
         }
 
         table {
           border-collapse: collapse;
           width: 100%;
-          margin-bottom: 3px;
+          margin-bottom: 2px;
         }
 
         td, th {
           border: none;
-          padding: 4px 6px;
+          padding: 6px 5px;
           text-align: left;
-          font-size: 10px;
+          font-size: 9px;
           line-height: 1.4;
-          vertical-align: middle;
+          vertical-align: top;
           color: #000;
           font-weight: 500;
+        }
+
+        /* Remove extra margins from nested divs */
+        td > div {
+          margin-top: 1px !important;
+          margin-bottom: 0 !important;
+          line-height: 1.2;
         }
 
         /* Apply borders only where needed to avoid overlaps */
@@ -751,20 +828,21 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           background-color: #e5e5e5;
           font-weight: bold;
           text-transform: uppercase;
-          font-size: 9px;
-          padding: 5px 6px;
+          font-size: 8px;
+          padding: 6px 5px;
           color: #000;
+          vertical-align: middle;
         }
 
         .section-title {
           background-color: #e5e5e5;
           border: 0.5px solid #666;
-          padding: 5px 8px;
+          padding: 4px 6px;
           font-weight: bold;
           text-align: center;
           text-transform: uppercase;
           margin-bottom: 0;
-          font-size: 10px;
+          font-size: 9px;
           color: #000;
         }
 
@@ -772,6 +850,13 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           font-weight: bold;
           background-color: #f9f9f9;
           color: #000;
+          vertical-align: middle !important;
+          padding: 4px 6px !important;
+        }
+
+        /* Heading rows should be centered */
+        tr[style*="backgroundColor: '#f3f4f6'"] td {
+          vertical-align: middle !important;
         }
       `}</style>
 
@@ -930,9 +1015,10 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                                       <td colSpan={4} style={{
                                         fontWeight: 'bold',
                                         fontSize: '8px',
-                                        padding: '3px 6px',
+                                        padding: '4px 6px',
                                         textTransform: 'uppercase',
-                                        color: '#000'
+                                        color: '#000',
+                                        verticalAlign: 'middle'
                                       }}>
                                         {param.name}
                                       </td>
@@ -944,9 +1030,9 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
                                   <React.Fragment key={param.name}>
                                     <tr>
                                       <td>
-                                        {param.name}
+                                        <div>{param.name}</div>
                                         {param.method && (
-                                          <div style={{ fontSize: '8px', color: '#333', fontWeight: '500', marginTop: '2px' }}>
+                                          <div style={{ fontSize: '7px', color: '#555', fontWeight: '400' }}>
                                             ({param.method})
                                           </div>
                                         )}
@@ -994,7 +1080,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
         {/* Footer Section - COMPACT & ALWAYS AT BOTTOM */}
         <div className="report-footer" style={{
           borderTop: '0.5px solid #666',
-          paddingTop: '6px',
+          paddingTop: '4px',
           fontSize: '8px',
           flexShrink: 0
         }}>
@@ -1003,8 +1089,8 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-end',
-            marginBottom: '6px',
-            minHeight: '35px'
+            marginBottom: '4px',
+            minHeight: '30px'
           }}>
             {approvers.length > 0 ? (
               <>
@@ -1119,20 +1205,20 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
 
           {/* Footer Notes - ALL DISCLAIMERS */}
           <div style={{
-            fontSize: '8px',
-            lineHeight: '1.4',
+            fontSize: '7px',
+            lineHeight: '1.3',
             color: '#000',
-            marginTop: '6px',
-            paddingTop: '6px',
+            marginTop: '4px',
+            paddingTop: '4px',
             borderTop: '0.5px solid #666'
           }}>
-            <p style={{ margin: '2px 0' }}>
+            <p style={{ margin: '1px 0' }}>
               Assay result should be correlated clinically with other laboratory finding and the total clinical status of the patient.
             </p>
-            <p style={{ margin: '2px 0' }}>
+            <p style={{ margin: '1px 0' }}>
               Note :- This Report is subject to the terms and conditions mentioned overleaf
             </p>
-            <p style={{ margin: '2px 0', fontWeight: 'bold' }}>
+            <p style={{ margin: '1px 0', fontWeight: 'bold' }}>
               Note :- PARTIAL REPRODUCTION OF THIS REPORT IS NOT PERMITTED
             </p>
           </div>
@@ -1141,7 +1227,7 @@ export const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
           <div style={{
             textAlign: 'center',
             fontSize: '8px',
-            marginTop: '4px',
+            marginTop: '3px',
             color: '#000'
           }}>
             Page {pageIndex + 1} of {totalPages}

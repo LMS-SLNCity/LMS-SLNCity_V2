@@ -344,6 +344,8 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Visit Code</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Patient Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Test Code</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Test Name</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Approved At</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Approved By</th>
@@ -356,6 +358,13 @@ export const ApproverQueue: React.FC<ApproverQueueProps> = ({ onInitiateReport }
                     return (
                     <tr key={test.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-blue-600">{test.visitCode}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm font-medium text-gray-900">{test.patientName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 font-mono">{test.template.code}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{test.template.name}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 text-sm text-gray-600">
