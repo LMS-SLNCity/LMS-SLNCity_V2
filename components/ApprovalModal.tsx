@@ -268,12 +268,12 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
                     <textarea
                         value={rejectionReason}
                         onChange={(e) => setRejectionReason(e.target.value)}
-                        placeholder="Please provide a detailed reason for rejecting these results. The lab technician will see this comment."
+                        placeholder="Please provide a detailed reason for rejecting this sample (e.g., hemolyzed, insufficient quantity, contaminated, etc.). Phlebotomy will see this comment."
                         rows={4}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                        The test will be sent back to the lab for correction.
+                    <p className="text-xs text-red-600 font-medium mt-1">
+                        ⚠️ The sample will be sent back to phlebotomy for recollection.
                     </p>
                 </div>
             )}

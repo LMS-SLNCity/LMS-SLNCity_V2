@@ -120,14 +120,18 @@ router.post('/', async (req: Request, res: Response) => {
         ]
       );
 
-      // Update visit_test status and rejection count
+      // Update visit_test status to REJECTED (send back to phlebotomy for recollection)
       await client.query(
-        `UPDATE visit_tests 
-         SET status = 'IN_PROGRESS',
+        `UPDATE visit_tests
+         SET status = 'REJECTED',
              rejection_count = rejection_count + 1,
              last_rejection_at = CURRENT_TIMESTAMP,
              approved_by = NULL,
              approved_at = NULL,
+             results = NULL,
+             culture_result = NULL,
+             entered_by = NULL,
+             entered_at = NULL,
              updated_at = CURRENT_TIMESTAMP
          WHERE id = $1`,
         [visit_test_id]
@@ -158,8 +162,8 @@ router.post('/', async (req: Request, res: Response) => {
         ) VALUES ($1, $2, $3, $4, $5, $6)`,
         [
           rejected_by_username,
-          'REJECT_RESULT',
-          `Rejected results for ${test.test_name} (${test.visit_code} - ${test.patient_name}). Reason: ${rejection_reason}`,
+          'REJECT_SAMPLE',
+          `Rejected sample for ${test.test_name} (${test.visit_code} - ${test.patient_name}). Sample sent back to phlebotomy for recollection. Reason: ${rejection_reason}`,
           rejected_by_user_id,
           'visit_test',
           visit_test_id

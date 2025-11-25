@@ -602,15 +602,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       // OPTIMISTIC UPDATE: Update UI immediately
+      // Set status to REJECTED so sample goes back to phlebotomy for recollection
       setState(prevState => ({
         ...prevState,
         visitTests: prevState.visitTests.map(t =>
           t.id === visitTestId
             ? {
                 ...t,
-                status: 'IN_PROGRESS' as VisitTestStatus,
+                status: 'REJECTED' as VisitTestStatus,
                 results: null,
                 cultureResult: null,
+                enteredBy: undefined,
+                enteredAt: undefined,
+                approvedBy: undefined,
+                approvedAt: undefined,
               }
             : t
         ),
