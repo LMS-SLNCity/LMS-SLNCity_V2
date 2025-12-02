@@ -1691,4 +1691,3 @@ const TestReport: React.FC<TestReportProps> = ({ visit, signatory }) => {
   );
 };
 
-// export default TestReport;
