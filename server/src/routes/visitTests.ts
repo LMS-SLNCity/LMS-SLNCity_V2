@@ -5,12 +5,24 @@ import { authMiddleware, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// Safely parse JSON strings from DB fields (some DB rows may contain malformed JSON)
+const safeParseJSON = (value: any) => {
+  if (!value) return null;
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    console.warn('Warning: failed to parse JSON from DB field, returning raw value', err);
+    return null;
+  }
+};
+
 // No caching - visit tests change very frequently
 router.get('/', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT vt.id, vt.visit_id, vt.test_template_id, vt.status, vt.collected_by, vt.collected_at, vt.specimen_type,
-              vt.results, vt.culture_result, vt.entered_by, vt.entered_at, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at, vt.created_at,
+              vt.results, vt.culture_result, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at, vt.entered_by, vt.entered_at, vt.created_at,
               tt.id as template_id, tt.code, tt.name, tt.category, tt.price, tt.b2b_price, tt.is_active, tt.report_type, tt.parameters, tt.default_antibiotic_ids, tt.sample_type, tt.tat_hours,
               v.visit_code, v.other_ref_doctor, p.name as patient_name,
               rd.name as referred_doctor_name, rd.designation as referred_doctor_designation
@@ -38,7 +50,7 @@ router.get('/', async (req: Request, res: Response) => {
         b2b_price: row.b2b_price,
         isActive: row.is_active,
         reportType: row.report_type,
-        parameters: typeof row.parameters === 'string' ? JSON.parse(row.parameters) : row.parameters,
+        parameters: safeParseJSON(row.parameters),
         defaultAntibioticIds: row.default_antibiotic_ids,
         sampleType: row.sample_type,
         tatHours: row.tat_hours,
@@ -49,12 +61,12 @@ router.get('/', async (req: Request, res: Response) => {
       specimen_type: row.specimen_type,
       results: row.results,
       cultureResult: row.culture_result,
-      enteredBy: row.entered_by,
-      enteredAt: row.entered_at,
       approvedBy: row.approved_by,
       approvedAt: row.approved_at,
       rejection_count: row.rejection_count || 0,
       last_rejection_at: row.last_rejection_at,
+      enteredBy: row.entered_by,
+      enteredAt: row.entered_at,
       created_at: row.created_at,
     })));
   } catch (error) {
@@ -67,7 +79,7 @@ router.get('/:id', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT vt.id, vt.visit_id, vt.test_template_id, vt.status, vt.collected_by, vt.collected_at, vt.specimen_type,
-              vt.results, vt.culture_result, vt.entered_by, vt.entered_at, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at,
+              vt.results, vt.culture_result, vt.approved_by, vt.approved_at, vt.rejection_count, vt.last_rejection_at, vt.entered_by, vt.entered_at,
               tt.id as template_id, tt.code, tt.name, tt.category, tt.price, tt.b2b_price, tt.is_active, tt.report_type, tt.parameters, tt.default_antibiotic_ids, tt.sample_type, tt.tat_hours,
               v.visit_code, p.name as patient_name
        FROM visit_tests vt
@@ -94,7 +106,7 @@ router.get('/:id', async (req: Request, res: Response) => {
         b2b_price: row.b2b_price,
         isActive: row.is_active,
         reportType: row.report_type,
-        parameters: typeof row.parameters === 'string' ? JSON.parse(row.parameters) : row.parameters,
+        parameters: safeParseJSON(row.parameters),
         defaultAntibioticIds: row.default_antibiotic_ids,
         sampleType: row.sample_type,
         tatHours: row.tat_hours,
@@ -105,12 +117,12 @@ router.get('/:id', async (req: Request, res: Response) => {
       specimen_type: row.specimen_type,
       results: row.results,
       cultureResult: row.culture_result,
-      enteredBy: row.entered_by,
-      enteredAt: row.entered_at,
       approvedBy: row.approved_by,
       approvedAt: row.approved_at,
       rejection_count: row.rejection_count || 0,
       last_rejection_at: row.last_rejection_at,
+      enteredBy: row.entered_by,
+      enteredAt: row.entered_at,
     });
   } catch (error) {
     console.error('Error fetching visit test:', error);
@@ -136,7 +148,7 @@ router.post('/', async (req: Request, res: Response) => {
 
 router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { status, collected_by, collected_at, specimen_type, results, culture_result, entered_by, entered_at, approved_by, approved_at, editedBy, editReason } = req.body;
+    const { status, collected_by, collected_at, specimen_type, results, culture_result, approved_by, approved_at, editedBy, editReason } = req.body;
 
     // Get old values and test details for audit trail
     const oldResult = await pool.query(
@@ -166,14 +178,14 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
            specimen_type = COALESCE($4, specimen_type),
            results = COALESCE($5, results),
            culture_result = COALESCE($6, culture_result),
-           entered_by = COALESCE($7, entered_by),
-           entered_at = COALESCE($8, entered_at),
-           approved_by = COALESCE($9, approved_by),
-           approved_at = COALESCE($10, approved_at),
+           approved_by = COALESCE($7, approved_by),
+           approved_at = COALESCE($8, approved_at),
+           entered_by = COALESCE($10, entered_by),
+           entered_at = COALESCE($11, entered_at),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $11
-       RETURNING id, visit_id, test_template_id, status, collected_by, collected_at, specimen_type, results, culture_result, entered_by, entered_at, approved_by, approved_at`,
-      [status, collected_by, collected_at, specimen_type, results ? JSON.stringify(results) : null, culture_result ? JSON.stringify(culture_result) : null, entered_by, entered_at, approved_by, approved_at, req.params.id]
+       WHERE id = $9
+       RETURNING id, visit_id, test_template_id, status, collected_by, collected_at, specimen_type, results, culture_result, approved_by, approved_at, entered_by, entered_at`,
+      [status, collected_by, collected_at, specimen_type, results ? JSON.stringify(results) : null, culture_result ? JSON.stringify(culture_result) : null, approved_by, approved_at, req.params.id, req.body.entered_by, req.body.entered_at]
     );
 
     const newData = result.rows[0];

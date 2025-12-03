@@ -19,7 +19,7 @@ const formatDate = (dateString?: string) => {
 export const MicrobiologyReportDisplay: React.FC<MicrobiologyReportDisplayProps> = ({ test, visit }) => {
     const { antibiotics } = useAppContext();
     if (!test.cultureResult) {
-        return <div className="text-sm text-red-500 p-4">Culture result data is missing.</div>;
+        return <div style={{ fontSize: 12, color: '#d32f2f', padding: 6 }}>Culture result data is missing.</div>;
     }
 
     const { growthStatus, organismIsolated, colonyCount, sensitivity, remarks } = test.cultureResult;
@@ -31,55 +31,55 @@ export const MicrobiologyReportDisplay: React.FC<MicrobiologyReportDisplayProps>
     const getAntibioticName = (id: number) => antibiotics.find(ab => ab.id === id)?.name || 'Unknown';
 
     return (
-        <div className="mt-2 text-xs p-4 border-l border-r border-b border-black">
-            <div className="text-center mb-4">
-                <h4 className="font-bold text-sm underline">Culture and Sensitivity Report</h4>
+        <div style={{ marginTop: 6, fontSize: 11, padding: 6, borderLeft: '1px solid #000', borderRight: '1px solid #000', borderBottom: '1px solid #000' }}>
+            <div style={{ textAlign: 'center', marginBottom: 8 }}>
+                <h4 style={{ fontWeight: 700, fontSize: 12, textDecoration: 'underline' }}>Culture and Sensitivity Report</h4>
             </div>
 
             {growthStatus === 'no_growth' ? (
-                <div className="text-center py-6">
-                    <p className="font-bold text-gray-800">Organism Isolated: No growth occurred.</p>
-                    {remarks && <p className="mt-2 text-gray-600">Remarks: {remarks}</p>}
+                <div style={{ textAlign: 'center', paddingTop: 12, paddingBottom: 12 }}>
+                    <p style={{ fontWeight: 700, color: '#333' }}>Organism Isolated: No growth occurred.</p>
+                    {remarks && <p style={{ marginTop: 6, color: '#666' }}>Remarks: {remarks}</p>}
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-1 mb-4">
-                        <div><span className="font-semibold">Source of specimen:</span> {test.specimen_type}</div>
-                        <div><span className="font-semibold">Sample collection date:</span> {formatDate(test.collectedAt)}</div>
-                        <div><span className="font-semibold">Reporting date:</span> {formatDate(test.approvedAt)}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px', marginBottom: 8 }}>
+                        <div><span style={{ fontWeight: 600 }}>Source of specimen:</span> {test.specimen_type}</div>
+                        <div><span style={{ fontWeight: 600 }}>Sample collection date:</span> {formatDate(test.collectedAt)}</div>
+                        <div><span style={{ fontWeight: 600 }}>Reporting date:</span> {formatDate(test.approvedAt)}</div>
                     </div>
                     
-                    <div className="mb-4">
-                        <span className="font-semibold">Organism isolated:</span> 
-                        <span className="ml-2 font-bold">{organismIsolated} {colonyCount && `> ${colonyCount} CFU/ml.`}</span>
+                    <div style={{ marginBottom: 8 }}>
+                        <span style={{ fontWeight: 600 }}>Organism isolated:</span> 
+                        <span style={{ marginLeft: 6, fontWeight: 700 }}>{organismIsolated} {colonyCount && `> ${colonyCount} CFU/ml.`}</span>
                     </div>
 
-                    <table className="w-full border-collapse border border-black">
+                    <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000' }}>
                         <thead>
-                            <tr className="bg-gray-100">
-                                <th className="border border-black p-2 font-semibold">Sensitive To</th>
-                                <th className="border border-black p-2 font-semibold">Intermediate To</th>
-                                <th className="border border-black p-2 font-semibold">Resistant To</th>
+                            <tr style={{ background: '#f0f0f0' }}>
+                                <th style={{ border: '1px solid #000', padding: 6, fontWeight: 600 }}>Sensitive To</th>
+                                <th style={{ border: '1px solid #000', padding: 6, fontWeight: 600 }}>Intermediate To</th>
+                                <th style={{ border: '1px solid #000', padding: 6, fontWeight: 600 }}>Resistant To</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td className="border border-black p-2 align-top">
-                                    <ul className="list-disc list-inside space-y-1">
-                                        {sensitiveTo.map(s => <li key={s.antibioticId}>{getAntibioticName(s.antibioticId)}</li>)}
-                                        {sensitiveTo.length === 0 && <span className="text-gray-500">-</span>}
+                                <td style={{ border: '1px solid #000', padding: 6, verticalAlign: 'top' }}>
+                                    <ul style={{ listStyleType: 'disc', marginLeft: 20, margin: 0, padding: 0, lineHeight: 1.4 }}>
+                                        {sensitiveTo.map(s => <li key={s.antibioticId} style={{ margin: '2px 0' }}>{getAntibioticName(s.antibioticId)}</li>)}
+                                        {sensitiveTo.length === 0 && <span style={{ color: '#999' }}>-</span>}
                                     </ul>
                                 </td>
-                                <td className="border border-black p-2 align-top">
-                                    <ul className="list-disc list-inside space-y-1">
-                                        {intermediateTo.map(s => <li key={s.antibioticId}>{getAntibioticName(s.antibioticId)}</li>)}
-                                        {intermediateTo.length === 0 && <span className="text-gray-500">-</span>}
+                                <td style={{ border: '1px solid #000', padding: 6, verticalAlign: 'top' }}>
+                                    <ul style={{ listStyleType: 'disc', marginLeft: 20, margin: 0, padding: 0, lineHeight: 1.4 }}>
+                                        {intermediateTo.map(s => <li key={s.antibioticId} style={{ margin: '2px 0' }}>{getAntibioticName(s.antibioticId)}</li>)}
+                                        {intermediateTo.length === 0 && <span style={{ color: '#999' }}>-</span>}
                                     </ul>
                                 </td>
-                                <td className="border border-black p-2 align-top">
-                                    <ul className="list-disc list-inside space-y-1">
-                                        {resistantTo.map(s => <li key={s.antibioticId}>{getAntibioticName(s.antibioticId)}</li>)}
-                                        {resistantTo.length === 0 && <span className="text-gray-500">-</span>}
+                                <td style={{ border: '1px solid #000', padding: 6, verticalAlign: 'top' }}>
+                                    <ul style={{ listStyleType: 'disc', marginLeft: 20, margin: 0, padding: 0, lineHeight: 1.4 }}>
+                                        {resistantTo.map(s => <li key={s.antibioticId} style={{ margin: '2px 0' }}>{getAntibioticName(s.antibioticId)}</li>)}
+                                        {resistantTo.length === 0 && <span style={{ color: '#999' }}>-</span>}
                                     </ul>
                                 </td>
                             </tr>
@@ -87,8 +87,8 @@ export const MicrobiologyReportDisplay: React.FC<MicrobiologyReportDisplayProps>
                     </table>
                 </>
             )}
-             <div className="mt-6">
-                <p className="font-semibold">* Correlate clinically.</p>
+             <div style={{ marginTop: 12 }}>
+                <p style={{ fontWeight: 600 }}>* Correlate clinically.</p>
                 <p>If there is a need kindly discuss.</p>
             </div>
         </div>

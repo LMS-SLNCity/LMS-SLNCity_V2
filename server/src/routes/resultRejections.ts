@@ -88,11 +88,17 @@ router.post('/', async (req: Request, res: Response) => {
       rejected_by_user_id,
       rejected_by_username,
       rejection_reason,
+      rejection_destination = 'phlebotomy',
       old_results
     } = req.body;
 
     if (!visit_test_id || !rejected_by_user_id || !rejected_by_username || !rejection_reason) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate rejection destination
+    if (!['phlebotomy', 'lab'].includes(rejection_destination)) {
+      return res.status(400).json({ error: 'Invalid rejection destination. Must be "phlebotomy" or "lab"' });
     }
 
     const client = await pool.connect();
@@ -120,10 +126,14 @@ router.post('/', async (req: Request, res: Response) => {
         ]
       );
 
-      // Update visit_test status to REJECTED (send back to phlebotomy for recollection)
+      // Update visit_test status based on rejection destination
+      // If sent to phlebotomy: REJECTED (for recollection)
+      // If sent to lab: IN_PROGRESS (for re-entry of results)
+      const newStatus = rejection_destination === 'lab' ? 'IN_PROGRESS' : 'REJECTED';
+      
       await client.query(
         `UPDATE visit_tests
-         SET status = 'REJECTED',
+         SET status = $1,
              rejection_count = rejection_count + 1,
              last_rejection_at = CURRENT_TIMESTAMP,
              approved_by = NULL,
@@ -133,8 +143,8 @@ router.post('/', async (req: Request, res: Response) => {
              entered_by = NULL,
              entered_at = NULL,
              updated_at = CURRENT_TIMESTAMP
-         WHERE id = $1`,
-        [visit_test_id]
+         WHERE id = $2`,
+        [newStatus, visit_test_id]
       );
 
       // Get test details for audit log
@@ -150,7 +160,8 @@ router.post('/', async (req: Request, res: Response) => {
 
       const test = testResult.rows[0];
 
-      // Create audit log
+      // Create audit log with destination information
+      const destinationLabel = rejection_destination === 'lab' ? 'back to lab for result re-entry' : 'back to phlebotomy for recollection';
       await client.query(
         `INSERT INTO audit_logs (
           username,
@@ -163,7 +174,7 @@ router.post('/', async (req: Request, res: Response) => {
         [
           rejected_by_username,
           'REJECT_SAMPLE',
-          `Rejected sample for ${test.test_name} (${test.visit_code} - ${test.patient_name}). Sample sent back to phlebotomy for recollection. Reason: ${rejection_reason}`,
+          `Rejected result for ${test.test_name} (${test.visit_code} - ${test.patient_name}). Sample sent ${destinationLabel}. Reason: ${rejection_reason}`,
           rejected_by_user_id,
           'visit_test',
           visit_test_id

@@ -230,6 +230,8 @@ CREATE TABLE visit_tests (
     approved_at TIMESTAMP,
     rejection_count INTEGER DEFAULT 0,
     last_rejection_at TIMESTAMP,
+    entered_by VARCHAR(255),
+    entered_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

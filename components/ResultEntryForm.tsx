@@ -32,8 +32,8 @@ const StandardResultForm: React.FC<{ test: VisitTest, onClose: () => void, isEdi
             alert("User session has expired. Please log in again.");
             return;
         };
-        if (!isEditMode && test.status !== 'SAMPLE_COLLECTED') {
-            alert(`Cannot enter results. Test status is ${test.status}. Only SAMPLE_COLLECTED tests can have results entered.`);
+        if (!isEditMode && test.status !== 'SAMPLE_COLLECTED' && test.status !== 'REJECTED' && test.status !== 'IN_PROGRESS') {
+            alert(`Cannot enter results. Test status is ${test.status}. Only SAMPLE_COLLECTED, REJECTED, or IN_PROGRESS tests can have results entered.`);
             return;
         }
         if (isSubmitting) return;

@@ -13,6 +13,7 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
   const { user } = useAuth();
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionDestination, setRejectionDestination] = useState<'phlebotomy' | 'lab'>('phlebotomy');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedResults, setEditedResults] = useState<any>(test.results || {});
@@ -89,7 +90,7 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
   };
 
   const handleReject = async () => {
-    console.log('🔴 Rejection initiated:', { testId: test.id, status: test.status, user: user?.username });
+    console.log('🔴 Rejection initiated:', { testId: test.id, status: test.status, user: user?.username, destination: rejectionDestination });
 
     if (!user) {
         console.error('❌ No user found');
@@ -114,7 +115,7 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
     onClose();
 
     try {
-      await rejectTestResult(test.id, rejectionReason, user);
+      await rejectTestResult(test.id, rejectionReason, user, rejectionDestination);
       console.log('✅ Rejection successful');
     } catch (error) {
       console.error('❌ Rejection failed:', error);
@@ -264,16 +265,58 @@ export const ApprovalModal: React.FC<ApprovalModalProps> = ({ test, onClose }) =
             {/* Rejection Form */}
             {showRejectForm && (
                 <div className="mt-6 border-t pt-4">
-                    <h4 className="font-semibold text-gray-800 mb-2">Rejection Reason</h4>
-                    <textarea
-                        value={rejectionReason}
-                        onChange={(e) => setRejectionReason(e.target.value)}
-                        placeholder="Please provide a detailed reason for rejecting this sample (e.g., hemolyzed, insufficient quantity, contaminated, etc.). Phlebotomy will see this comment."
-                        rows={4}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
-                    <p className="text-xs text-red-600 font-medium mt-1">
-                        ⚠️ The sample will be sent back to phlebotomy for recollection.
+                    <h4 className="font-semibold text-gray-800 mb-3">Rejection Details</h4>
+                    
+                    {/* Rejection Reason */}
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Reason for Rejection</label>
+                        <textarea
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            placeholder="Please provide a detailed reason for rejecting this result (e.g., hemolyzed, insufficient quantity, contaminated, etc.)"
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                    </div>
+
+                    {/* Rejection Destination */}
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Send Back To:</label>
+                        <div className="space-y-2">
+                            <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" style={{borderColor: rejectionDestination === 'phlebotomy' ? '#3b82f6' : '#d1d5db', backgroundColor: rejectionDestination === 'phlebotomy' ? '#eff6ff' : 'transparent'}}>
+                                <input
+                                    type="radio"
+                                    name="destination"
+                                    value="phlebotomy"
+                                    checked={rejectionDestination === 'phlebotomy'}
+                                    onChange={(e) => setRejectionDestination(e.target.value as 'phlebotomy' | 'lab')}
+                                    className="h-4 w-4 text-blue-600 cursor-pointer"
+                                />
+                                <div className="ml-3">
+                                    <p className="text-sm font-medium text-gray-900">Phlebotomy - Recollection Required</p>
+                                    <p className="text-xs text-gray-500">Sample quality issue. Phlebotomy needs to recollect the sample.</p>
+                                </div>
+                            </label>
+                            
+                            <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" style={{borderColor: rejectionDestination === 'lab' ? '#3b82f6' : '#d1d5db', backgroundColor: rejectionDestination === 'lab' ? '#eff6ff' : 'transparent'}}>
+                                <input
+                                    type="radio"
+                                    name="destination"
+                                    value="lab"
+                                    checked={rejectionDestination === 'lab'}
+                                    onChange={(e) => setRejectionDestination(e.target.value as 'phlebotomy' | 'lab')}
+                                    className="h-4 w-4 text-blue-600 cursor-pointer"
+                                />
+                                <div className="ml-3">
+                                    <p className="text-sm font-medium text-gray-900">Lab - Result Re-entry Required</p>
+                                    <p className="text-xs text-gray-500">Lab needs to re-enter or verify the results using the same sample.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <p className="text-xs text-red-600 font-medium mt-2">
+                        ⚠️ {rejectionDestination === 'phlebotomy' ? 'The sample will be sent back to phlebotomy for recollection.' : 'Lab will be notified to re-enter or verify results.'}
                     </p>
                 </div>
             )}

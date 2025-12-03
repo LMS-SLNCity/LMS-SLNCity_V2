@@ -76,7 +76,7 @@ router.get('/:visitCode', async (req: Request, res: Response) => {
 
     // Get approvers who approved the tests
     const approversResult = await pool.query(
-      `SELECT DISTINCT u.id, u.username, u.full_name, u.role
+      `SELECT DISTINCT u.id, u.username, u.role
        FROM users u
        JOIN visit_tests vt ON vt.approved_by = u.username
        WHERE vt.visit_id = $1`,
@@ -87,7 +87,7 @@ router.get('/:visitCode', async (req: Request, res: Response) => {
     const signatory = approversResult.rows.length > 0 
       ? {
           id: approversResult.rows[0].id,
-          name: approversResult.rows[0].full_name || approversResult.rows[0].username,
+          name: approversResult.rows[0].username,
           title: 'Lab Director',
           show_on_print: true
         }

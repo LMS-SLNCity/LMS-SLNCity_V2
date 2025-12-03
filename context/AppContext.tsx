@@ -65,7 +65,7 @@ interface AppContextType extends AppState {
   addTestResult: (visitTestId: number, data: AddResultData, actor: User) => void;
   editTestResult: (visitTestId: number, data: AddResultData, reason: string, actor: User) => void;
   approveTestResult: (visitTestId: number, actor: User) => void;
-  rejectTestResult: (visitTestId: number, rejectionReason: string, actor: User) => Promise<void>;
+  rejectTestResult: (visitTestId: number, rejectionReason: string, actor: User, destination?: 'phlebotomy' | 'lab') => Promise<void>;
   collectDuePayment: (visitId: number, amount: number, mode: Visit['payment_mode'], actor: User) => void;
   // Admin functions
   addUser: (userData: UserCreationData, actor: User) => void;
@@ -592,7 +592,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const rejectTestResult = async (visitTestId: number, rejectionReason: string, actor: User): Promise<void> => {
+  const rejectTestResult = async (visitTestId: number, rejectionReason: string, actor: User, destination: 'phlebotomy' | 'lab' = 'phlebotomy'): Promise<void> => {
     try {
       const authToken = getAuthToken();
       const test = state.visitTests.find(t => t.id === visitTestId);
@@ -602,14 +602,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       // OPTIMISTIC UPDATE: Update UI immediately
-      // Set status to REJECTED so sample goes back to phlebotomy for recollection
+      // Set status based on destination: 'phlebotomy' = REJECTED, 'lab' = IN_PROGRESS
+      const newStatus = destination === 'lab' ? 'IN_PROGRESS' : 'REJECTED';
       setState(prevState => ({
         ...prevState,
         visitTests: prevState.visitTests.map(t =>
           t.id === visitTestId
             ? {
                 ...t,
-                status: 'REJECTED' as VisitTestStatus,
+                status: newStatus as VisitTestStatus,
                 results: null,
                 cultureResult: null,
                 enteredBy: undefined,
@@ -627,6 +628,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         rejected_by_user_id: actor.id,
         rejected_by_username: actor.username,
         rejection_reason: rejectionReason,
+        rejection_destination: destination,
         old_results: test.results || test.cultureResult
       };
 
@@ -679,7 +681,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
         }, 100);
 
-        alert('Test result rejected successfully. Lab technician will be notified.');
+        const destinationLabel = destination === 'lab' ? 'Lab technician' : 'Phlebotomy team';
+        alert(`Test result rejected successfully. ${destinationLabel} will be notified.`);
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('Rejection failed:', errorData);
